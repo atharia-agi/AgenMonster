@@ -138,6 +138,6 @@ export default {
     minify: 'esbuild',
   },
   css: {
-    transformer: 'lightningcss',
+    transformer: 'esbuild',
   },
 };

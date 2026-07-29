@@ -24,10 +24,12 @@ jobs:
           node-version: 22
           cache: "npm"
           cache-dependency-path: apps/desktop/package-lock.json
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
       - uses: dtolnay/rust-toolchain@stable
-      - run: cd apps/desktop && npm ci
-      - run: cd apps/desktop && npm run lint
-      - run: cd apps/desktop && npm test
+      - run: cd apps/desktop && CI=1 npm ci
+      - run: cd apps/desktop && CI=1 npm run lint
+      - run: cd apps/desktop && CI=1 npm test
       - uses: tauri-apps/tauri-action@v2
         with:
           projectPath: apps/desktop
@@ -44,6 +46,8 @@ jobs:
           node-version: 22
           cache: "npm"
           cache-dependency-path: apps/desktop/package-lock.json
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-gnu
@@ -51,9 +55,9 @@ jobs:
         run: echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-g++" >> "$GITHUB_ENV"
 
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends mingw-w64
-      - run: cd apps/desktop && npm ci
-      - run: cd apps/desktop && npm run lint
-      - run: cd apps/desktop && npm test
+      - run: cd apps/desktop && CI=1 npm ci
+      - run: cd apps/desktop && CI=1 npm run lint
+      - run: cd apps/desktop && CI=1 npm test
       - run: cd apps/desktop && npx tauri build --target x86_64-pc-windows-gnu
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

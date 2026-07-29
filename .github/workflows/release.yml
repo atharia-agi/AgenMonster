@@ -22,6 +22,8 @@ jobs:
           node-version: 22
           cache: "npm"
           cache-dependency-path: apps/desktop/package-lock.json
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -37,10 +39,12 @@ jobs:
           sudo apt-get install -y mingw-w64
 
       - name: Install app dependencies
-        run: cd apps/desktop && npm ci
+        run: cd apps/desktop && CI=1 npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
       - name: Build web frontend
-        run: cd apps/desktop && npm run build
+        run: cd apps/desktop && CI=1 npm run build
 
       - name: Build Windows desktop EXE
         run: cd apps/desktop && npx tauri build --target x86_64-pc-windows-gnu
