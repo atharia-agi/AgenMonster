@@ -1,0 +1,32 @@
+[package]
+name = "monster-bench"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "agenmonster-bench"
+path = "src/main.rs"
+
+[lib]
+name = "monster_bench"
+path = "src/lib.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+rusqlite.workspace = true
+tracing.workspace = true
+clap = { version = "4", features = ["derive"] }
+uuid.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+
+monster-bus    = { path = "../monster-bus" }
+monster-tools  = { path = "../monster-tools" }
+monster-memory = { path = "../monster-memory" }
+monster-evolve = { path = "../monster-evolve" }
+monster-agent  = { path = "../monster-agent" }
+monster-llm    = { path = "../monster-llm" }
+monster-pixel  = { path = "../monster-pixel" }

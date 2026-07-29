@@ -1,0 +1,9 @@
+{
+  "stage": "baby",
+  "personality": {
+    "preferred_mood": "curious",
+    "default_speech": "Splish splash",
+    "max_idle_bob_px": 2,
+    "default_scale": 1.05
+  }
+}

@@ -1,0 +1,146 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/monster-bus",
+    "crates/monster-render",
+    "crates/monster-asset",
+    "crates/monster-memory",
+    "crates/monster-llm",
+    "crates/monster-tools",
+    "crates/monster-agent",
+    "crates/monster-evolve",
+    "crates/monster-scheduler",
+    "crates/monster-telemetry",
+    "crates/monster-ffi",
+    "crates/monster-cli",
+    "crates/monster-runtime",
+    "crates/monster-sync",
+    "crates/marketplace-registry",
+    "crates/monster-a11y",
+    "crates/monster-bench",
+    "crates/monster-audio",
+    "crates/monster-core",
+    "crates/monster-optim",
+    "crates/monster-pixel",
+    "crates/monster-skills",
+    "crates/monster-tests",
+    "crates/monster-tile",
+    "crates/monster-equipment",
+    "apps/desktop/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT OR Apache-2.0"
+authors = ["AgenMonster contributors"]
+repository = "https://github.com/agenmonster/agenmonster"
+homepage = "https://agenmonster.dev"
+
+[workspace.dependencies]
+# Async / runtime
+tokio = { version = "1.40", features = ["full"] }
+tokio-util = { version = "0.7", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+futures-util = "0.3"
+
+# Errors / utils
+anyhow = "1"
+thiserror = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+tracing-appender = "0.2"
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+toml = "0.9"
+ron = "0.10"
+bincode = "1"
+serde_yaml = "0.9"
+
+# Time / ids
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "1", features = ["v4", "v7", "serde"] }
+ulid = { version = "1", features = ["serde"] }
+
+# HTTP / clients
+reqwest = { version = "0.12", features = ["json", "stream", "rustls-tls", "gzip"] }
+hyper = { version = "1", features = ["full"] }
+
+# Crypto / hashing
+sha2 = "0.10"
+blake3 = "1"
+
+# Config / env
+config = { version = "0.14", default-features = false, features = ["toml", "yaml"] }
+dotenvy = "0.15"
+dirs = "5"
+
+# Crypto / HMAC
+hmac = "0.12"
+hex = "0.4"
+
+# Random
+rand = "0.8"
+regex = "1"
+
+# DB / persistence
+rusqlite = { version = "0.32", features = ["bundled", "blob", "serde_json"] }
+sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "json", "chrono", "uuid"] }
+
+# Vector store (qdrant client)
+qdrant-client = { version = "1", features = ["grpc"] }
+
+# Tauri / desktop shell
+tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri-runtime = "2"
+tauri-plugin-shell = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-deep-link = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-os = "2"
+tauri-plugin-window-state = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-single-instance = "2"
+window-vibrancy = "0.5"
+
+# Windows
+raw-window-handle = "0.6"
+glutin = "0.32"
+softbuffer = "0.4"
+
+# Rendering (option A – Macroquad)
+macroquad = "0.4"
+miniquad = "0.4"
+
+# Rendering (option B – raylib)
+raylib = "6"
+raylib-sys = "6"
+
+# LSP / editing (skill maintenance)
+lsp-types = "0.95"
+
+# Skills / agent prompts
+include_dir = "0.7"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+debug = false
+panic = "abort"
+
+[profile.dev]
+opt-level = 0
+debug = true
+incremental = true
+
+[profile.bench]
+inherits = "release"
+debug = true

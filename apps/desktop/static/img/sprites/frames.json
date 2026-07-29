@@ -1,0 +1,6 @@
+{
+  "size": 24,
+  "stages": ["egg", "hatchling", "baby", "child", "teen", "adult", "mega"],
+  "frames_base_indices": null,
+  "comment": "Real sprite frames are generated at runtime from the master silhouette in apps/desktop/src/lib/render/masterSprite.ts (mirror of crates/monster-pixel/src/sprite.rs)."
+}

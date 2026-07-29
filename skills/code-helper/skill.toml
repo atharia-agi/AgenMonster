@@ -1,0 +1,34 @@
+[skill]
+name = "code-helper"
+version = "0.1.0"
+author = "agenmonster"
+description = "Code analysis, refactoring, and generation assistance"
+min_stage = "egg"
+tags = ["code", "programming", "rust", "refactor", "review"]
+
+triggers = ["code", "refactor", "review", "implement", "debug"]
+
+[[tools]]
+name = "analyze_code"
+description = "Analyze code for issues, complexity, and improvement suggestions"
+parameters = [
+    { name = "file_path", description = "Path to the file to analyze", param_type = "string", required = true },
+]
+examples = [
+    "analyze_code src/main.rs",
+]
+
+[[tools]]
+name = "generate_test"
+description = "Generate unit tests for a given function or module"
+parameters = [
+    { name = "file_path", description = "Path to the source file", param_type = "string", required = true },
+    { name = "function_name", description = "Specific function to test (optional)", param_type = "string", required = false },
+]
+examples = [
+    "generate_test src/parser.rs function_name=parse_config",
+]
+
+[prompts]
+system = "You are an expert code assistant. Follow existing code conventions and patterns in the project."
+review = "When reviewing code, check for: correctness, performance, safety, idiomatic patterns, and error handling."

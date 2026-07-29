@@ -1,0 +1,13 @@
+{
+  "default_provider": "anthropic",
+  "anthropic": { "model_alias": "claude-sonnet-4-5", "max_tokens": 8192 },
+  "router": {
+    "deep_research": "anthropic-sonnet",
+    "creative": "anthropic-opus",
+    "quick": "anthropic-haiku",
+    "local": "ollama:llama3.1:8b"
+  },
+  "telemetry": { "otel": false, "metrics_flush_secs": 30 },
+  "memory": { "tier": "sqlite+qdrant" },
+  "evolution": { "max_per_day": 4, "cost_cap_usd_per_day": 5 }
+}

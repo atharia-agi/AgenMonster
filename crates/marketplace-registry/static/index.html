@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AgenMonster Registry</title>
+    <link rel="stylesheet" href="/app.css" />
+    <style>
+      /* Inline minimal page chrome; full styling lives in app.css. */
+      .bar { display: flex; gap: 12px; align-items: baseline; padding: 4px 0; }
+   </style>
+ </head>
+  <body>
+    <header>
+      <h1>AGENMONSTER SKILL REGISTRY</h1>
+      <p style="color:#555; margin: 4px 0 0; font-size: 9px;">
+        <code id="host</code>
+     </p>
+   </header>
+    <main>
+      <section id="list" class="grid</section>
+   </main>
+    <footer>
+      POST <code>/v1/skill</code> with body
+      <code>{ id, version, author, author_pubkey, signature_b64, description, body_markdown, changelog }</code>.
+      Body is verified against Ed25519 signature; OK responses include the <code>commit</code> id.
+   </footer>
+    <script type="module">
+      document.getElementById('host').textContent = location.host + '/v1/index';
+      const listEl = document.getElementById('list');
+      const out = await (await fetch('/v1/index')).json();
+      out.forEach(s => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <h3><a href="/v1/skill/${encodeURIComponent(s.id)}">${s.id</a</h3>
+          <div class="meta">v${s.version} · ${s.author} · ${new Date(s.published_at).toISOString().slice(0,10)}</div>
+          <p style="margin: 8px 0; font-size: 10px;">${s.description || ''</p>
+          <div>
+            <span class="tag">STARS ${s.stars</span>
+            <span class="tag">DL ${s.downloads</span>
+         </div>`;
+        listEl.appendChild(card);
+      });
+   </script>
+ </body>
+</html>

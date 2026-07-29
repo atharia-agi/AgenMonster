@@ -1,0 +1,22 @@
+# AndroidManifest additions — needed for the floating overlay window.
+# Merge these into your existing `apps/mobile/android/app/src/main/AndroidManifest.xml`.
+# The runtime needs:
+#   <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+#   <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+#   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE"/>
+#   <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
+# At the <application> level, declare:
+#   <service
+#       android:name="dev.fluttercommunity.plus.androidalarmmanager.AlarmService"
+#       android:foregroundServiceType="specialUse"
+#       android:exported="false">
+#       <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+#                 android:value="Floating companion overlay for AgenMonster"/>
+#  </service>
+
+# The hosted main.dart is `lib/main.dart`. For the overlay entry-point:
+#   @flutterEntryPoint `OVERLAY_ENTRY`
+# …or use a separate dart isolate entry compiled with `dart-define FROM_OVL=true`.
+
+# FlutterOverlayPlugin: see pub.dev/packages/flutter_overlay_window

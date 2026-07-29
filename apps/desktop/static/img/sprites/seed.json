@@ -1,0 +1,45 @@
+{
+  "version": "0.1",
+  "generator": "manual / draft by hand; replace with Aseprite export later",
+  "palettes": [
+    { "stage": "egg",       "colors": ["#fff5e6","#1d1306","#6b3a17","#ffd270","#ffe2a8","#fff8d6","#fdfdf3"] },
+    { "stage": "hatchling", "colors": ["#d4f4a6","#0a1b08","#1a3011","#4f8b2c","#88c457","#a0e07d","#fdfdf3"] },
+    { "stage": "baby",      "colors": ["#e2f4ff","#0c1f3f","#214266","#4f9bd0","#86ccf2","#a8def4","#fdfdf3"] },
+    { "stage": "child",     "colors": ["#f0dffa","#1a0c40","#3a1f75","#965ccd","#c896e4","#d8b5f0","#fdfdf3"] },
+    { "stage": "teen",      "colors": ["#ffd9df","#510521","#8c0d2e","#f73e63","#ff7e95","#ffa9b8","#fdfdf3"] },
+    { "stage": "adult",     "colors": ["#f7e3a3","#3b200a","#6e3f0e","#a56614","#f5c057","#fcd58d","#fdfdf3"] },
+    { "stage": "mega",      "colors": ["#fce9ff","#2d1736","#5b2c7a","#75b3ff","#9affc0","#ffe07d","#fdfdf3"] }
+  ],
+
+  "tile": {
+    "name": "paper-dither",
+    "size": 16,
+    "indices": [
+      0,0,1,0, 0,0,1,0, 0,0,1,0, 0,0,1,0,
+      0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0,
+      1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,0,0,
+      0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0
+    ]
+  },
+
+  "speech_bubble": {
+    "padding_x": 12,
+    "padding_y": 6,
+    "border_w": 1,
+    "arrow_height": 6,
+    "tail_drop": 4,
+    "font_size": 8
+  },
+
+  "click_star_sprite": {
+    "size": 5,
+    "indices": [
+      0,0,1,0,0,
+      0,1,2,1,0,
+      1,2,3,2,1,
+      0,1,2,1,0,
+      0,0,1,0,0
+    ],
+    "notes": "indices 0 transparent, 1 ink, 2 mid, 3 center bright"
+  }
+}

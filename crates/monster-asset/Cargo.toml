@@ -1,0 +1,16 @@
+[package]
+name = "monster-asset"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+include_dir.workspace = true
+bincode.workspace = true
+blake3.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true

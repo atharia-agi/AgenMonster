@@ -1,0 +1,17 @@
+[package]
+name = "monster-llm"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+futures.workspace = true
+futures-util.workspace = true
+reqwest = { workspace = true, features = ["stream"] }
+chrono.workspace = true
+monster-bus = { path = "../monster-bus" }

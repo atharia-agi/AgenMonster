@@ -1,0 +1,40 @@
+name: agenmonster_mobile
+description: "Self-evolving AI monster companion — Flutter mobile shell (Android overlay + iOS in-app)"
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+  flutter: '>=3.24.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_rust_bridge: ^2.0.0
+  flutter_overlay_window: ^0.5.0
+  system_alert_window: ^2.0.11
+  shared_preferences: ^2.3.0
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  web_socket_channel: ^3.0.0
+  app_links: ^6.3.0
+  share_plus: ^9.0.0
+  http: ^1.2.0
+  flutter_svg: ^2.0.0
+  audioplayers: ^6.1.0
+  path_provider: ^2.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  flutter_rust_bridge_codegen: ^2.0.0
+  integration_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/sprites/
+    - assets/voxels/
+    - assets/audio/

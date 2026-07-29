@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%sveltekit.assets%/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="AgenMonster — a self-evolving AI monster companion that grows from your real work." />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0f380f" />
+    <title>AgenMonster</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover">
+    <div style="display: contents">%sveltekit.body%</div>
+    <script>
+      // Force Game Boy pixel aesthetic globally
+      document.documentElement.style.setProperty('--gb-lightest', '#9bbc0f');
+      document.documentElement.style.setProperty('--gb-light', '#8bac0f');
+      document.documentElement.style.setProperty('--gb-dark', '#306230');
+      document.documentElement.style.setProperty('--gb-darkest', '#0f380f');
+    </script>
+  </body>
+</html>
+

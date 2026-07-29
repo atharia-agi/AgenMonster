@@ -1,0 +1,16 @@
+name: mobile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with: { channel: stable }
+      - run: cd apps/mobile && flutter pub get
+      - run: cd apps/mobile && flutter analyze
+      - run: cd apps/mobile && flutter test
+      - run: cd apps/mobile && flutter build apk --release --sign=false

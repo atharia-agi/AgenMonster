@@ -1,0 +1,76 @@
+{
+  "productName": "AgenMonster",
+  "version": "1.0.0",
+  "identifier": "dev.agenmonster.desktop",
+  "build": {
+    "frontendDist": "../build",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "pet",
+        "title": "AgenMonster",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "decorations": true,
+        "transparent": false,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "center": true,
+        "url": "/"
+      },
+      {
+        "label": "chat",
+        "title": "AgenMonster Chat",
+        "width": 400,
+        "height": 500,
+        "resizable": true,
+        "visible": false,
+        "url": "/?window=chat"
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ],
+    "targets": ["app"],
+    "windows": {
+      "webviewInstallMode": {
+        "type": "embedBootstrapper"
+      }
+    }
+  },
+  "plugins": {
+    "globalShortcut": {
+      "shortcuts": [
+        "CmdOrCtrl+Shift+A"
+      ]
+    },
+    "systemTray": {
+      "iconPath": "icons/32x32.png",
+      "iconAsTemplate": true,
+      "menuOnLeftClick": false,
+      "tooltip": "AgenMonster"
+    },
+    "updater": {
+      "active": false
+    },
+    "window-state": {
+      "allWindows": true
+    }
+  }
+}

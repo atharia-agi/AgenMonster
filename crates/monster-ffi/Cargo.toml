@@ -1,0 +1,29 @@
+[package]
+name = "monster-ffi"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = []
+flutter = []
+mobile = []
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+async-trait.workspace = true
+
+monster-bus = { path = "../monster-bus" }
+monster-agent = { path = "../monster-agent" }
+monster-memory = { path = "../monster-memory" }
+monster-tools = { path = "../monster-tools" }
+monster-evolve = { path = "../monster-evolve" }
+monster-scheduler = { path = "../monster-scheduler" }

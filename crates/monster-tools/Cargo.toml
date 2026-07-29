@@ -1,0 +1,26 @@
+[package]
+name = "monster-tools"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+chrono.workspace = true
+uuid.workspace = true
+regex.workspace = true
+reqwest.workspace = true
+hmac.workspace = true
+sha2.workspace = true
+blake3.workspace = true
+hex.workspace = true
+rand.workspace = true
+urlencoding = "2"
+dotenvy.workspace = true
+
+monster-bus = { path = "../monster-bus" }
+monster-memory = { path = "../monster-memory" }

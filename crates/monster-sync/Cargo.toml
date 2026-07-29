@@ -1,0 +1,16 @@
+[package]
+name = "monster-sync"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+rand.workspace = true
+blake3.workspace = true
+dirs = "5"
+
+monster-bus = { path = "../monster-bus" }

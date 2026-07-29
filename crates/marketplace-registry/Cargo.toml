@@ -1,0 +1,22 @@
+[package]
+name = "marketplace-registry"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "agenmonster-registry"
+path = "src/main.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tokio.workspace = true
+rusqlite.workspace = true
+axum = { version = "0.7", features = ["macros", "tokio", "http1"] }
+tower = "0.5"
+tower-http = { version = "0.5", features = ["cors"] }
+uuid.workspace = true
+chrono.workspace = true

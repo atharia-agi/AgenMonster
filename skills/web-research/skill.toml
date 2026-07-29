@@ -1,0 +1,35 @@
+[skill]
+name = "web-research"
+version = "0.1.0"
+author = "agenmonster"
+description = "Deep web research using multiple search engines and content extraction"
+min_stage = "hatchling"
+tags = ["search", "research", "web", "internet"]
+
+triggers = ["search", "research", "find", "look up", "investigate"]
+
+[[tools]]
+name = "deep_search"
+description = "Perform a deep web search with multiple queries and synthesize results"
+parameters = [
+    { name = "query", description = "The search query", param_type = "string", required = true },
+    { name = "depth", description = "Search depth (1-5)", param_type = "integer", required = false },
+]
+examples = [
+    "deep_search \"rust async runtime comparison\"",
+    "deep_search \"tauri 2.0 migration guide\" depth=3",
+]
+
+[[tools]]
+name = "summarize_url"
+description = "Fetch a URL and return a structured summary"
+parameters = [
+    { name = "url", description = "The URL to summarize", param_type = "string", required = true },
+]
+examples = [
+    "summarize_url https://doc.rust-lang.org/book/",
+]
+
+[prompts]
+system = "You are a thorough research assistant. Always cite sources and provide structured findings."
+search_strategy = "For each query, search with multiple phrasings, extract key facts, cross-reference sources."

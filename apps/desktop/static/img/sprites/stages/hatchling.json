@@ -1,0 +1,9 @@
+{
+  "stage": "hatchling",
+  "personality": {
+    "preferred_mood": "excited",
+    "default_speech": "I see new worlds",
+    "max_idle_bob_px": 1,
+    "default_scale": 1.0
+  }
+}

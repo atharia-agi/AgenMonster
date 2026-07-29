@@ -1,0 +1,25 @@
+[package]
+name = "monster-render"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tokio.workspace = true
+async-trait.workspace = true
+
+# Rendering backends (feature-gated so the binary stays small)
+macroquad = { workspace = true, optional = true }
+miniquad = { workspace = true, optional = true }
+raylib = { workspace = true, optional = true }
+
+[features]
+default = ["macroquad_backend"]
+macroquad_backend = ["dep:macroquad", "dep:miniquad"]
+raylib_backend = ["dep:raylib"]
+webgl_backend = []
+vulkan_backend = []
+noop_backend = []

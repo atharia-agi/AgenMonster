@@ -1,0 +1,11 @@
+{
+  "identifier": "dev.agenmonster.desktop",
+  "description": "AgenMonster — AI Monster Companion",
+  "windows": ["pet", "chat"],
+  "permissions": [
+    "core:default",
+    "shell:allow-open",
+    "global-shortcut:allow-register",
+    "global-shortcut:allow-unregister"
+  ]
+}

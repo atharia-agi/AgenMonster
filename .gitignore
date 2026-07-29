@@ -1,0 +1,82 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Build outputs
+target/
+dist/
+build/
+.next/
+.cache/
+.svelte-kit/
+
+# Logs / temp
+*.log
+*.tmp
+*.bak
+*.swp
+test-output.txt
+svelte-check.out
+
+# Archives / installers (too large for git)
+*.zip
+*.7z
+*.tgz
+*.tar.gz
+nsis.7z
+vs_buildtools.exe
+mingw64.zip
+
+# IDE / editor
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.*.local
+*.swp
+*.bak
+*.tmp
+*.zip
+*.tgz
+
+# Rust
+**/*.rs.bk
+**/*.pdb
+
+# Flutter
+**/.dart_tool/
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+**/.packages
+**/.pub-cache/
+**/.pub/
+**/build/
+**/pubspec.lock
+
+# Tauri
+**/WixTools/
+**/wix/
+
+# Secrets / env
+.env
+.env.*
+.env.local
+!.env.example
+.env.backup
+
+# Secrets
+**/google-services.json
+**/GoogleService-Info.plist
+**/*.keystore
+**/*.jks
+**/*.p12
+**/*.pem
+
+# AI tool configs (not part of project)
+.opencode/
+.claude/

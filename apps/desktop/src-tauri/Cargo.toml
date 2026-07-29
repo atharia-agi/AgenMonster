@@ -1,0 +1,42 @@
+[package]
+name = "agenmonster-desktop"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "agenmonster_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tokio.workspace = true
+chrono.workspace = true
+
+tauri.workspace = true
+tauri-runtime.workspace = true
+tauri-plugin-shell.workspace = true
+tauri-plugin-fs.workspace = true
+tauri-plugin-dialog.workspace = true
+tauri-plugin-deep-link.workspace = true
+tauri-plugin-notification.workspace = true
+tauri-plugin-os.workspace = true
+tauri-plugin-window-state.workspace = true
+tauri-plugin-global-shortcut.workspace = true
+tauri-plugin-updater.workspace = true
+
+monster-runtime = { path = "../../../crates/monster-runtime" }
+monster-llm = { path = "../../../crates/monster-llm" }
+monster-tools = { path = "../../../crates/monster-tools" }
+monster-agent = { path = "../../../crates/monster-agent" }
+monster-memory = { path = "../../../crates/monster-memory" }
+monster-skills = { path = "../../../crates/monster-skills" }
+monster-equipment = { path = "../../../crates/monster-equipment" }
+dirs = "5"
+pollster = "0.4"

@@ -1,0 +1,35 @@
+[skill]
+name = "memory-augment"
+version = "0.1.0"
+author = "agenmonster"
+description = "Enhanced memory operations with semantic search and consolidation"
+min_stage = "hatchling"
+tags = ["memory", "recall", "store", "search", "knowledge"]
+
+triggers = ["remember", "recall", "forget", "memory", "knowledge"]
+
+[[tools]]
+name = "smart_store"
+description = "Store information with automatic categorization and tagging"
+parameters = [
+    { name = "content", description = "The content to store", param_type = "string", required = true },
+    { name = "category", description = "Category hint (code, research, personal, general)", param_type = "string", required = false },
+]
+examples = [
+    "smart_store \"Rust async uses pinning\" category=code",
+]
+
+[[tools]]
+name = "contextual_search"
+description = "Search memory with context-aware ranking"
+parameters = [
+    { name = "query", description = "What to search for", param_type = "string", required = true },
+    { name = "context", description = "Current context for ranking boost", param_type = "string", required = false },
+]
+examples = [
+    "contextual_search \"async runtime\" context=\"tokio vs async-std\"",
+]
+
+[prompts]
+system = "You are a memory-augmented assistant. Use stored knowledge to provide better answers."
+consolidation = "Periodically consolidate related memories into summaries for better recall."
