@@ -1,4 +1,4 @@
-name: desktop
+name: CI — Desktop Build Matrix
 
 on:
   push:
@@ -7,6 +7,8 @@ on:
       - "apps/desktop/**"
       - "crates/**"
       - "skills/**"
+  pull_request:
+    branches: [main]
 
 jobs:
   build-desktop:
@@ -18,11 +20,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: 22 }
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
       - uses: dtolnay/rust-toolchain@stable
       - run: cd apps/desktop && npm ci
-      - uses: tauri-apps/tauri-action@v0
+      - run: cd apps/desktop && npm run lint
+      - run: cd apps/desktop && npm test
+      - uses: tauri-apps/tauri-action@v2
         with:
           projectPath: apps/desktop
+          includeDebug: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-desktop-gnu-windows:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-gnu
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends mingw-w64
+      - run: cd apps/desktop && npm ci
+      - run: cd apps/desktop && npm run lint
+      - run: cd apps/desktop && npm test
+      - run: cd apps/desktop && npx tauri build -- --target x86_64-pc-windows-gnu
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

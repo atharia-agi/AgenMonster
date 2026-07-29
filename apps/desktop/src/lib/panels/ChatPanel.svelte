@@ -29,6 +29,7 @@
   import { TOOLS, handleTool } from '$lib/mcp';
   import { parseAgentToolCall } from '$lib/agentToolCall';
   import { buildSystemPrompt, toPetMood, type SystemPromptContext } from '$lib/systemPrompt';
+  import type { GameState, Mood, RelationshipLevel, Stage } from '$lib/gameState';
 
   let { stage = 'egg', mood = 'idle', onMessageSent = () => {}, onStreamState = (_s: { streaming: boolean; route: string; ms: number }) => {} } = $props<{
     stage?: string; mood?: string; onMessageSent?: (text: string) => void;
@@ -51,11 +52,11 @@
       : '';
 
     const ctx: SystemPromptContext = {
-      mood: toPetMood(gs.mood),
+      mood: toPetMood(gs.mood as Mood),
       energy: gs.needs.energy / 100,
       relationship: Math.min(1, gs.relationshipXp / Math.max(1, gs.relationshipXpToNext)),
-      relationshipLevel: gs.relationshipLevel,
-      stage: gs.stage,
+      relationshipLevel: String(gs.relationshipLevel) as RelationshipLevel,
+      stage: gs.stage as Stage,
     };
 
     const base = buildSystemPrompt(
@@ -694,7 +695,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       );
       saveLLMConfig({ provider: activeConfig.provider, model: activeConfig.model, apiKey: '' });
       onMessageSent(text);
-      addAssistantMessage(finalReply);
+      addAssistantMessage(getGameState(), finalReply);
       recordTokenUsage({
         provider: activeConfig.provider,
         model: activeConfig.model,

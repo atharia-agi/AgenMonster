@@ -5,6 +5,15 @@ import { loadStateNative, saveStateNative, loadMemoryNative, saveMemoryNative, l
 
 export const SCHEMA_VERSION = 2;
 
+export type Mood = 'happy' | 'sad' | 'proud' | 'focused' | 'idle' | 'neutral' | 'excited' | 'sleepy' | 'frustrated' | 'tired' | 'thinking' | 'angry';
+export type Stage = 'egg' | 'hatchling' | 'baby' | 'child' | 'teen' | 'adult' | 'mega';
+export type RelationshipLevel = 'stranger' | 'friend' | 'buddy' | 'best_friend' | 'soul_companion';
+export type Needs = { hunger: number; affection: number; energy: number; focus: number; mood: number; motivation: number; knowledge: number };
+export type Activity = 'idle' | 'chatting' | 'exploring' | 'eating' | 'sleeping' | 'evolving' | 'learning' | 'playing' | 'coding' | 'researching' | 'browsing' | 'dreaming';
+export interface Skill { id: string; name: string; category: string; level: number; unlocked: boolean; icon?: string; xp: number; xpToNext: number }
+export interface MemoryCrystal { id: string; label: string; content: string; createdAt: number; unlocked: boolean }
+export interface ActiveTask { id: string; title: string; status: 'pending' | 'active' | 'done'; createdAt: number }
+
 export interface GameState {
   version: number;
   stage: string;
@@ -14,7 +23,7 @@ export interface GameState {
   level: number;
   xp: number;
   xpToNext: number;
-  needs: { hunger: number; affection: number; energy: number };
+  needs: Needs;
   missions: any[];
   completedMissions: number;
   name: string;
@@ -48,7 +57,7 @@ export interface GameState {
   _lastMorningWakeupDate: string;
   _moodHistory: { date: string; mood: string; energy: number }[];
   _pendingSpeech?: string;
-  _sessionStart: string;
+  _sessionStart: string | number;
   adaptationWeights: AdaptationWeights;
   bandits: BanditArm[];
   feedbackLog: FeedbackEntry[];
@@ -58,6 +67,7 @@ export interface GameState {
   evolution: EvolutionState;
   bestPrompt: PromptVariant;
   activeRoutines: RoutineGene[];
+  chatMode?: string;
 }
 
 const adaptState = createAdaptationState();
@@ -152,7 +162,7 @@ export function createInitialState(): GameState {
     level: 1,
     xp: 0,
     xpToNext: 100,
-    needs: { hunger: 50, affection: 50, energy: 50 },
+    needs: { hunger: 50, affection: 50, energy: 50, focus: 50, mood: 50, motivation: 50, knowledge: 50 },
     missions: [],
     completedMissions: 0,
     name: 'Monster',

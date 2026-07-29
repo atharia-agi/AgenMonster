@@ -89,6 +89,7 @@ export function buildSystemPrompt(
 
 const MOOD_MAP: Record<Mood, PetMood> = {
   idle: 'tired',
+  neutral: 'neutral',
   happy: 'happy',
   sleepy: 'tired',
   proud: 'happy',

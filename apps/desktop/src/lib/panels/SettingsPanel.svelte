@@ -3,7 +3,7 @@ import type { GameState } from "$lib/gameState";
 import { getEvolutionProgress, selectBestPrompt, evolve } from "$lib/evolution";
 import { getAdaptationReport } from "$lib/gameState";
 
-let { state, onClose, onOpenAbout }: { state: GameState; onClose: () => void; onOpenAbout: () => void } = $props();
+let { state: petState, onClose, onOpenAbout }: { state: GameState; onClose: () => void; onOpenAbout: () => void } = $props();
 
 let showResetConfirm = $state(false);
 let resetText = $state("");
@@ -13,11 +13,7 @@ let resetMaster = $state(false);
 let resetEvolutionClicked = $state(false);
 let resetEvolution = $state(false);
 
-let gameState = $state<GameState>(state);
-
-$effect(() => {
-  gameState = state;
-});
+let gameState = $derived(petState);
 
 const SECTIONS = [
   { id: "cosmetics", label: "COSMETICS", icon: "🎨" },
@@ -104,8 +100,8 @@ function handleBackupExport(): void {
 
 function triggerEvolution(): void {
   if (!gameState) return;
-  const feedbackScores = gameState.feedbackLog.slice(-10).map((f) => f.score);
-  const routineScores = gameState.activeRoutines.map((r) => r.fitness);
+  const feedbackScores = gameState.feedbackLog.slice(-10).map((f: { score: number }) => f.score);
+  const routineScores = gameState.activeRoutines.map((r: { fitness: number }) => r.fitness);
   const result = evolve(gameState.evolution, feedbackScores, routineScores);
 }
 

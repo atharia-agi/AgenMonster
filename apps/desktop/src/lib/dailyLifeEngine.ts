@@ -106,7 +106,7 @@ export function useDailyLife(_node: HTMLElement, options: DailyLifeOptions = {})
 
     // 4. Critical-need notification
     const state = getGameState();
-    const criticalCount = [state.needs.energy, state.needs.hunger, state.needs.motivation].filter(n => n < 15).length;
+    const criticalCount = [state.needs.energy, state.needs.hunger, state.needs.motivation].filter((n: number) => n < 15).length;
     if (criticalCount > 0 && Date.now() - lastNotify > 60000) {
       lastNotify = Date.now();
       sendNotification(

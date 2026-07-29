@@ -12,9 +12,16 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "CompanyName", "AgenMonster\0"
-            VALUE "FileVersion", "1.0.0\0"
-            VALUE "ProductName", "AgenMonster\0"
+            VALUE "CompanyName", "AgenMonster Team\0"
+            VALUE "FileDescription", "AgenMonster Desktop — Your Evolving AI Monster Companion\0"
+            VALUE "FileVersion", "1.0.0.0\0"
+            VALUE "InternalName", "agenmonster-desktop\0"
+            VALUE "LegalCopyright", "Copyright \0xA9 2025 AgenMonster Team. MIT License.\0"
+            VALUE "LegalTrademarks", "\0"
+            VALUE "OriginalFilename", "agenmonster-desktop.exe\0"
+            VALUE "ProductName", "AgenMonster Desktop\0"
+            VALUE "ProductVersion", "1.0.0.0\0"
+            VALUE "Comments", "Built with Tauri 2 + SvelteKit 5. Open source: github.com/atharia-agi/AgenMonster\0"
         END
     END
     BLOCK "VarFileInfo"

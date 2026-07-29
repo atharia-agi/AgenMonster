@@ -38,8 +38,14 @@ const MOOD_TRANSITIONS: Record<Mood, Record<string, Mood>> = {
     tool_success: 'proud',
     sleep_start: 'sleepy',
     energy_high: 'happy',
-    energy_low: 'tired',
+    energy_low: 'idle',
     interaction: 'happy',
+  },
+  neutral: {
+    task_success: 'happy',
+    task_fail: 'sad',
+    interaction: 'idle',
+    sleep_start: 'sleepy',
   },
   happy: {
     task_fail: 'frustrated',
@@ -195,6 +201,7 @@ export function processEmotionEvent(
 function getMoodDuration(mood: Mood): number {
   const durations: Record<Mood, number> = {
     idle: 300,
+    neutral: 300,
     happy: 240,
     sad: 360,
     focused: 480,
@@ -234,8 +241,9 @@ export function tickEmotion(state: EmotionState): EmotionState {
 export function getMoodDescription(mood: Mood, intensity: number): string {
   if (intensity > 0.8) {
     const strong: Record<Mood, string> = {
-      idle: 'Relaxed',
-      happy: 'Very Happy!',
+    idle: 'Relaxed',
+    neutral: 'Neutral',
+    happy: 'Very Happy!',
       sad: 'Quite Sad...',
       focused: 'Laser Focused!',
       excited: 'Super Excited!',
@@ -250,6 +258,7 @@ export function getMoodDescription(mood: Mood, intensity: number): string {
   }
   const mild: Record<Mood, string> = {
     idle: 'Content',
+    neutral: 'Neutral',
     happy: 'Happy',
     sad: 'A bit down',
     focused: 'Concentrating',

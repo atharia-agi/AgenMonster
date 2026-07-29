@@ -11,7 +11,7 @@ export type ChatSnapshot = {
   xp: number;
   xpToNext?: number;
   mood: string;
-  relationshipLevel: string;
+  relationshipLevel: number;
   chatMessages: any[];
 };
 

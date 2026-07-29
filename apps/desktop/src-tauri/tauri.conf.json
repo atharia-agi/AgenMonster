@@ -1,5 +1,5 @@
 {
-  "productName": "AgenMonster",
+  "productName": "AgenMonster Desktop",
   "version": "1.0.0",
   "identifier": "dev.agenmonster.desktop",
   "build": {
@@ -37,8 +37,9 @@
       }
     ],
     "security": {
-      "csp": null
-    }
+      "csp": "default-src 'self'; img-src 'self' https: data: blob:; media-src 'self' https: data: blob:; font-src 'self' data:; connect-src 'self' https: http://localhost:* ws://localhost:*; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; worker-src 'self' blob:"
+    },
+    "macOSPrivateApi": false
   },
   "bundle": {
     "icon": [
@@ -47,10 +48,39 @@
       "icons/128x128@2x.png",
       "icons/icon.png"
     ],
-    "targets": ["app"],
+    "targets": ["app", "nsis"],
+    "publisher": "AgenMonster Team",
+    "copyright": "Copyright (c) 2025 AgenMonster Team",
+    "shortDescription": "Your evolving AI monster companion",
+    "longDescription": "A floating AI pet companion that lives on your desktop. Built with Tauri 2 + SvelteKit. Open source under MIT/Apache-2.0.",
+    "category": "SocialNetworking",
+    "externalBin": [],
     "windows": {
       "webviewInstallMode": {
-        "type": "embedBootstrapper"
+        "type": "embedBootstrapper",
+        "silent": true
+      },
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": "http://timestamp.digicert.com",
+      "wix": null,
+      "nsis": {
+        "license": "../../../LICENSE",
+        "installMode": "currentUser",
+        "languages": ["en-US"],
+        "displayLanguageSelector": false,
+        "headerImage": "icons/128x128.png",
+        "sidebarImage": "icons/128x128.png",
+        "installerIcon": "icons/icon.ico",
+        "uninstallerIcon": "icons/icon.ico",
+        "installerHeader": "icons/icon.bmp",
+        "uninstallDisplayName": "AgenMonster Desktop",
+        "createDesktopShortcut": true,
+        "createStartMenuShortcut": true,
+        "shortcutName": "AgenMonster",
+        "runAfterFinish": true,
+        "allowElevation": true,
+        "allowPrerelease": false
       }
     }
   },
@@ -67,7 +97,12 @@
       "tooltip": "AgenMonster"
     },
     "updater": {
-      "active": false
+      "active": true,
+      "endpoints": [
+        "https://api.github.com/repos/atharia-agi/AgenMonster/releases/latest"
+      ],
+      "dialog": true,
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDQxODM5NDQxNUMzNUIwQ0QKUldRUnZoZnJiViZ3bHJFUmNFNnBjSDBvcmRLSDVQWFJWcGthQTh1OXNFdTlIRWd6Um96VnZBMkUK"
     },
     "window-state": {
       "allWindows": true

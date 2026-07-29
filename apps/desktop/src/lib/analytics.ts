@@ -16,7 +16,7 @@ export interface AnalyticsSummary {
 
 export function computeAnalytics(gs: GameState): AnalyticsSummary {
   const now = Date.now();
-  const sessionStart = gs._sessionStart || now;
+  const sessionStart = typeof gs._sessionStart === 'string' ? Date.parse(gs._sessionStart) : gs._sessionStart as number;
   const uptimeMs = now - sessionStart;
   const daysActive = Math.max(1, Math.floor(uptimeMs / (24 * 60 * 60 * 1000)));
 
@@ -53,7 +53,7 @@ export function computeAnalytics(gs: GameState): AnalyticsSummary {
     totalMessages: gs._totalMessages,
     goalsCompleted: completedGoals.length,
     totalGoals: goals.length,
-    relationshipLevel: gs.relationshipLevel,
+    relationshipLevel: String(gs.relationshipLevel),
     currentStage: gs.stage,
     currentLevel: gs.level,
     totalXP: gs.xp + _accumulatedXP(gs),

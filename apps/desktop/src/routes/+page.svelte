@@ -404,7 +404,7 @@
         </div>
       {:else if activeTab === 'settings'}
         <div class="tab-content">
-          <SettingsPanel {gs} onClose={() => activeTab = 'workspace'} {onOpenAbout} />
+          <SettingsPanel state={gs} onClose={() => activeTab = 'workspace'} {onOpenAbout} />
         </div>
       {:else if activeTab === 'achievements'}
         <div class="tab-content">

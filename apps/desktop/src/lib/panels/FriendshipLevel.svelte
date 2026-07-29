@@ -1,6 +1,6 @@
 <script lang="ts">
   let { level = 'stranger', xp = 0, xpToNext = 100 } = $props<{
-    level?: string; xp?: number; xpToNext?: number;
+    level?: number | string; xp?: number; xpToNext?: number;
   }>();
 
   const levelLabels: Record<string, string> = {
