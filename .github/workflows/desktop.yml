@@ -27,7 +27,7 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
       - uses: dtolnay/rust-toolchain@stable
-      - run: cd apps/desktop && CI=1 npm ci
+      - run: cd apps/desktop && CI=1 npm ci --legacy-peer-deps
       - run: cd apps/desktop && CI=1 npm run lint
       - run: cd apps/desktop && CI=1 npm test
       - uses: tauri-apps/tauri-action@v2
