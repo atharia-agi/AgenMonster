@@ -28,6 +28,9 @@ jobs:
           toolchain: stable
           targets: x86_64-pc-windows-gnu
 
+      - name: Set cross-compilation linker
+        run: echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-g++" >> "$GITHUB_ENV"
+
       - name: Install MinGW toolchain
         run: |
           sudo apt-get update
@@ -40,7 +43,7 @@ jobs:
         run: cd apps/desktop && npm run build
 
       - name: Build Windows desktop EXE
-        run: cd apps/desktop && npx tauri build -- --target x86_64-pc-windows-gnu
+        run: cd apps/desktop && npx tauri build --target x86_64-pc-windows-gnu
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
@@ -49,14 +52,10 @@ jobs:
       - name: Collect build artifacts
         run: |
           mkdir -p release-artifacts
-          cp apps/desktop/src-tauri/target/x86_64-pc-windows-gnu/release/agenmonster-desktop.exe release-artifacts/ || true
-          cp apps/desktop/src-tauri/target/x86_64-pc-windows-gnu/release/agenmonster_desktop_lib.dll release-artifacts/ || true
-          cp apps/desktop/src-tauri/target/x86_64-pc-windows-gnu/release/WebView2Loader.dll release-artifacts/ || true
-          shopt -s globstar nullglob
-          RELEASES=($(ls apps/desktop/src-tauri/target/x86_64-pc-windows-gnu/release/bundle/nsis/*.exe 2>/dev/null))
-          if [ ${#RELEASES[@]} -gt 0 ]; then
-            cp "${RELEASES[0]}" release-artifacts/
-          fi
+          BUILD_DIR="apps/desktop/src-tauri/target/x86_64-pc-windows-gnu/release"
+          find "$BUILD_DIR" -maxdepth 1 -name "*.exe" -exec cp {} release-artifacts/ \;
+          find "$BUILD_DIR" -maxdepth 1 -name "*.dll" -exec cp {} release-artifacts/ \;
+          find "$BUILD_DIR/bundle/nsis" -maxdepth 1 -name "*.exe" -exec cp {} release-artifacts/ \;
 
       - name: ZIP portable bundle
         run: |
