@@ -36,11 +36,21 @@ impl Telemetry {
         }
     }
 
-    pub fn record_llm_call(&self) { self.llm_calls.fetch_add(1, Ordering::Relaxed); }
-    pub fn record_tool_call(&self) { self.tool_calls.fetch_add(1, Ordering::Relaxed); }
-    pub fn record_evolution(&self) { self.evolution_attempts.fetch_add(1, Ordering::Relaxed); }
-    pub fn record_memory_write(&self) { self.memory_writes.fetch_add(1, Ordering::Relaxed); }
-    pub fn record_memory_read(&self) { self.memory_reads.fetch_add(1, Ordering::Relaxed); }
+    pub fn record_llm_call(&self) {
+        self.llm_calls.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn record_tool_call(&self) {
+        self.tool_calls.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn record_evolution(&self) {
+        self.evolution_attempts.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn record_memory_write(&self) {
+        self.memory_writes.fetch_add(1, Ordering::Relaxed);
+    }
+    pub fn record_memory_read(&self) {
+        self.memory_reads.fetch_add(1, Ordering::Relaxed);
+    }
 
     pub fn snapshot(&self) -> TelemetrySnapshot {
         TelemetrySnapshot {

@@ -39,5 +39,7 @@ pub enum AgenError {
 }
 
 impl From<anyhow::Error> for AgenError {
-    fn from(e: anyhow::Error) -> Self { AgenError::Other(e.to_string()) }
+    fn from(e: anyhow::Error) -> Self {
+        AgenError::Other(e.to_string())
+    }
 }

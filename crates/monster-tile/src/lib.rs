@@ -11,18 +11,32 @@ pub struct TilePattern {
 fn make_egg_dots() -> TilePattern {
     let size = 8;
     let mut pixels = vec![vec![false; size as usize]; size as usize];
-    pixels[0][0] = true; pixels[0][4] = true;
-    pixels[4][0] = true; pixels[4][4] = true;
-    TilePattern { name: "egg_dots", size, pixels }
+    pixels[0][0] = true;
+    pixels[0][4] = true;
+    pixels[4][0] = true;
+    pixels[4][4] = true;
+    TilePattern {
+        name: "egg_dots",
+        size,
+        pixels,
+    }
 }
 
 fn make_grass_blades() -> TilePattern {
     let size = 8;
     let mut pixels = vec![vec![false; size as usize]; size as usize];
-    pixels[6][1] = true; pixels[7][1] = true;
-    pixels[5][3] = true; pixels[6][3] = true; pixels[7][3] = true;
-    pixels[6][5] = true; pixels[7][5] = true;
-    TilePattern { name: "grass_blades", size, pixels }
+    pixels[6][1] = true;
+    pixels[7][1] = true;
+    pixels[5][3] = true;
+    pixels[6][3] = true;
+    pixels[7][3] = true;
+    pixels[6][5] = true;
+    pixels[7][5] = true;
+    TilePattern {
+        name: "grass_blades",
+        size,
+        pixels,
+    }
 }
 
 fn make_wave_crest() -> TilePattern {
@@ -34,30 +48,63 @@ fn make_wave_crest() -> TilePattern {
             pixels[y as usize][x as usize] = true;
         }
     }
-    TilePattern { name: "wave_crest", size, pixels }
+    TilePattern {
+        name: "wave_crest",
+        size,
+        pixels,
+    }
 }
 
 fn make_mist_dots() -> TilePattern {
     let size = 16;
     let mut pixels = vec![vec![false; size as usize]; size as usize];
-    pixels[4][2] = true; pixels[4][3] = true;
-    pixels[5][2] = true; pixels[5][3] = true;
-    pixels[8][10] = true; pixels[8][11] = true; pixels[8][12] = true;
-    TilePattern { name: "mist_dots", size, pixels }
+    pixels[4][2] = true;
+    pixels[4][3] = true;
+    pixels[5][2] = true;
+    pixels[5][3] = true;
+    pixels[8][10] = true;
+    pixels[8][11] = true;
+    pixels[8][12] = true;
+    TilePattern {
+        name: "mist_dots",
+        size,
+        pixels,
+    }
 }
 
 fn make_heart_tile() -> TilePattern {
     let size = 8;
     let mut pixels = vec![vec![false; size as usize]; size as usize];
-    pixels[1][1] = true; pixels[1][2] = true; pixels[1][5] = true; pixels[1][6] = true;
-    pixels[2][0] = true; pixels[2][1] = true; pixels[2][2] = true; pixels[2][3] = true;
-    pixels[2][4] = true; pixels[2][5] = true; pixels[2][6] = true; pixels[2][7] = true;
-    pixels[3][1] = true; pixels[3][2] = true; pixels[3][3] = true;
-    pixels[3][4] = true; pixels[3][5] = true; pixels[3][6] = true;
-    pixels[4][2] = true; pixels[4][3] = true; pixels[4][4] = true; pixels[4][5] = true;
-    pixels[5][3] = true; pixels[5][4] = true;
+    pixels[1][1] = true;
+    pixels[1][2] = true;
+    pixels[1][5] = true;
+    pixels[1][6] = true;
+    pixels[2][0] = true;
+    pixels[2][1] = true;
+    pixels[2][2] = true;
+    pixels[2][3] = true;
+    pixels[2][4] = true;
+    pixels[2][5] = true;
+    pixels[2][6] = true;
+    pixels[2][7] = true;
+    pixels[3][1] = true;
+    pixels[3][2] = true;
+    pixels[3][3] = true;
+    pixels[3][4] = true;
+    pixels[3][5] = true;
+    pixels[3][6] = true;
+    pixels[4][2] = true;
+    pixels[4][3] = true;
+    pixels[4][4] = true;
+    pixels[4][5] = true;
+    pixels[5][3] = true;
+    pixels[5][4] = true;
     pixels[6][4] = true;
-    TilePattern { name: "heart_tile", size, pixels }
+    TilePattern {
+        name: "heart_tile",
+        size,
+        pixels,
+    }
 }
 
 fn make_sun_dots() -> TilePattern {
@@ -71,7 +118,11 @@ fn make_sun_dots() -> TilePattern {
             pixels[y as usize][x as usize] = true;
         }
     }
-    TilePattern { name: "sun_dots", size, pixels }
+    TilePattern {
+        name: "sun_dots",
+        size,
+        pixels,
+    }
 }
 
 fn make_aurora_wave() -> TilePattern {
@@ -83,14 +134,23 @@ fn make_aurora_wave() -> TilePattern {
             pixels[y as usize][x as usize] = true;
         }
     }
-    TilePattern { name: "aurora_wave", size, pixels }
+    TilePattern {
+        name: "aurora_wave",
+        size,
+        pixels,
+    }
 }
 
 pub fn all_patterns() -> HashMap<&'static str, TilePattern> {
     let mut m = HashMap::new();
     for p in vec![
-        make_egg_dots(), make_grass_blades(), make_wave_crest(),
-        make_mist_dots(), make_heart_tile(), make_sun_dots(), make_aurora_wave(),
+        make_egg_dots(),
+        make_grass_blades(),
+        make_wave_crest(),
+        make_mist_dots(),
+        make_heart_tile(),
+        make_sun_dots(),
+        make_aurora_wave(),
     ] {
         m.insert(p.name, p);
     }

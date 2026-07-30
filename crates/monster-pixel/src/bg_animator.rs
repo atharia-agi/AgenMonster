@@ -8,7 +8,11 @@ pub struct BgAnimator {
 
 impl BgAnimator {
     pub fn new(speed: f32) -> Self {
-        Self { frame: 0, speed, pixel_data: Vec::new() }
+        Self {
+            frame: 0,
+            speed,
+            pixel_data: Vec::new(),
+        }
     }
 
     pub fn tick(&mut self, delta_ms: u32) {

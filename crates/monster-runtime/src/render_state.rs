@@ -36,7 +36,9 @@ impl RenderSubsystem {
 }
 
 impl Default for RenderSubsystem {
-    fn default() -> Self { Self::new("egg", 200, 200) }
+    fn default() -> Self {
+        Self::new("egg", 200, 200)
+    }
 }
 
 #[cfg(test)]

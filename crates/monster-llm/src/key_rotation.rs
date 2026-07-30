@@ -45,16 +45,22 @@ impl KeyRotator {
 
     /// Register keys for a provider.
     pub async fn register_provider(&self, provider: &str, keys: Vec<String>) {
-        let slots: Vec<KeySlot> = keys.into_iter().map(|key| KeySlot {
-            provider: provider.to_string(),
-            key,
-            usage_count: 0,
-            last_used: 0,
-            cooldown_until: 0,
-            failures: 0,
-        }).collect();
+        let slots: Vec<KeySlot> = keys
+            .into_iter()
+            .map(|key| KeySlot {
+                provider: provider.to_string(),
+                key,
+                usage_count: 0,
+                last_used: 0,
+                cooldown_until: 0,
+                failures: 0,
+            })
+            .collect();
         self.keys.write().await.insert(provider.to_string(), slots);
-        self.current_idx.write().await.insert(provider.to_string(), 0);
+        self.current_idx
+            .write()
+            .await
+            .insert(provider.to_string(), 0);
     }
 
     /// Get the next available key for a provider.
@@ -131,7 +137,10 @@ impl KeyRotator {
         let keys = self.keys.read().await;
         let now = now_secs();
         for slots in keys.values() {
-            stats.active_keys += slots.iter().filter(|s| s.failures < self.max_failures).count();
+            stats.active_keys += slots
+                .iter()
+                .filter(|s| s.failures < self.max_failures)
+                .count();
             stats.cooldown_keys += slots.iter().filter(|s| s.cooldown_until > now).count();
         }
         stats
@@ -143,9 +152,10 @@ impl KeyRotator {
         let now = now_secs();
         let mut result = HashMap::new();
         for (provider, slots) in keys.iter() {
-            let summary: Vec<(u32, u32, bool)> = slots.iter().map(|s| {
-                (s.usage_count, s.failures, s.cooldown_until > now)
-            }).collect();
+            let summary: Vec<(u32, u32, bool)> = slots
+                .iter()
+                .map(|s| (s.usage_count, s.failures, s.cooldown_until > now))
+                .collect();
             result.insert(provider.clone(), summary);
         }
         result
@@ -153,7 +163,9 @@ impl KeyRotator {
 }
 
 impl Default for KeyRotator {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 fn now_secs() -> u64 {
@@ -170,7 +182,9 @@ mod tests {
     #[tokio::test]
     async fn test_register_and_get_key() {
         let rotator = KeyRotator::new();
-        rotator.register_provider("groq", vec!["key1".into(), "key2".into()]).await;
+        rotator
+            .register_provider("groq", vec!["key1".into(), "key2".into()])
+            .await;
         let key = rotator.next_key("groq").await;
         assert!(key.is_some());
     }
@@ -178,7 +192,9 @@ mod tests {
     #[tokio::test]
     async fn test_rotation() {
         let rotator = KeyRotator::new();
-        rotator.register_provider("groq", vec!["key1".into(), "key2".into()]).await;
+        rotator
+            .register_provider("groq", vec!["key1".into(), "key2".into()])
+            .await;
         let k1 = rotator.next_key("groq").await.unwrap();
         let k2 = rotator.next_key("groq").await.unwrap();
         assert_ne!(k1, k2);

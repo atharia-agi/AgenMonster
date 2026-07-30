@@ -43,7 +43,9 @@ pub struct AssetPipeline {
 
 impl AssetPipeline {
     pub fn new(root: &Path) -> Self {
-        Self { root: root.to_path_buf() }
+        Self {
+            root: root.to_path_buf(),
+        }
     }
 
     pub fn manifest_path(&self) -> PathBuf {
@@ -52,9 +54,14 @@ impl AssetPipeline {
 
     pub fn build_manifest(&self) -> anyhow::Result<AssetManifest> {
         let mut sprites = vec![];
-        let stages = ["egg","hatchling","baby","child","teen","adult","mega"];
+        let stages = ["egg", "hatchling", "baby", "child", "teen", "adult", "mega"];
         for stage in &stages {
-            let path = self.root.join("static").join("img").join("sprites").join(format!("{stage}.png"));
+            let path = self
+                .root
+                .join("static")
+                .join("img")
+                .join("sprites")
+                .join(format!("{stage}.png"));
             if path.exists() {
                 let hash = blake3::hash(&std::fs::read(&path)?).to_hex().to_string();
                 sprites.push(SpriteAsset {
@@ -69,7 +76,12 @@ impl AssetPipeline {
 
         let mut tiles = vec![];
         for stage in &stages {
-            let path = self.root.join("static").join("img").join("tiles").join(format!("{stage}.png"));
+            let path = self
+                .root
+                .join("static")
+                .join("img")
+                .join("tiles")
+                .join(format!("{stage}.png"));
             if path.exists() {
                 let hash = blake3::hash(&std::fs::read(&path)?).to_hex().to_string();
                 tiles.push(TileAsset {
@@ -83,9 +95,13 @@ impl AssetPipeline {
         }
 
         let mut sounds = vec![];
-        let sound_names = ["click","bark","happy","evolve","error","busy"];
+        let sound_names = ["click", "bark", "happy", "evolve", "error", "busy"];
         for name in &sound_names {
-            let path = self.root.join("static").join("ogg").join(format!("{name}.wav"));
+            let path = self
+                .root
+                .join("static")
+                .join("ogg")
+                .join(format!("{name}.wav"));
             if path.exists() {
                 let hash = blake3::hash(&std::fs::read(&path)?).to_hex().to_string();
                 sounds.push(SoundAsset {
@@ -97,7 +113,11 @@ impl AssetPipeline {
             }
         }
 
-        Ok(AssetManifest { sprites, tiles, sounds })
+        Ok(AssetManifest {
+            sprites,
+            tiles,
+            sounds,
+        })
     }
 
     pub fn write_manifest(&self) -> anyhow::Result<()> {

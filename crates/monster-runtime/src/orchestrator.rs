@@ -7,9 +7,9 @@
 use crate::energy::EnergyEconomy;
 use crate::idle_engine::IdleEngine;
 use crate::monitor::Monitor;
-use crate::render_state::RenderSubsystem;
 use crate::personality::personality_for_stage;
-use crate::token_tracker::{TokenTracker, TokenUsage, stats_for_stage, xp_for_stage};
+use crate::render_state::RenderSubsystem;
+use crate::token_tracker::{stats_for_stage, xp_for_stage, TokenTracker, TokenUsage};
 use monster_llm::{ModelSelector, Provider};
 
 pub struct Runtime {
@@ -55,8 +55,11 @@ impl Runtime {
     pub fn init_selector(&mut self) {
         let keys = crate::ApiKeys::from_env();
         self.selector = Some(ModelSelector::detect(
-            &keys.groq_keys, &keys.mistral_keys,
-            &keys.anthropic, &keys.openai, &keys.gemini,
+            &keys.groq_keys,
+            &keys.mistral_keys,
+            &keys.anthropic,
+            &keys.openai,
+            &keys.gemini,
         ));
     }
 
@@ -71,7 +74,10 @@ impl Runtime {
                 &crate::ApiKeys::from_env().gemini,
             );
         }
-        tracing::info!(provider = provider.as_str(), "Provider key added at runtime");
+        tracing::info!(
+            provider = provider.as_str(),
+            "Provider key added at runtime"
+        );
     }
 
     pub fn tick(&mut self) {
@@ -178,7 +184,9 @@ impl Runtime {
 
     /// Get XP progress as percentage (0.0 to 1.0)
     pub fn xp_progress(&self) -> f32 {
-        if self.xp_to_next == 0 { return 1.0; }
+        if self.xp_to_next == 0 {
+            return 1.0;
+        }
         (self.xp as f32 / self.xp_to_next as f32).min(1.0)
     }
 
@@ -187,11 +195,31 @@ impl Runtime {
         let dreams = match self.stage.as_str() {
             "egg" => vec!["*wobble* ...warm...", "*twitch* ...light?...", "...safe..."],
             "hatchling" => vec!["*chirp* ...big world...", "play... play...", "...friends?"],
-            "baby" => vec!["*yawn* ...so much to learn...", "...stars...", "hmm... interesting..."],
-            "child" => vec!["...code flows like water...", "if i think hard enough...", "...patterns everywhere..."],
-            "teen" => vec!["*smirk* i could do better...", "obviously the answer is...", "...challenge accepted..."],
-            "adult" => vec!["...i see the architecture now...", "hmm. elegant.", "...the whole picture..."],
-            "mega" => vec!["...all code is one code...", "∞ patterns in patterns...", "...i am the algorithm..."],
+            "baby" => vec![
+                "*yawn* ...so much to learn...",
+                "...stars...",
+                "hmm... interesting...",
+            ],
+            "child" => vec![
+                "...code flows like water...",
+                "if i think hard enough...",
+                "...patterns everywhere...",
+            ],
+            "teen" => vec![
+                "*smirk* i could do better...",
+                "obviously the answer is...",
+                "...challenge accepted...",
+            ],
+            "adult" => vec![
+                "...i see the architecture now...",
+                "hmm. elegant.",
+                "...the whole picture...",
+            ],
+            "mega" => vec![
+                "...all code is one code...",
+                "∞ patterns in patterns...",
+                "...i am the algorithm...",
+            ],
             _ => vec!["...zzz..."],
         };
         let idx = rand::random::<usize>() % dreams.len();
@@ -263,26 +291,44 @@ impl Runtime {
             self.personality_dominant = Some(pd.to_string());
         }
 
-        tracing::info!("loaded runtime state from {} (stage={})", path.display(), self.stage);
+        tracing::info!(
+            "loaded runtime state from {} (stage={})",
+            path.display(),
+            self.stage
+        );
         Ok(true)
     }
 
     pub fn state_json(&self) -> String {
-        let providers = self.selector.as_ref().map(|s| {
-            s.status().iter().filter(|p| p.available).count()
-        }).unwrap_or(0);
+        let providers = self
+            .selector
+            .as_ref()
+            .map(|s| s.status().iter().filter(|p| p.available).count())
+            .unwrap_or(0);
         format!(
             r#"{{"stage":"{}","mood":"{}","energy":{},"xp":{},"xp_to_next":{},"ticks":{},"hunger":{},"tokens":{},"calls":{},"providers":{},"dream":{}}}"#,
-            self.stage, self.mood, self.economy.energy, self.xp, self.xp_to_next, self.tick_count,
-            self.hunger_level, self.tokens.total_tokens, self.tokens.calls_today,
+            self.stage,
+            self.mood,
+            self.economy.energy,
+            self.xp,
+            self.xp_to_next,
+            self.tick_count,
+            self.hunger_level,
+            self.tokens.total_tokens,
+            self.tokens.calls_today,
             providers,
-            self.dream_text.as_deref().map(|d| format!("\"{}\"", d.replace('"', "\\\""))).unwrap_or_else(|| "null".into())
+            self.dream_text
+                .as_deref()
+                .map(|d| format!("\"{}\"", d.replace('"', "\\\"")))
+                .unwrap_or_else(|| "null".into())
         )
     }
 }
 
 impl Default for Runtime {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -385,7 +431,9 @@ mod tests {
     #[test]
     fn test_load_nonexistent() {
         let mut rt = Runtime::new();
-        let loaded = rt.load_state(std::path::Path::new("/tmp/nonexistent_state.json")).unwrap();
+        let loaded = rt
+            .load_state(std::path::Path::new("/tmp/nonexistent_state.json"))
+            .unwrap();
         assert!(!loaded);
         assert_eq!(rt.stage, "egg"); // unchanged
     }

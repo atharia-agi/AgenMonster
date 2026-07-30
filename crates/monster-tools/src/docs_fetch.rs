@@ -7,9 +7,13 @@ use serde_json::Value;
 pub struct DocsFetchTool;
 
 impl DocsFetchTool {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn name(&self) -> &str { "docs_fetch" }
+    pub fn name(&self) -> &str {
+        "docs_fetch"
+    }
 
     pub fn description(&self) -> &str {
         "Fetch up-to-date library documentation. Searches for a library and returns current API docs, preventing hallucinated APIs."
@@ -37,15 +41,15 @@ impl DocsFetchTool {
     }
 
     pub async fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let library = args.get("library")
+        let library = args
+            .get("library")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("library is required"))?;
 
-        let topic = args.get("topic")
-            .and_then(|v| v.as_str())
-            .unwrap_or("");
+        let topic = args.get("topic").and_then(|v| v.as_str()).unwrap_or("");
 
-        let version = args.get("version")
+        let version = args
+            .get("version")
             .and_then(|v| v.as_str())
             .unwrap_or("latest");
 
@@ -79,7 +83,8 @@ impl DocsFetchTool {
                         })
                         .unwrap_or_default();
 
-                    let mut result = format!(
+                    let mut result =
+                        format!(
                         "📚 {} v{}\n{}\n\nHomepage: {}\nRepository: {}\n\nRecent versions: {}\n",
                         library, latest, description, homepage, repo,
                         recent_versions.join(", ")
@@ -127,9 +132,12 @@ mod tests {
     #[tokio::test]
     async fn test_docs_fetch_react() {
         let tool = DocsFetchTool::new();
-        let result = tool.execute(&serde_json::json!({
-            "library": "react"
-        })).await.unwrap();
+        let result = tool
+            .execute(&serde_json::json!({
+                "library": "react"
+            }))
+            .await
+            .unwrap();
         assert!(result.contains("react"));
         assert!(result.contains("npm"));
     }

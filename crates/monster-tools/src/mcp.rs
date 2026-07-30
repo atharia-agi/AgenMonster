@@ -12,7 +12,9 @@ pub struct McpServer {
 
 impl McpTools {
     pub fn new() -> Self {
-        Self { servers: Vec::new() }
+        Self {
+            servers: Vec::new(),
+        }
     }
 
     pub fn add_server(&mut self, server: McpServer) {
@@ -30,7 +32,9 @@ impl McpTools {
 }
 
 impl Default for McpTools {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

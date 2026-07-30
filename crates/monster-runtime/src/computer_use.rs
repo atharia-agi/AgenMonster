@@ -4,7 +4,11 @@ pub struct ComputerUse {
     platform: Platform,
 }
 
-enum Platform { Windows, Mac, Linux }
+enum Platform {
+    Windows,
+    Mac,
+    Linux,
+}
 
 impl ComputerUse {
     pub fn new() -> Self {
@@ -63,7 +67,9 @@ impl ComputerUse {
 }
 
 impl Default for ComputerUse {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

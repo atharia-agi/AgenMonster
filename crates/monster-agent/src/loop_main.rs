@@ -1,6 +1,6 @@
 //! Agent loop — main execution cycle with tool dispatch and LLM integration.
 
-use monster_tools::registry::{ToolRegistry, ToolInput, ToolOutput};
+use monster_tools::registry::{ToolInput, ToolOutput, ToolRegistry};
 
 pub struct AgentLoop {
     pub max_iterations: usize,
@@ -80,11 +80,9 @@ impl AgentLoop {
             context.compress_proactive();
 
             // Get LLM response
-            let response = router.route_stream(
-                &messages_to_prompt(&messages),
-                "agent",
-                |_| {},
-            ).await?;
+            let response = router
+                .route_stream(&messages_to_prompt(&messages), "agent", |_| {})
+                .await?;
 
             total_tokens += response.total_tokens;
             self.last_response = response.text.clone();
@@ -141,7 +139,9 @@ impl AgentLoop {
     }
 
     pub fn progress(&self) -> f32 {
-        if self.max_iterations == 0 { return 1.0; }
+        if self.max_iterations == 0 {
+            return 1.0;
+        }
         self.current_iteration as f32 / self.max_iterations as f32
     }
 }
@@ -179,21 +179,33 @@ impl AgentContext {
     pub fn inject_skill(&mut self, skill: &monster_skills::Skill) {
         // Add skill system prompt if available
         if let Some(sys_prompt) = skill.prompt("system") {
-            self.system_prompt.push_str(&format!("\n\n[Skill: {}]\n{}", skill.id(), sys_prompt));
+            self.system_prompt
+                .push_str(&format!("\n\n[Skill: {}]\n{}", skill.id(), sys_prompt));
         }
         // Add skill tool descriptions
         if !skill.tools().is_empty() {
-            self.system_prompt.push_str(&format!("\n\nAvailable skill tools for '{}':", skill.id()));
+            self.system_prompt
+                .push_str(&format!("\n\nAvailable skill tools for '{}':", skill.id()));
             for tool in skill.tools() {
-                self.system_prompt.push_str(&format!("\n  - skill_{}_{}: {}", skill.id(), tool.name, tool.description));
+                self.system_prompt.push_str(&format!(
+                    "\n  - skill_{}_{}: {}",
+                    skill.id(),
+                    tool.name,
+                    tool.description
+                ));
                 for example in &tool.examples {
-                    self.system_prompt.push_str(&format!("\n    Example: {example}"));
+                    self.system_prompt
+                        .push_str(&format!("\n    Example: {example}"));
                 }
             }
         }
         // Add triggers as hints
         if !skill.triggers().is_empty() {
-            self.system_prompt.push_str(&format!("\n\nTriggers for '{}': {}", skill.id(), skill.triggers().join(", ")));
+            self.system_prompt.push_str(&format!(
+                "\n\nTriggers for '{}': {}",
+                skill.id(),
+                skill.triggers().join(", ")
+            ));
         }
     }
 
@@ -228,24 +240,26 @@ impl AgentContext {
         if self.current_tokens <= threshold {
             return; // Still have headroom
         }
-        
+
         // Only compress if we have enough messages to make it worthwhile
         if self.messages.len() <= 6 {
             return;
         }
-        
+
         // Compress oldest 25% of messages
         let compress_count = (self.messages.len() / 4).max(1);
         let compress_count = compress_count.min(self.messages.len() - 4);
-        
+
         let mut key_facts: Vec<String> = Vec::new();
         let mut removed_tokens = 0;
-        
+
         for _ in 0..compress_count {
-            if self.messages.is_empty() { break; }
+            if self.messages.is_empty() {
+                break;
+            }
             let removed = self.messages.remove(0);
             removed_tokens += removed.tokens;
-            
+
             let content = removed.content.to_lowercase();
             let has_key_signal = content.contains("error")
                 || content.contains("found")
@@ -258,7 +272,7 @@ impl AgentContext {
                 || content.contains("completed")
                 || content.contains("warning")
                 || removed.role == "tool";
-            
+
             if has_key_signal {
                 let summary = if removed.content.len() > 150 {
                     format!("{}...", &removed.content[..147])
@@ -268,7 +282,7 @@ impl AgentContext {
                 key_facts.push(format!("[{}]: {}", removed.role, summary));
             }
         }
-        
+
         if !key_facts.is_empty() {
             let summary = format!(
                 "[Context Summary — {} messages compressed]:\n{}",
@@ -276,11 +290,14 @@ impl AgentContext {
                 key_facts.join("\n")
             );
             let summary_tokens = summary.len() / 4;
-            self.messages.insert(0, ContextMessage {
-                role: "system".into(),
-                content: summary,
-                tokens: summary_tokens,
-            });
+            self.messages.insert(
+                0,
+                ContextMessage {
+                    role: "system".into(),
+                    content: summary,
+                    tokens: summary_tokens,
+                },
+            );
             self.current_tokens = self.current_tokens - removed_tokens + summary_tokens;
         } else {
             self.current_tokens -= removed_tokens;
@@ -293,16 +310,18 @@ impl AgentContext {
             // Take the oldest 30% of messages for compression
             let compress_count = (self.messages.len() / 3).max(1);
             let compress_count = compress_count.min(self.messages.len() - 2);
-            
+
             // Extract key facts from messages being compressed
             let mut key_facts: Vec<String> = Vec::new();
             let mut removed_tokens = 0;
-            
+
             for _ in 0..compress_count {
-                if self.messages.is_empty() { break; }
+                if self.messages.is_empty() {
+                    break;
+                }
                 let removed = self.messages.remove(0);
                 removed_tokens += removed.tokens;
-                
+
                 // Extractive summarization: keep sentences with key signals
                 let content = removed.content.to_lowercase();
                 let has_key_signal = content.contains("error")
@@ -315,7 +334,7 @@ impl AgentContext {
                     || content.contains("created")
                     || content.contains("completed")
                     || removed.role == "tool";
-                
+
                 if has_key_signal {
                     // Truncate long messages to 200 chars
                     let summary = if removed.content.len() > 200 {
@@ -326,7 +345,7 @@ impl AgentContext {
                     key_facts.push(format!("[{}]: {}", removed.role, summary));
                 }
             }
-            
+
             // Replace compressed messages with a summary
             if !key_facts.is_empty() {
                 let summary = format!(
@@ -335,17 +354,20 @@ impl AgentContext {
                     key_facts.join("\n")
                 );
                 let summary_tokens = summary.len() / 4;
-                self.messages.insert(0, ContextMessage {
-                    role: "system".into(),
-                    content: summary,
-                    tokens: summary_tokens,
-                });
+                self.messages.insert(
+                    0,
+                    ContextMessage {
+                        role: "system".into(),
+                        content: summary,
+                        tokens: summary_tokens,
+                    },
+                );
                 self.current_tokens = self.current_tokens - removed_tokens + summary_tokens;
             } else {
                 self.current_tokens -= removed_tokens;
             }
         }
-        
+
         // Hard drop if still over budget (safety net)
         while self.current_tokens > self.max_tokens && self.messages.len() > 2 {
             let removed = self.messages.remove(0);
@@ -376,15 +398,20 @@ impl AgentContext {
     }
 
     pub fn token_usage(&self) -> f32 {
-        if self.max_tokens == 0 { return 0.0; }
+        if self.max_tokens == 0 {
+            return 0.0;
+        }
         self.current_tokens as f32 / self.max_tokens as f32
     }
 
-    pub fn message_count(&self) -> usize { self.messages.len() }
+    pub fn message_count(&self) -> usize {
+        self.messages.len()
+    }
 }
 
 fn messages_to_prompt(messages: &[serde_json::Value]) -> String {
-    messages.iter()
+    messages
+        .iter()
         .map(|m| {
             let role = m["role"].as_str().unwrap_or("user");
             let content = m["content"].as_str().unwrap_or("");
@@ -401,19 +428,25 @@ fn parse_tool_calls(response: &str) -> Option<Vec<ToolCall>> {
         if let Some(end) = rest.find("```") {
             let json_str = rest[..end].trim();
             if let Ok(calls) = serde_json::from_str::<Vec<serde_json::Value>>(json_str) {
-                let tool_calls: Vec<ToolCall> = calls.into_iter().filter_map(|v| {
-                    let name = v["name"].as_str()?.to_string();
-                    let args = v["args"].as_object()
-                        .map(|o| o.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
-                        .unwrap_or_default();
-                    Some(ToolCall {
-                        name,
-                        args,
-                        result: None,
-                        iteration: 0,
+                let tool_calls: Vec<ToolCall> = calls
+                    .into_iter()
+                    .filter_map(|v| {
+                        let name = v["name"].as_str()?.to_string();
+                        let args = v["args"]
+                            .as_object()
+                            .map(|o| o.iter().map(|(k, v)| (k.clone(), v.clone())).collect())
+                            .unwrap_or_default();
+                        Some(ToolCall {
+                            name,
+                            args,
+                            result: None,
+                            iteration: 0,
+                        })
                     })
-                }).collect();
-                if !tool_calls.is_empty() { return Some(tool_calls); }
+                    .collect();
+                if !tool_calls.is_empty() {
+                    return Some(tool_calls);
+                }
             }
         }
     }
@@ -427,7 +460,9 @@ pub enum AgentStepResult {
 }
 
 impl Default for AgentLoop {
-    fn default() -> Self { Self::new(100, 5) }
+    fn default() -> Self {
+        Self::new(100, 5)
+    }
 }
 
 #[cfg(test)]

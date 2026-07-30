@@ -33,7 +33,11 @@ impl IdleEngine {
         self.bob_offset = (t / (p.bob_speed_ms as f32 / 1000.0)).sin() * p.bob_amplitude;
 
         self.blink_accum_ms += delta_ms;
-        if !self.is_blinking && self.blink_accum_ms > p.blink_min_ms + rng.gen_range(0..p.blink_max_ms.saturating_sub(p.blink_min_ms).max(1)) {
+        if !self.is_blinking
+            && self.blink_accum_ms
+                > p.blink_min_ms
+                    + rng.gen_range(0..p.blink_max_ms.saturating_sub(p.blink_min_ms).max(1))
+        {
             self.is_blinking = true;
             self.blink_accum_ms = 0;
         }

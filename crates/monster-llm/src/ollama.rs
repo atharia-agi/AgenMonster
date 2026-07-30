@@ -27,7 +27,8 @@ impl OllamaClient {
     }
 
     pub fn build_chat_request(&self, messages: &[ApiMessage]) -> serde_json::Value {
-        let msgs: Vec<serde_json::Value> = messages.iter()
+        let msgs: Vec<serde_json::Value> = messages
+            .iter()
             .map(|m| serde_json::json!({"role": m.role, "content": m.content}))
             .collect();
 
@@ -54,8 +55,7 @@ mod tests {
 
     #[test]
     fn test_ollama_client() {
-        let client = OllamaClient::new("http://localhost:11434")
-            .with_model("mistral");
+        let client = OllamaClient::new("http://localhost:11434").with_model("mistral");
         assert_eq!(client.model, "mistral");
         assert_eq!(client.cost_estimate(), 0.0);
     }

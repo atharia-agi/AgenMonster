@@ -5,9 +5,13 @@ use serde_json::Value;
 pub struct HashGenerateTool;
 
 impl HashGenerateTool {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn name(&self) -> &str { "hash_generate" }
+    pub fn name(&self) -> &str {
+        "hash_generate"
+    }
 
     pub fn description(&self) -> &str {
         "Generate a hash from a string. Algorithms: blake3 (default), sha256, md5."
@@ -32,23 +36,25 @@ impl HashGenerateTool {
     }
 
     pub fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let input = args.get("input")
+        let input = args
+            .get("input")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("input is required"))?;
 
-        let algorithm = args.get("algorithm")
+        let algorithm = args
+            .get("algorithm")
             .and_then(|v| v.as_str())
             .unwrap_or("blake3");
 
         let hash = match algorithm {
             "sha256" => {
-                use sha2::{Sha256, Digest};
+                use sha2::{Digest, Sha256};
                 let mut hasher = Sha256::new();
                 hasher.update(input.as_bytes());
                 format!("{:x}", hasher.finalize())
             }
             "md5" => {
-                use sha2::{Sha256, Digest};
+                use sha2::{Digest, Sha256};
                 // Simple MD5 approximation using SHA256 truncated
                 let mut hasher = Sha256::new();
                 hasher.update(input.as_bytes());
@@ -65,7 +71,8 @@ impl HashGenerateTool {
             "algorithm": algorithm,
             "hash": hash,
             "input_length": input.len(),
-        }).to_string())
+        })
+        .to_string())
     }
 }
 
@@ -76,7 +83,9 @@ mod tests {
     #[test]
     fn test_blake3_hash() {
         let tool = HashGenerateTool::new();
-        let result = tool.execute(&serde_json::json!({"input": "hello"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"input": "hello"}))
+            .unwrap();
         assert!(result.contains("hash"));
         assert!(result.contains("blake3"));
     }
@@ -84,7 +93,9 @@ mod tests {
     #[test]
     fn test_sha256_hash() {
         let tool = HashGenerateTool::new();
-        let result = tool.execute(&serde_json::json!({"input": "hello", "algorithm": "sha256"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"input": "hello", "algorithm": "sha256"}))
+            .unwrap();
         assert!(result.contains("sha256"));
     }
 

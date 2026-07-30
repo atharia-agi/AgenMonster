@@ -5,9 +5,15 @@ use serde_json::Value;
 pub struct SysInfoTool;
 
 impl SysInfoTool {
-    pub fn new() -> Self { Self }
-    pub fn name(&self) -> &str { "sys_info" }
-    pub fn description(&self) -> &str { "Get system info: CPU, memory, disk usage on Windows." }
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn name(&self) -> &str {
+        "sys_info"
+    }
+    pub fn description(&self) -> &str {
+        "Get system info: CPU, memory, disk usage on Windows."
+    }
     pub fn parameters(&self) -> Value {
         serde_json::json!({
             "type": "object",
@@ -53,7 +59,12 @@ impl SysInfoTool {
 
         if query == "all" || query == "memory" {
             let output = std::process::Command::new("wmic")
-                .args(["OS", "get", "FreePhysicalMemory,TotalVisibleMemorySize", "/value"])
+                .args([
+                    "OS",
+                    "get",
+                    "FreePhysicalMemory,TotalVisibleMemorySize",
+                    "/value",
+                ])
                 .output()?;
             let stdout = String::from_utf8_lossy(&output.stdout);
             let mut free = 0u64;
@@ -85,22 +96,32 @@ impl SysInfoTool {
             let mut current = serde_json::Map::new();
             for line in stdout.lines() {
                 if let Some(val) = line.strip_prefix("DeviceID=") {
-                    if !current.is_empty() { disks.push(serde_json::Value::Object(current)); }
+                    if !current.is_empty() {
+                        disks.push(serde_json::Value::Object(current));
+                    }
                     current = serde_json::Map::new();
                     current.insert("device".into(), serde_json::json!(val.trim()));
                 }
                 if let Some(val) = line.strip_prefix("FreeSpace=") {
                     if let Ok(bytes) = val.trim().parse::<u64>() {
-                        current.insert("free_gb".into(), serde_json::json!((bytes as f64 / 1_073_741_824.0) as f64));
+                        current.insert(
+                            "free_gb".into(),
+                            serde_json::json!((bytes as f64 / 1_073_741_824.0) as f64),
+                        );
                     }
                 }
                 if let Some(val) = line.strip_prefix("Size=") {
                     if let Ok(bytes) = val.trim().parse::<u64>() {
-                        current.insert("total_gb".into(), serde_json::json!((bytes as f64 / 1_073_741_824.0) as f64));
+                        current.insert(
+                            "total_gb".into(),
+                            serde_json::json!((bytes as f64 / 1_073_741_824.0) as f64),
+                        );
                     }
                 }
             }
-            if !current.is_empty() { disks.push(serde_json::Value::Object(current)); }
+            if !current.is_empty() {
+                disks.push(serde_json::Value::Object(current));
+            }
             result.insert("disks".into(), serde_json::json!(disks));
         }
 
@@ -120,7 +141,9 @@ mod tests {
     #[test]
     fn test_sys_info_memory() {
         let tool = SysInfoTool::new();
-        let result = tool.execute(&serde_json::json!({"query": "memory"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"query": "memory"}))
+            .unwrap();
         assert!(result.contains("memory"));
     }
 }

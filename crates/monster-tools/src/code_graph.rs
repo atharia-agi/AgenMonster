@@ -7,9 +7,13 @@ use serde_json::Value;
 pub struct CodeGraphTool;
 
 impl CodeGraphTool {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn name(&self) -> &str { "code_graph" }
+    pub fn name(&self) -> &str {
+        "code_graph"
+    }
 
     pub fn description(&self) -> &str {
         "Analyze code structure: extract functions, structs, imports, and dependencies. Works with Rust, TypeScript, Python, Go."
@@ -38,22 +42,32 @@ impl CodeGraphTool {
     }
 
     pub fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let code = args.get("code")
+        let code = args
+            .get("code")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("code is required"))?;
 
-        let language = args.get("language")
+        let language = args
+            .get("language")
             .and_then(|v| v.as_str())
             .unwrap_or("auto");
 
-        let analysis = args.get("analysis")
+        let analysis = args
+            .get("analysis")
             .and_then(|v| v.as_str())
             .unwrap_or("full");
 
-        let lang = if language == "auto" { detect_language(code) } else { language };
+        let lang = if language == "auto" {
+            detect_language(code)
+        } else {
+            language
+        };
 
         let mut result = serde_json::Map::new();
-        result.insert("language".into(), serde_json::Value::String(lang.to_string()));
+        result.insert(
+            "language".into(),
+            serde_json::Value::String(lang.to_string()),
+        );
 
         if analysis == "full" || analysis == "structure" {
             let structure = analyze_structure(code, lang);
@@ -73,15 +87,55 @@ impl CodeGraphTool {
 }
 
 fn detect_language(code: &str) -> &'static str {
-    if code.contains("fn ") && (code.contains("pub ") || code.contains("use ") || code.contains("struct ") || code.contains("impl ") || code.contains("trait ") || code.contains("enum ") || code.contains("mod ")) { "rust" }
-    else if code.contains("function ") && (code.contains("const ") || code.contains("let ") || code.contains("import ") || code.contains("export ") || code.contains("interface ") || code.contains("type ") || code.contains("=>") || code.contains("async ") || code.contains("return ") || code.contains("<")) { "typescript" }
-    else if code.contains("def ") && (code.contains("class ") || code.contains("import ") || code.contains("self") || code.contains("self.") || code.contains("__init__")) { "python" }
-    else if code.contains("func ") && (code.contains("package ") || code.contains("import ") || code.contains("struct ") || code.contains("interface ")) { "go" }
-    else if code.contains("function ") { "typescript" }
-    else if code.contains("def ") { "python" }
-    else if code.contains("func ") { "go" }
-    else if code.contains("fn ") { "rust" }
-    else { "unknown" }
+    if code.contains("fn ")
+        && (code.contains("pub ")
+            || code.contains("use ")
+            || code.contains("struct ")
+            || code.contains("impl ")
+            || code.contains("trait ")
+            || code.contains("enum ")
+            || code.contains("mod "))
+    {
+        "rust"
+    } else if code.contains("function ")
+        && (code.contains("const ")
+            || code.contains("let ")
+            || code.contains("import ")
+            || code.contains("export ")
+            || code.contains("interface ")
+            || code.contains("type ")
+            || code.contains("=>")
+            || code.contains("async ")
+            || code.contains("return ")
+            || code.contains("<"))
+    {
+        "typescript"
+    } else if code.contains("def ")
+        && (code.contains("class ")
+            || code.contains("import ")
+            || code.contains("self")
+            || code.contains("self.")
+            || code.contains("__init__"))
+    {
+        "python"
+    } else if code.contains("func ")
+        && (code.contains("package ")
+            || code.contains("import ")
+            || code.contains("struct ")
+            || code.contains("interface "))
+    {
+        "go"
+    } else if code.contains("function ") {
+        "typescript"
+    } else if code.contains("def ") {
+        "python"
+    } else if code.contains("func ") {
+        "go"
+    } else if code.contains("fn ") {
+        "rust"
+    } else {
+        "unknown"
+    }
 }
 
 fn analyze_structure(code: &str, lang: &str) -> serde_json::Value {
@@ -186,8 +240,14 @@ fn analyze_dependencies(code: &str, lang: &str) -> serde_json::Value {
         match lang {
             "rust" => {
                 if trimmed.starts_with("use ") {
-                    let dep = trimmed.trim_start_matches("use ").trim_end_matches(';').trim();
-                    if !dep.starts_with("crate") && !dep.starts_with("super") && !dep.starts_with("self") {
+                    let dep = trimmed
+                        .trim_start_matches("use ")
+                        .trim_end_matches(';')
+                        .trim();
+                    if !dep.starts_with("crate")
+                        && !dep.starts_with("super")
+                        && !dep.starts_with("self")
+                    {
                         external.push(dep.split("::").next().unwrap_or(dep).to_string());
                     }
                 }
@@ -196,9 +256,12 @@ fn analyze_dependencies(code: &str, lang: &str) -> serde_json::Value {
                     let before = &trimmed[..idx];
                     if let Some(func_name) = before.split_whitespace().next_back() {
                         let func_name = func_name.trim();
-                        if !func_name.starts_with("fn") && !func_name.starts_with("if")
-                            && !func_name.starts_with("while") && !func_name.starts_with("for")
-                            && !func_name.starts_with("match") {
+                        if !func_name.starts_with("fn")
+                            && !func_name.starts_with("if")
+                            && !func_name.starts_with("while")
+                            && !func_name.starts_with("for")
+                            && !func_name.starts_with("match")
+                        {
                             internal_calls.push(func_name.to_string());
                         }
                     }
@@ -238,15 +301,21 @@ fn analyze_metrics(code: &str) -> serde_json::Value {
     let lines = code.lines().count();
     let chars = code.len();
     let blank_lines = code.lines().filter(|l| l.trim().is_empty()).count();
-    let comment_lines = code.lines().filter(|l| {
-        let t = l.trim();
-        t.starts_with("//") || t.starts_with("#") || t.starts_with("/*") || t.starts_with("*")
-    }).count();
+    let comment_lines = code
+        .lines()
+        .filter(|l| {
+            let t = l.trim();
+            t.starts_with("//") || t.starts_with("#") || t.starts_with("/*") || t.starts_with("*")
+        })
+        .count();
     let code_lines = lines - blank_lines - comment_lines;
 
     // Estimate complexity based on control flow keywords
-    let complexity_keywords = ["if ", "else ", "match ", "for ", "while ", "loop ", "switch ", "case "];
-    let complexity: usize = code.lines()
+    let complexity_keywords = [
+        "if ", "else ", "match ", "for ", "while ", "loop ", "switch ", "case ",
+    ];
+    let complexity: usize = code
+        .lines()
         .filter(|l| complexity_keywords.iter().any(|kw| l.contains(kw)))
         .count();
 
@@ -271,7 +340,11 @@ fn extract_name(line: &str, keyword: &str) -> Option<String> {
         .trim_start_matches("async ")
         .trim_start_matches("mut ")
         .to_string();
-    if name.is_empty() || name.starts_with('#') { None } else { Some(name) }
+    if name.is_empty() || name.starts_with('#') {
+        None
+    } else {
+        Some(name)
+    }
 }
 
 #[cfg(test)]
@@ -304,10 +377,12 @@ mod tests {
     #[test]
     fn test_code_graph_python() {
         let tool = CodeGraphTool::new();
-        let result = tool.execute(&serde_json::json!({
-            "code": "import os\ndef main():\n    pass\nclass Foo:\n    pass",
-            "language": "python"
-        })).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({
+                "code": "import os\ndef main():\n    pass\nclass Foo:\n    pass",
+                "language": "python"
+            }))
+            .unwrap();
         assert!(result.contains("main"));
         assert!(result.contains("Foo"));
     }
@@ -323,10 +398,12 @@ mod tests {
     #[test]
     fn test_metrics() {
         let tool = CodeGraphTool::new();
-        let result = tool.execute(&serde_json::json!({
-            "code": "fn main() {\n    if true {\n        println!(\"hi\");\n    }\n}",
-            "analysis": "metrics"
-        })).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({
+                "code": "fn main() {\n    if true {\n        println!(\"hi\");\n    }\n}",
+                "analysis": "metrics"
+            }))
+            .unwrap();
         assert!(result.contains("total_lines"));
         assert!(result.contains("estimated_complexity"));
     }

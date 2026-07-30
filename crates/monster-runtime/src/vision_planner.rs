@@ -64,7 +64,8 @@ impl VisionPlanner {
         let response = router.route_stream(&prompt, "vision", |_| {}).await?;
 
         // Parse response
-        let result = self.parse_vision_response(&response.text, &response.model, response.total_tokens);
+        let result =
+            self.parse_vision_response(&response.text, &response.model, response.total_tokens);
         Ok(result)
     }
 
@@ -83,7 +84,10 @@ impl VisionPlanner {
 
         match serde_json::from_str::<serde_json::Value>(json_str) {
             Ok(v) => {
-                let description = v["description"].as_str().unwrap_or("No description").to_string();
+                let description = v["description"]
+                    .as_str()
+                    .unwrap_or("No description")
+                    .to_string();
                 let mut actions = Vec::new();
                 if let Some(arr) = v["actions"].as_array() {
                     for item in arr.iter().take(self.max_actions) {
@@ -105,7 +109,12 @@ impl VisionPlanner {
                         });
                     }
                 }
-                VisionResult { description, actions, model: model.to_string(), tokens_used: tokens }
+                VisionResult {
+                    description,
+                    actions,
+                    model: model.to_string(),
+                    tokens_used: tokens,
+                }
             }
             Err(_) => {
                 // Fallback: treat the whole response as description
@@ -133,7 +142,10 @@ impl VisionPlanner {
                 coordinates: None,
             });
         }
-        if desc_lower.contains("input") || desc_lower.contains("text field") || desc_lower.contains("search") {
+        if desc_lower.contains("input")
+            || desc_lower.contains("text field")
+            || desc_lower.contains("search")
+        {
             actions.push(PlannedAction {
                 action_type: "type".into(),
                 target: "input".into(),
@@ -165,7 +177,9 @@ impl VisionPlanner {
 }
 
 impl Default for VisionPlanner {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Simple base64 encoder (no external crate needed).
@@ -179,8 +193,16 @@ fn base64_encode(data: &[u8]) -> String {
         let triple = (b0 << 16) | (b1 << 8) | b2;
         result.push(CHARS[((triple >> 18) & 0x3F) as usize] as char);
         result.push(CHARS[((triple >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 { result.push(CHARS[((triple >> 6) & 0x3F) as usize] as char); } else { result.push('='); }
-        if chunk.len() > 2 { result.push(CHARS[(triple & 0x3F) as usize] as char); } else { result.push('='); }
+        if chunk.len() > 1 {
+            result.push(CHARS[((triple >> 6) & 0x3F) as usize] as char);
+        } else {
+            result.push('=');
+        }
+        if chunk.len() > 2 {
+            result.push(CHARS[(triple & 0x3F) as usize] as char);
+        } else {
+            result.push('=');
+        }
     }
     result
 }

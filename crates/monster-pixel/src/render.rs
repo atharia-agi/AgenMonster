@@ -13,7 +13,8 @@ impl RenderSubsystem {
     pub fn new(stage: &str, width: u32, height: u32) -> Self {
         Self {
             stage: stage.to_string(),
-            width, height,
+            width,
+            height,
             scale: 1.0,
             visible: true,
             opacity: 1.0,
@@ -32,8 +33,12 @@ impl RenderSubsystem {
         self.opacity = opacity.clamp(0.0, 1.0);
     }
 
-    pub fn show(&mut self) { self.visible = true; }
-    pub fn hide(&mut self) { self.visible = false; }
+    pub fn show(&mut self) {
+        self.visible = true;
+    }
+    pub fn hide(&mut self) {
+        self.visible = false;
+    }
 
     pub fn render_frame(&self, frame: u32, time_s: f32) -> Vec<u8> {
         let bg = crate::background::Background::new(&self.stage, self.width, self.height);

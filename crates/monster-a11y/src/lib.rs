@@ -27,27 +27,50 @@ pub struct A11yTree;
 impl A11yTree {
     pub async fn capture_root() -> anyhow::Result<A11yNode> {
         #[cfg(target_os = "windows")]
-        { windows_ui_automation::capture_root().await }
+        {
+            windows_ui_automation::capture_root().await
+        }
 
         #[cfg(target_os = "macos")]
-        { macos_axapi::capture_root().await }
+        {
+            macos_axapi::capture_root().await
+        }
 
         #[cfg(target_os = "linux")]
-        { linux_atspi::capture_root().await }
+        {
+            linux_atspi::capture_root().await
+        }
 
         #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
-        { Ok(A11yNode { role: "unknown".into(), name: "unsupported platform".into(), value: None, bounds: None, focused: false, children: vec![] }) }
+        {
+            Ok(A11yNode {
+                role: "unknown".into(),
+                name: "unsupported platform".into(),
+                value: None,
+                bounds: None,
+                focused: false,
+                children: vec![],
+            })
+        }
     }
 
     pub fn flatten(node: &A11yNode) -> Vec<&A11yNode> {
         let mut out = vec![node];
-        for c in &node.children { out.extend(Self::flatten(c)); }
+        for c in &node.children {
+            out.extend(Self::flatten(c));
+        }
         out
     }
 
     pub fn find_clickable(node: &A11yNode) -> Vec<&A11yNode> {
-        Self::flatten(node).into_iter()
-            .filter(|n| matches!(n.role.as_str(), "button" | "link" | "menuitem" | "tab" | "text" | "textfield" | "checkbox"))
+        Self::flatten(node)
+            .into_iter()
+            .filter(|n| {
+                matches!(
+                    n.role.as_str(),
+                    "button" | "link" | "menuitem" | "tab" | "text" | "textfield" | "checkbox"
+                )
+            })
             .collect()
     }
 }

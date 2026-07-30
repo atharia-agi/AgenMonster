@@ -35,8 +35,10 @@ impl Plan {
     pub fn add_step(&mut self, description: &str) {
         self.steps.push(PlanStep {
             description: description.to_string(),
-            tool: None, args: vec![],
-            completed: false, result: None,
+            tool: None,
+            args: vec![],
+            completed: false,
+            result: None,
         });
     }
 
@@ -45,7 +47,8 @@ impl Plan {
             description: description.to_string(),
             tool: Some(tool.to_string()),
             args,
-            completed: false, result: None,
+            completed: false,
+            result: None,
         });
     }
 
@@ -54,7 +57,9 @@ impl Plan {
     }
 
     pub fn next_step(&mut self) -> Option<&mut PlanStep> {
-        if self.current_step >= self.steps.len() { return None; }
+        if self.current_step >= self.steps.len() {
+            return None;
+        }
         Some(&mut self.steps[self.current_step])
     }
 
@@ -79,14 +84,21 @@ impl Plan {
     }
 
     pub fn progress(&self) -> f32 {
-        if self.steps.is_empty() { return 1.0; }
+        if self.steps.is_empty() {
+            return 1.0;
+        }
         self.current_step as f32 / self.steps.len() as f32
     }
 
     pub fn summary(&self) -> String {
         let completed = self.steps.iter().filter(|s| s.completed).count();
-        format!("Plan '{}': {}/{} steps completed ({:.0}%)",
-            self.goal, completed, self.steps.len(), self.progress() * 100.0)
+        format!(
+            "Plan '{}': {}/{} steps completed ({:.0}%)",
+            self.goal,
+            completed,
+            self.steps.len(),
+            self.progress() * 100.0
+        )
     }
 }
 

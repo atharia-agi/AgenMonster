@@ -22,7 +22,8 @@ pub enum MemoryTier {
 impl MemoryBlock {
     pub fn new(id: u64, tier: MemoryTier, content: &str) -> Self {
         Self {
-            id, tier,
+            id,
+            tier,
             content: content.to_string(),
             embedding: Vec::new(),
             access_count: 0,

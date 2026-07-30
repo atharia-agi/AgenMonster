@@ -1,14 +1,14 @@
 //! Bus crate — typed event bus for all inter-crate communication.
 //! Channels are created per-topic; publish is non-blocking.
 
-pub mod topic;
-pub mod event;
 mod channels;
+pub mod event;
+pub mod topic;
 
+use event::BusEvent;
 use std::collections::HashMap;
 use tokio::sync::broadcast;
 use topic::Topic;
-use event::BusEvent;
 
 #[derive(Clone)]
 pub struct Bus {
@@ -53,7 +53,9 @@ impl Bus {
         (Subscription { topic }, rx)
     }
 
-    pub fn capacity(&self) -> usize { self.capacity }
+    pub fn capacity(&self) -> usize {
+        self.capacity
+    }
 }
 
 pub struct Subscription {
@@ -65,5 +67,9 @@ pub struct BusConfig {
 }
 
 impl Default for BusConfig {
-    fn default() -> Self { Self { default_capacity: 256 } }
+    fn default() -> Self {
+        Self {
+            default_capacity: 256,
+        }
+    }
 }

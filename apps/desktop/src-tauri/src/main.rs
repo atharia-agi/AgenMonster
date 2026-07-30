@@ -2,15 +2,13 @@
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::sync::{Arc, Mutex};
-use monster_runtime::Runtime;
 use agenmonster_desktop_lib::agent_bridge::AgentBridge;
+use monster_runtime::Runtime;
+use std::sync::{Arc, Mutex};
 use tauri::Manager;
 
 fn main() {
-    tracing_subscriber::fmt()
-        .with_env_filter("info")
-        .init();
+    tracing_subscriber::fmt().with_env_filter("info").init();
 
     let runtime = Arc::new(Mutex::new(Runtime::new()));
     let mut agent = AgentBridge::new(runtime.clone());

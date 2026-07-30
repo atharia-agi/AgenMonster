@@ -38,7 +38,11 @@ pub struct WebSearchItem {
 }
 
 /// Search using Brave Search API.
-pub async fn brave_search(query: &str, api_key: &str, count: u32) -> anyhow::Result<WebSearchResult> {
+pub async fn brave_search(
+    query: &str,
+    api_key: &str,
+    count: u32,
+) -> anyhow::Result<WebSearchResult> {
     let client = reqwest::Client::new();
     let url = format!(
         "https://api.search.brave.com/res/v1/web/search?q={}&count={}",
@@ -67,11 +71,14 @@ pub async fn brave_search(query: &str, api_key: &str, count: u32) -> anyhow::Res
         query: query.to_string(),
         answer: None,
         provider: "brave".into(),
-        results: results.into_iter().map(|r| WebSearchItem {
-            title: r.title,
-            url: r.url,
-            snippet: r.description.unwrap_or_default(),
-        }).collect(),
+        results: results
+            .into_iter()
+            .map(|r| WebSearchItem {
+                title: r.title,
+                url: r.url,
+                snippet: r.description.unwrap_or_default(),
+            })
+            .collect(),
     })
 }
 
@@ -91,7 +98,11 @@ struct TavilyResult {
 }
 
 /// Search using Tavily API (with AI-generated answer).
-pub async fn tavily_search(query: &str, api_key: &str, max_results: u32) -> anyhow::Result<WebSearchResult> {
+pub async fn tavily_search(
+    query: &str,
+    api_key: &str,
+    max_results: u32,
+) -> anyhow::Result<WebSearchResult> {
     let client = reqwest::Client::new();
     let body = serde_json::json!({
         "api_key": api_key,
@@ -120,11 +131,15 @@ pub async fn tavily_search(query: &str, api_key: &str, max_results: u32) -> anyh
         query: query.to_string(),
         answer: data.answer,
         provider: "tavily".into(),
-        results: data.results.into_iter().map(|r| WebSearchItem {
-            title: r.title,
-            url: r.url,
-            snippet: r.content.unwrap_or_default(),
-        }).collect(),
+        results: data
+            .results
+            .into_iter()
+            .map(|r| WebSearchItem {
+                title: r.title,
+                url: r.url,
+                snippet: r.content.unwrap_or_default(),
+            })
+            .collect(),
     })
 }
 
@@ -148,7 +163,8 @@ pub async fn web_fetch(url: &str) -> anyhow::Result<String> {
         anyhow::bail!("HTTP error {status} for {url}");
     }
 
-    let content_type = resp.headers()
+    let content_type = resp
+        .headers()
         .get(reqwest::header::CONTENT_TYPE)
         .and_then(|v| v.to_str().ok())
         .unwrap_or("")
@@ -177,15 +193,23 @@ fn strip_html(html: &str) -> String {
     let skip_ranges: Vec<(usize, usize)> = vec![
         script_start.and_then(|s| script_end.map(|e| (s, e + 9))),
         style_start.and_then(|s| style_end.map(|e| (s, e + 8))),
-    ].into_iter().flatten().collect();
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
 
     for (i, ch) in html.char_indices() {
         let in_skip = skip_ranges.iter().any(|(s, e)| i >= *s && i <= *e);
-        if in_skip { continue; }
+        if in_skip {
+            continue;
+        }
 
         match ch {
             '<' => in_tag = true,
-            '>' if in_tag => { in_tag = false; continue; }
+            '>' if in_tag => {
+                in_tag = false;
+                continue;
+            }
             _ if in_tag => continue,
             _ => result.push(ch),
         }
@@ -195,7 +219,11 @@ fn strip_html(html: &str) -> String {
 }
 
 /// Combined search: tries Tavily first (has AI answers), falls back to Brave.
-pub async fn search_web(query: &str, tavily_key: Option<&str>, brave_key: Option<&str>) -> anyhow::Result<WebSearchResult> {
+pub async fn search_web(
+    query: &str,
+    tavily_key: Option<&str>,
+    brave_key: Option<&str>,
+) -> anyhow::Result<WebSearchResult> {
     if let Some(key) = tavily_key {
         match tavily_search(query, key, 5).await {
             Ok(result) if !result.results.is_empty() => return Ok(result),
@@ -215,7 +243,8 @@ mod tests {
 
     #[test]
     fn test_strip_html() {
-        let html = "<html><head><title>Test</title></head><body><h1>Hello</h1><p>World</p></body></html>";
+        let html =
+            "<html><head><title>Test</title></head><body><h1>Hello</h1><p>World</p></body></html>";
         let text = strip_html(html);
         assert!(text.contains("Hello"));
         assert!(text.contains("World"));
@@ -224,7 +253,8 @@ mod tests {
 
     #[test]
     fn test_strip_html_script() {
-        let html = r#"<html><head><script>alert('hi')</script></head><body><p>Content</p></body></html>"#;
+        let html =
+            r#"<html><head><script>alert('hi')</script></head><body><p>Content</p></body></html>"#;
         let text = strip_html(html);
         assert!(text.contains("Content"));
         assert!(!text.contains("alert"));

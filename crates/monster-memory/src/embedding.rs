@@ -16,16 +16,56 @@ impl EmbeddingEngine {
         let mut idf = HashMap::new();
         // Common English words with pre-computed IDF weights
         let common_words = vec![
-            ("the", 0.5), ("a", 0.6), ("is", 0.55), ("in", 0.5), ("it", 0.55),
-            ("and", 0.45), ("to", 0.5), ("of", 0.5), ("for", 0.5), ("on", 0.55),
-            ("with", 0.5), ("this", 0.55), ("that", 0.55), ("are", 0.5), ("was", 0.5),
-            ("be", 0.5), ("at", 0.55), ("by", 0.55), ("from", 0.5), ("or", 0.5),
-            ("an", 0.6), ("as", 0.55), ("has", 0.55), ("had", 0.55), ("have", 0.5),
-            ("not", 0.5), ("but", 0.5), ("they", 0.55), ("which", 0.55), ("can", 0.5),
-            ("will", 0.5), ("if", 0.55), ("we", 0.55), ("you", 0.55), ("do", 0.55),
-            ("my", 0.55), ("no", 0.55), ("so", 0.55), ("what", 0.5), ("there", 0.55),
-            ("their", 0.55), ("its", 0.55), ("about", 0.5), ("up", 0.55), ("out", 0.5),
-            ("into", 0.5), ("just", 0.5), ("than", 0.5), ("other", 0.5), ("new", 0.5),
+            ("the", 0.5),
+            ("a", 0.6),
+            ("is", 0.55),
+            ("in", 0.5),
+            ("it", 0.55),
+            ("and", 0.45),
+            ("to", 0.5),
+            ("of", 0.5),
+            ("for", 0.5),
+            ("on", 0.55),
+            ("with", 0.5),
+            ("this", 0.55),
+            ("that", 0.55),
+            ("are", 0.5),
+            ("was", 0.5),
+            ("be", 0.5),
+            ("at", 0.55),
+            ("by", 0.55),
+            ("from", 0.5),
+            ("or", 0.5),
+            ("an", 0.6),
+            ("as", 0.55),
+            ("has", 0.55),
+            ("had", 0.55),
+            ("have", 0.5),
+            ("not", 0.5),
+            ("but", 0.5),
+            ("they", 0.55),
+            ("which", 0.55),
+            ("can", 0.5),
+            ("will", 0.5),
+            ("if", 0.55),
+            ("we", 0.55),
+            ("you", 0.55),
+            ("do", 0.55),
+            ("my", 0.55),
+            ("no", 0.55),
+            ("so", 0.55),
+            ("what", 0.5),
+            ("there", 0.55),
+            ("their", 0.55),
+            ("its", 0.55),
+            ("about", 0.5),
+            ("up", 0.55),
+            ("out", 0.5),
+            ("into", 0.5),
+            ("just", 0.5),
+            ("than", 0.5),
+            ("other", 0.5),
+            ("new", 0.5),
         ];
         for (word, weight) in common_words {
             idf.insert(word.to_string(), weight);
@@ -77,7 +117,9 @@ impl EmbeddingEngine {
 }
 
 impl Default for EmbeddingEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 /// Tokenize text into lowercase words.
@@ -111,7 +153,8 @@ pub fn vec_to_bytes(vec: &[f32]) -> Vec<u8> {
 
 /// Convert bytes from SQLite back to embedding vector.
 pub fn bytes_to_vec(bytes: &[u8]) -> Vec<f32> {
-    bytes.chunks_exact(4)
+    bytes
+        .chunks_exact(4)
         .filter_map(|chunk| {
             let arr: [u8; 4] = [chunk[0], chunk[1], chunk[2], chunk[3]];
             Some(f32::from_le_bytes(arr))

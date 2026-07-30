@@ -5,15 +5,20 @@
 
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::RwLock;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SyncRequest {
     ListPeers,
     GetSkill(String),
-    PushSkill { id: String, body: String, signature: String, author_pubkey: String },
+    PushSkill {
+        id: String,
+        body: String,
+        signature: String,
+        author_pubkey: String,
+    },
     GetMemoryDigest,
     PushMemoryDigest(Vec<u8>),
 }
@@ -50,13 +55,16 @@ impl Sync {
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap()
                 .as_nanos()
-                .to_le_bytes()
-        ).to_hex().to_string();
+                .to_le_bytes(),
+        )
+        .to_hex()
+        .to_string();
         let peer_id = format!("peer-{}", &hex_str[..12]);
 
         let skills_dir = dirs::data_local_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join("agenmonster").join("skills");
+            .join("agenmonster")
+            .join("skills");
         std::fs::create_dir_all(&skills_dir).ok();
 
         let sync = Arc::new(Self {
@@ -103,7 +111,9 @@ impl Sync {
             let peer_id = self.peer_id.clone();
 
             tokio::spawn(async move {
-                if let Err(e) = Self::handle_connection(stream, peer_addr, peers, skills_dir, peer_id).await {
+                if let Err(e) =
+                    Self::handle_connection(stream, peer_addr, peers, skills_dir, peer_id).await
+                {
                     tracing::warn!(addr = %peer_addr, "Connection error: {e}");
                 }
             });
@@ -120,7 +130,9 @@ impl Sync {
         // Read request
         let mut buf = vec![0u8; 65536];
         let n = stream.read(&mut buf).await?;
-        if n == 0 { return Ok(()); }
+        if n == 0 {
+            return Ok(());
+        }
 
         let request: SyncRequest = serde_json::from_slice(&buf[..n])?;
 
@@ -149,9 +161,7 @@ impl Sync {
                 // Return empty digest for now
                 SyncResponse::MemoryDigest(vec![])
             }
-            SyncRequest::PushMemoryDigest(_digest) => {
-                SyncResponse::Ack
-            }
+            SyncRequest::PushMemoryDigest(_digest) => SyncResponse::Ack,
         };
 
         // Update peer list
@@ -161,7 +171,10 @@ impl Sync {
             .as_secs();
         {
             let mut peer_list = peers.write().await;
-            if let Some(existing) = peer_list.iter_mut().find(|p| p.addr == peer_addr.to_string()) {
+            if let Some(existing) = peer_list
+                .iter_mut()
+                .find(|p| p.addr == peer_addr.to_string())
+            {
                 existing.last_seen = now;
             } else {
                 peer_list.push(PeerInfo {
@@ -227,13 +240,21 @@ impl Sync {
             peer_list.retain(|p| now - p.last_seen < 120); // 2 min timeout
             let removed = before - peer_list.len();
             if removed > 0 {
-                tracing::info!(removed, remaining = peer_list.len(), "Cleaned up stale peers");
+                tracing::info!(
+                    removed,
+                    remaining = peer_list.len(),
+                    "Cleaned up stale peers"
+                );
             }
         }
     }
 
     /// Connect to a peer and send a request.
-    pub async fn request_peer(&self, addr: &str, request: &SyncRequest) -> anyhow::Result<SyncResponse> {
+    pub async fn request_peer(
+        &self,
+        addr: &str,
+        request: &SyncRequest,
+    ) -> anyhow::Result<SyncResponse> {
         let mut stream = TcpStream::connect(addr).await?;
         let request_bytes = serde_json::to_vec(request)?;
         stream.write_all(&request_bytes).await?;

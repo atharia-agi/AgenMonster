@@ -5,9 +5,13 @@ use serde_json::Value;
 pub struct RandomStringTool;
 
 impl RandomStringTool {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn name(&self) -> &str { "random_string" }
+    pub fn name(&self) -> &str {
+        "random_string"
+    }
 
     pub fn description(&self) -> &str {
         "Generate a random string. Supports alphanumeric, hex, uuid formats."
@@ -31,12 +35,14 @@ impl RandomStringTool {
     }
 
     pub fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let length = args.get("length")
+        let length = args
+            .get("length")
             .and_then(|v| v.as_u64())
             .unwrap_or(16)
             .min(256) as usize;
 
-        let format = args.get("format")
+        let format = args
+            .get("format")
             .and_then(|v| v.as_str())
             .unwrap_or("alphanumeric");
 
@@ -59,7 +65,8 @@ impl RandomStringTool {
                 chars.into_iter().collect()
             }
             _ => {
-                const CHARS: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                const CHARS: &[u8] =
+                    b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
                 let chars: Vec<char> = (0..length)
                     .map(|_| {
                         let idx = rand::random::<u8>() as usize % CHARS.len();
@@ -74,7 +81,8 @@ impl RandomStringTool {
             "string": output,
             "length": output.len(),
             "format": format,
-        }).to_string())
+        })
+        .to_string())
     }
 }
 
@@ -93,21 +101,27 @@ mod tests {
     #[test]
     fn test_random_hex() {
         let tool = RandomStringTool::new();
-        let result = tool.execute(&serde_json::json!({"format": "hex", "length": 8})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"format": "hex", "length": 8}))
+            .unwrap();
         assert!(result.contains("hex"));
     }
 
     #[test]
     fn test_random_uuid() {
         let tool = RandomStringTool::new();
-        let result = tool.execute(&serde_json::json!({"format": "uuid"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"format": "uuid"}))
+            .unwrap();
         assert!(result.contains("uuid"));
     }
 
     #[test]
     fn test_random_numeric() {
         let tool = RandomStringTool::new();
-        let result = tool.execute(&serde_json::json!({"format": "numeric", "length": 6})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"format": "numeric", "length": 6}))
+            .unwrap();
         assert!(result.contains("numeric"));
     }
 

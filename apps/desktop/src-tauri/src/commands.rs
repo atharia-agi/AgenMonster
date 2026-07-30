@@ -1,12 +1,12 @@
 //! Desktop commands — Tauri IPC command handlers.
 //! Includes: state management, agent bridge, equipment, personality, emotion.
 
+use crate::agent_bridge::AgentBridge;
+use monster_equipment::Equipment;
+use monster_runtime::Runtime;
+use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tauri::State;
-use monster_runtime::Runtime;
-use monster_equipment::Equipment;
-use crate::agent_bridge::AgentBridge;
-use serde_json::Value;
 
 pub struct AppState {
     pub runtime: Arc<Mutex<Runtime>>,
@@ -53,12 +53,14 @@ pub fn send_task(state: State<AppState>, message: String) -> String {
             "xp": rt.xp,
             "xp_to_next": rt.xp_to_next,
             "energy": rt.economy.energy,
-        }).to_string()
+        })
+        .to_string()
     } else {
         serde_json::json!({
             "status": "ok",
             "response": response,
-        }).to_string()
+        })
+        .to_string()
     }
 }
 
@@ -80,8 +82,7 @@ pub fn set_stage(state: State<AppState>, stage: String) -> String {
 #[tauri::command]
 pub fn get_skills() -> String {
     let skills_dir = std::path::Path::new("skills");
-    let loaded = monster_skills::SkillLoader::load_from_dir(skills_dir)
-        .unwrap_or_default();
+    let loaded = monster_skills::SkillLoader::load_from_dir(skills_dir).unwrap_or_default();
     let mut skill_list = Vec::new();
     for skill in &loaded {
         skill_list.push(serde_json::json!({
@@ -104,7 +105,8 @@ pub fn get_memory_stats(state: State<AppState>) -> String {
         "db_path": dirs::data_local_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
             .join("agenmonster").join("memory.db").to_string_lossy(),
-    }).to_string()
+    })
+    .to_string()
 }
 
 #[tauri::command]
@@ -114,7 +116,8 @@ pub fn get_energy(state: State<AppState>) -> String {
         "energy": rt.economy.energy,
         "max": rt.economy.max_energy,
         "regen_rate": rt.economy.regen_per_hour,
-    }).to_string()
+    })
+    .to_string()
 }
 
 #[tauri::command]
@@ -124,7 +127,8 @@ pub fn spend_energy(state: State<AppState>, cost: u32) -> String {
     serde_json::json!({
         "success": success,
         "energy": rt.economy.energy,
-    }).to_string()
+    })
+    .to_string()
 }
 
 // ── NEW COMMANDS (Round 23) ──────────────────────────────────
@@ -147,7 +151,8 @@ pub fn get_full_state(state: State<AppState>) -> String {
         "dream_text": rt.dream_text,
         "dominant_task": rt.tokens.dominant_task(),
         "tick_count": rt.tick_count,
-    }).to_string()
+    })
+    .to_string()
 }
 
 /// Manually feed tokens (e.g., from quick action "Feed Token").
@@ -179,7 +184,8 @@ pub fn feed_tokens(state: State<AppState>, amount: u32) -> String {
         "stage": rt.stage,
         "mood": rt.mood,
         "evolved": evolved,
-    }).to_string()
+    })
+    .to_string()
 }
 
 /// Get personality info for current stage.
@@ -194,7 +200,8 @@ pub fn get_personality(state: State<AppState>) -> String {
         "preferred_mood": p.preferred_mood,
         "default_speech": p.default_speech,
         "attention_phrases": p.attention_phrases,
-    }).to_string()
+    })
+    .to_string()
 }
 
 /// Trigger an emotion event (from frontend actions).
@@ -226,7 +233,8 @@ pub fn trigger_event(state: State<AppState>, event: String) -> String {
         "mood": rt.mood,
         "xp": rt.xp,
         "energy": rt.economy.energy,
-    }).to_string()
+    })
+    .to_string()
 }
 
 /// Get all available equipment.
@@ -252,7 +260,8 @@ pub fn equip_item(state: State<AppState>, item_id: String) -> String {
     let mut ids = state.equipped_ids.lock().unwrap();
     ids.retain(|id| {
         let item = Equipment::get(id);
-        item.map(|i| format!("{:?}", i.slot) != slot).unwrap_or(false)
+        item.map(|i| format!("{:?}", i.slot) != slot)
+            .unwrap_or(false)
     });
     ids.push(item_id.clone());
     serde_json::json!({
@@ -266,7 +275,8 @@ pub fn equip_item(state: State<AppState>, item_id: String) -> String {
             "energy_bonus": loadout.total_effects().energy_bonus,
             "learning_speed": loadout.total_effects().learning_speed,
         },
-    }).to_string()
+    })
+    .to_string()
 }
 
 /// Get current loadout.
@@ -296,7 +306,8 @@ pub fn unequip_item(state: State<AppState>, slot: String) -> String {
             "unequipped": item.id,
             "slot": slot,
             "loadout": loadout.to_json(),
-        }).to_string()
+        })
+        .to_string()
     } else {
         serde_json::json!({"status": "empty", "slot": slot}).to_string()
     }
@@ -406,12 +417,16 @@ pub fn export_backup_native(_state: State<AppState>) -> String {
             backup["evolution"] = parsed;
         }
     }
-    let backup_path = dir.join(format!("backup-{}.json", chrono::Utc::now().format("%Y%m%d-%H%M%S")));
+    let backup_path = dir.join(format!(
+        "backup-{}.json",
+        chrono::Utc::now().format("%Y%m%d-%H%M%S")
+    ));
     let json = backup.to_string();
     if let Err(e) = std::fs::write(&backup_path, &json) {
         return serde_json::json!({"status": "error", "error": e.to_string()}).to_string();
     }
-    serde_json::json!({"status": "ok", "path": backup_path.to_string_lossy(), "data": backup}).to_string()
+    serde_json::json!({"status": "ok", "path": backup_path.to_string_lossy(), "data": backup})
+        .to_string()
 }
 
 #[tauri::command]
@@ -423,5 +438,6 @@ pub fn get_app_paths() -> String {
         "memory": dir.join("memory.json").to_string_lossy(),
         "goals": dir.join("goals.json").to_string_lossy(),
         "evolution": dir.join("evolution.json").to_string_lossy(),
-    }).to_string()
+    })
+    .to_string()
 }

@@ -20,7 +20,8 @@ impl MemoryHandle {
     }
 
     pub fn next_id(&self) -> u64 {
-        self.next_id.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        self.next_id
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
     }
 
     pub async fn ingest_with_embedding(&self, block: MemoryBlock) -> anyhow::Result<()> {

@@ -25,7 +25,9 @@ impl AnimState {
         }
         self.elapsed_ms += delta_ms;
         let total: u32 = frame_durations.iter().sum();
-        if total == 0 { return; }
+        if total == 0 {
+            return;
+        }
 
         let mut acc = 0u32;
         for (i, dur) in frame_durations.iter().enumerate() {

@@ -94,7 +94,8 @@ impl GroqClient {
             stream: false,
         };
 
-        let resp = self.client
+        let resp = self
+            .client
             .post("https://api.groq.com/openai/v1/chat/completions")
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
@@ -124,7 +125,8 @@ impl GroqClient {
             stream: true,
         };
 
-        let resp = self.client
+        let resp = self
+            .client
             .post("https://api.groq.com/openai/v1/chat/completions")
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
@@ -150,10 +152,14 @@ impl GroqClient {
 
             while let Some(line_start) = buffer.find("data: ") {
                 if let Some(line_end) = buffer[line_start..].find('\n') {
-                    let line = buffer[line_start + 6..line_start + line_end].trim().to_string();
+                    let line = buffer[line_start + 6..line_start + line_end]
+                        .trim()
+                        .to_string();
                     buffer = buffer[line_start + line_end + 1..].to_string();
 
-                    if line == "[DONE]" { break; }
+                    if line == "[DONE]" {
+                        break;
+                    }
 
                     if let Ok(chunk) = serde_json::from_str::<GroqStreamChunk>(&line) {
                         if let Some(choice) = chunk.choices.first() {

@@ -36,7 +36,9 @@ pub struct RenderSubsystem {
 
 impl RenderSubsystem {
     pub fn new() -> Self {
-        Self { state: tokio::sync::RwLock::new(RenderState::default()) }
+        Self {
+            state: tokio::sync::RwLock::new(RenderState::default()),
+        }
     }
 
     pub async fn state(&self) -> RenderState {

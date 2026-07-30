@@ -1,12 +1,16 @@
 //! CLI entry point — agenmonster subcommands.
 
-mod doctor;
 mod bench_cmd;
+mod doctor;
 
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
-#[command(name = "agenmonster", version, about = "AgenMonster — AI Monster Companion")]
+#[command(
+    name = "agenmonster",
+    version,
+    about = "AgenMonster — AI Monster Companion"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -100,9 +104,7 @@ async fn main() -> anyhow::Result<()> {
     // Load .env keys before anything else
     let _ = dotenvy::dotenv();
 
-    tracing_subscriber::fmt()
-        .with_env_filter("info")
-        .init();
+    tracing_subscriber::fmt().with_env_filter("info").init();
 
     let cli = Cli::parse();
 
@@ -110,7 +112,9 @@ async fn main() -> anyhow::Result<()> {
         Commands::Run { stage } => {
             let stage = stage.as_deref().unwrap_or("egg");
             tracing::info!("starting agenmonster in stage: {stage}");
-            let _bus = monster_bus::Bus::new(monster_bus::BusConfig { default_capacity: 1024 });
+            let _bus = monster_bus::Bus::new(monster_bus::BusConfig {
+                default_capacity: 1024,
+            });
             tracing::info!("bus created, entering main loop (ctrl-c to quit)");
             tokio::signal::ctrl_c().await?;
             tracing::info!("shutting down");
@@ -137,8 +141,8 @@ async fn main() -> anyhow::Result<()> {
             let skills_dir = std::path::Path::new("skills");
             match action {
                 SkillsAction::List => {
-                    let skills = monster_skills::SkillLoader::load_from_dir(skills_dir)
-                        .unwrap_or_default();
+                    let skills =
+                        monster_skills::SkillLoader::load_from_dir(skills_dir).unwrap_or_default();
                     println!("═══════════════════════════════════════════════");
                     println!("  AgenMonster — Installed Skills ({})", skills.len());
                     println!("═══════════════════════════════════════════════");
@@ -155,7 +159,8 @@ async fn main() -> anyhow::Result<()> {
                             println!("        tags: {}", skill.tags().join(", "));
                         }
                         if !skill.tools().is_empty() {
-                            let tool_names: Vec<&str> = skill.tools().iter().map(|t| t.name.as_str()).collect();
+                            let tool_names: Vec<&str> =
+                                skill.tools().iter().map(|t| t.name.as_str()).collect();
                             println!("        tools: {}", tool_names.join(", "));
                         }
                         println!();
@@ -167,7 +172,10 @@ async fn main() -> anyhow::Result<()> {
                     match monster_skills::SkillLoader::create_skill(skills_dir, &name, &desc) {
                         Ok(path) => {
                             println!("Created skill '{}' at {}", name, path.display());
-                            println!("Edit {} to add tools and prompts.", path.join("skill.toml").display());
+                            println!(
+                                "Edit {} to add tools and prompts.",
+                                path.join("skill.toml").display()
+                            );
                         }
                         Err(e) => {
                             eprintln!("Failed to create skill: {e}");
@@ -176,8 +184,8 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
                 SkillsAction::Info { name } => {
-                    let skills = monster_skills::SkillLoader::load_from_dir(skills_dir)
-                        .unwrap_or_default();
+                    let skills =
+                        monster_skills::SkillLoader::load_from_dir(skills_dir).unwrap_or_default();
                     match skills.iter().find(|s| s.id() == name) {
                         Some(skill) => {
                             println!("═══════════════════════════════════════════════");
@@ -195,8 +203,15 @@ async fn main() -> anyhow::Result<()> {
                                 for tool in skill.tools() {
                                     println!("    {} — {}", tool.name, tool.description);
                                     for param in &tool.parameters {
-                                        let req = if param.required { "required" } else { "optional" };
-                                        println!("      {}: {} ({})", param.name, param.description, req);
+                                        let req = if param.required {
+                                            "required"
+                                        } else {
+                                            "optional"
+                                        };
+                                        println!(
+                                            "      {}: {} ({})",
+                                            param.name, param.description, req
+                                        );
                                     }
                                 }
                                 println!();
@@ -228,21 +243,59 @@ async fn main() -> anyhow::Result<()> {
             println!();
             println!("  Groq:     {} keys", keys.groq_keys.len());
             println!("  Mistral:  {} keys", keys.mistral_keys.len());
-            println!("  Anthropic: {}", if keys.anthropic.is_some() { "✓ configured" } else { "✗ not set" });
-            println!("  OpenAI:    {}", if keys.openai.is_some() { "✓ configured" } else { "✗ not set" });
-            println!("  Gemini:    {}", if keys.gemini.is_some() { "✓ configured" } else { "✗ not set" });
+            println!(
+                "  Anthropic: {}",
+                if keys.anthropic.is_some() {
+                    "✓ configured"
+                } else {
+                    "✗ not set"
+                }
+            );
+            println!(
+                "  OpenAI:    {}",
+                if keys.openai.is_some() {
+                    "✓ configured"
+                } else {
+                    "✗ not set"
+                }
+            );
+            println!(
+                "  Gemini:    {}",
+                if keys.gemini.is_some() {
+                    "✓ configured"
+                } else {
+                    "✗ not set"
+                }
+            );
             println!();
             println!("  Search:");
-            println!("    Tavily:  {}", if keys.tavily_key.is_some() { "✓ configured" } else { "✗ not set" });
-            println!("    Brave:   {}", if keys.brave_key.is_some() { "✓ configured" } else { "✗ not set" });
+            println!(
+                "    Tavily:  {}",
+                if keys.tavily_key.is_some() {
+                    "✓ configured"
+                } else {
+                    "✗ not set"
+                }
+            );
+            println!(
+                "    Brave:   {}",
+                if keys.brave_key.is_some() {
+                    "✓ configured"
+                } else {
+                    "✗ not set"
+                }
+            );
             println!();
             println!("═══════════════════════════════════════════════");
         }
         Commands::Models => {
             let keys = monster_runtime::ApiKeys::from_env();
             let selector = monster_llm::ModelSelector::detect(
-                &keys.groq_keys, &keys.mistral_keys,
-                &keys.anthropic, &keys.openai, &keys.gemini,
+                &keys.groq_keys,
+                &keys.mistral_keys,
+                &keys.anthropic,
+                &keys.openai,
+                &keys.gemini,
             );
             println!("═══════════════════════════════════════════════");
             println!("  AgenMonster — Available Models");
@@ -251,8 +304,14 @@ async fn main() -> anyhow::Result<()> {
             println!("{}", selector.summary());
             println!();
             for status in selector.status() {
-                if !status.available { continue; }
-                println!("  {} ({} keys):", status.provider.as_str(), status.key_count);
+                if !status.available {
+                    continue;
+                }
+                println!(
+                    "  {} ({} keys):",
+                    status.provider.as_str(),
+                    status.key_count
+                );
                 for model in &status.models {
                     println!("    • {model}");
                 }
@@ -260,10 +319,23 @@ async fn main() -> anyhow::Result<()> {
             println!();
             // Show model selection for each task type
             println!("  Auto-selection per task:");
-            for task_str in &["chat", "code", "creative", "vision", "fast", "summarize", "analyze"] {
+            for task_str in &[
+                "chat",
+                "code",
+                "creative",
+                "vision",
+                "fast",
+                "summarize",
+                "analyze",
+            ] {
                 let task = monster_llm::TaskType::from_str(task_str);
                 match selector.select(task) {
-                    Some(sel) => println!("    {:>10} → {} ({})", task_str, sel.model, sel.provider.as_str()),
+                    Some(sel) => println!(
+                        "    {:>10} → {} ({})",
+                        task_str,
+                        sel.model,
+                        sel.provider.as_str()
+                    ),
                     None => println!("    {:>10} → (no provider available)", task_str),
                 }
             }
@@ -293,19 +365,24 @@ async fn main() -> anyhow::Result<()> {
 
             // Use streaming for real-time output
             let mut chunks = Vec::new();
-            match router.route_stream(&message, &task, |chunk| {
-                print!("{chunk}");
-                use std::io::Write;
-                std::io::stdout().flush().unwrap_or(());
-                chunks.push(chunk);
-            }).await {
+            match router
+                .route_stream(&message, &task, |chunk| {
+                    print!("{chunk}");
+                    use std::io::Write;
+                    std::io::stdout().flush().unwrap_or(());
+                    chunks.push(chunk);
+                })
+                .await
+            {
                 Ok(resp) => {
                     println!();
                     println!();
                     println!("─────────────────────────────────────");
                     println!("Provider: {} | Model: {}", resp.provider, resp.model);
-                    println!("Tokens: {} in + {} out = {} total",
-                        resp.input_tokens, resp.output_tokens, resp.total_tokens);
+                    println!(
+                        "Tokens: {} in + {} out = {} total",
+                        resp.input_tokens, resp.output_tokens, resp.total_tokens
+                    );
                 }
                 Err(e) => {
                     eprintln!("Error: {e}");
@@ -326,24 +403,62 @@ async fn main() -> anyhow::Result<()> {
             println!();
             println!("  Stage:      {}", rt.stage);
             println!("  Mood:       {}", rt.mood);
-            println!("  Energy:     {}/{}", rt.economy.energy, rt.economy.max_energy);
-            println!("  XP:         {}/{} ({:.0}%)", rt.xp, rt.xp_to_next, rt.xp_progress() * 100.0);
+            println!(
+                "  Energy:     {}/{}",
+                rt.economy.energy, rt.economy.max_energy
+            );
+            println!(
+                "  XP:         {}/{} ({:.0}%)",
+                rt.xp,
+                rt.xp_to_next,
+                rt.xp_progress() * 100.0
+            );
             println!("  Ticks:      {}", rt.tick_count);
             println!("  Hunger:     {:.1}%", rt.hunger_level * 100.0);
             println!("  Tokens:     {}", rt.tokens.total_tokens);
             println!("  API Calls:  {}", rt.tokens.calls_today);
-            println!("  Dreams:     {}", rt.dream_text.as_deref().unwrap_or("(none)"));
+            println!(
+                "  Dreams:     {}",
+                rt.dream_text.as_deref().unwrap_or("(none)")
+            );
             println!();
             // Provider status
             let keys = monster_runtime::ApiKeys::from_env();
             println!("  Providers:");
             println!("    Groq:     {} keys", keys.groq_keys.len());
             println!("    Mistral:  {} keys", keys.mistral_keys.len());
-            println!("    Anthropic: {}", if keys.anthropic.is_some() { "✓" } else { "✗" });
-            println!("    OpenAI:    {}", if keys.openai.is_some() { "✓" } else { "✗" });
-            println!("    Gemini:    {}", if keys.gemini.is_some() { "✓" } else { "✗" });
-            println!("    Tavily:   {}", if keys.tavily_key.is_some() { "✓" } else { "✗" });
-            println!("    Brave:    {}", if keys.brave_key.is_some() { "✓" } else { "✗" });
+            println!(
+                "    Anthropic: {}",
+                if keys.anthropic.is_some() {
+                    "✓"
+                } else {
+                    "✗"
+                }
+            );
+            println!(
+                "    OpenAI:    {}",
+                if keys.openai.is_some() { "✓" } else { "✗" }
+            );
+            println!(
+                "    Gemini:    {}",
+                if keys.gemini.is_some() { "✓" } else { "✗" }
+            );
+            println!(
+                "    Tavily:   {}",
+                if keys.tavily_key.is_some() {
+                    "✓"
+                } else {
+                    "✗"
+                }
+            );
+            println!(
+                "    Brave:    {}",
+                if keys.brave_key.is_some() {
+                    "✓"
+                } else {
+                    "✗"
+                }
+            );
             println!();
             // Model selection per task
             if let Some(ref sel) = rt.selector {
@@ -351,7 +466,12 @@ async fn main() -> anyhow::Result<()> {
                 for task_str in &["chat", "code", "creative", "vision", "fast"] {
                     let task = monster_llm::TaskType::from_str(task_str);
                     match sel.select(task) {
-                        Some(s) => println!("    {:>10} → {} ({})", task_str, s.model, s.provider.as_str()),
+                        Some(s) => println!(
+                            "    {:>10} → {} ({})",
+                            task_str,
+                            s.model,
+                            s.provider.as_str()
+                        ),
                         None => println!("    {:>10} → (no provider)", task_str),
                     }
                 }
@@ -362,7 +482,9 @@ async fn main() -> anyhow::Result<()> {
         Commands::Search { query } => {
             let keys = monster_runtime::ApiKeys::from_env();
             if !keys.has_any_search() {
-                eprintln!("No search API keys configured. Set TAVILY_API_KEY or BRAVE_API_KEY in .env");
+                eprintln!(
+                    "No search API keys configured. Set TAVILY_API_KEY or BRAVE_API_KEY in .env"
+                );
                 std::process::exit(1);
             }
             println!("Searching: {query}");
@@ -370,9 +492,9 @@ async fn main() -> anyhow::Result<()> {
             let tavily_key = keys.tavily_key.as_deref();
             let brave_key = keys.brave_key.as_deref();
             let result = tokio::task::block_in_place(|| {
-                tokio::runtime::Handle::current().block_on(
-                    monster_tools::web::search_web(&query, tavily_key, brave_key)
-                )
+                tokio::runtime::Handle::current().block_on(monster_tools::web::search_web(
+                    &query, tavily_key, brave_key,
+                ))
             });
             match result {
                 Ok(result) => {
@@ -460,18 +582,24 @@ async fn main() -> anyhow::Result<()> {
             let mut rt = monster_runtime::Runtime::new();
             rt.init_selector();
             if rt.load_state(&state_path).unwrap_or(false) {
-                println!("Loaded saved state: stage={}, xp={}/{}", rt.stage, rt.xp, rt.xp_to_next);
+                println!(
+                    "Loaded saved state: stage={}, xp={}/{}",
+                    rt.stage, rt.xp, rt.xp_to_next
+                );
             }
             let state_path_clone = state_path.clone();
 
             // Initialize memory
             let memory_db_path = dirs::data_local_dir()
                 .unwrap_or_else(|| std::path::PathBuf::from("."))
-                .join("agenmonster").join("memory.db");
+                .join("agenmonster")
+                .join("memory.db");
             std::fs::create_dir_all(memory_db_path.parent().unwrap()).ok();
             if let Ok(subsystem) = monster_memory::MemorySubsystem::boot(
-                memory_db_path.to_str().unwrap_or("memory.db")
-            ).await {
+                memory_db_path.to_str().unwrap_or("memory.db"),
+            )
+            .await
+            {
                 let handle = monster_tools::memory::MemoryHandle::new(subsystem);
                 monster_tools::registry::init_memory_handle(handle);
             }
@@ -494,15 +622,18 @@ async fn main() -> anyhow::Result<()> {
 
             // Load skills
             let skills_dir = std::path::Path::new("skills");
-            let loaded_skills = monster_skills::SkillLoader::load_from_dir(skills_dir)
-                .unwrap_or_default();
+            let loaded_skills =
+                monster_skills::SkillLoader::load_from_dir(skills_dir).unwrap_or_default();
             let mut skill_registry = monster_skills::SkillRegistry::new();
             for skill in loaded_skills {
                 skill_registry.register(skill);
             }
 
             println!("╔══════════════════════════════════════════╗");
-            println!("║  AgenMonster Daemon v{}                  ║", env!("CARGO_PKG_VERSION"));
+            println!(
+                "║  AgenMonster Daemon v{}                  ║",
+                env!("CARGO_PKG_VERSION")
+            );
             println!("║  Persistent session — type 'exit' to quit ║");
             println!("╚══════════════════════════════════════════╝");
             println!();
@@ -530,23 +661,46 @@ async fn main() -> anyhow::Result<()> {
                     }
                 }
                 let input = input.trim().to_string();
-                if input.is_empty() { continue; }
-                if input == "exit" || input == "quit" { break; }
+                if input.is_empty() {
+                    continue;
+                }
+                if input == "exit" || input == "quit" {
+                    break;
+                }
                 if input == "clear" {
                     ctx.clear();
                     println!("Context cleared.");
                     continue;
                 }
                 if input == "status" {
-                    println!("Stage: {} | Mood: {} | XP: {}/{}", rt.stage, rt.mood, rt.xp, rt.xp_to_next);
-                    println!("Energy: {}/{} | Tokens: {}", rt.economy.energy, rt.economy.max_energy, rt.tokens.total_tokens);
-                    println!("Context: {} messages, {:.0}% full", ctx.message_count(), ctx.token_usage() * 100.0);
-                    println!("Skills: {} loaded, {} enabled", skill_registry.count(), skill_registry.enabled_count());
+                    println!(
+                        "Stage: {} | Mood: {} | XP: {}/{}",
+                        rt.stage, rt.mood, rt.xp, rt.xp_to_next
+                    );
+                    println!(
+                        "Energy: {}/{} | Tokens: {}",
+                        rt.economy.energy, rt.economy.max_energy, rt.tokens.total_tokens
+                    );
+                    println!(
+                        "Context: {} messages, {:.0}% full",
+                        ctx.message_count(),
+                        ctx.token_usage() * 100.0
+                    );
+                    println!(
+                        "Skills: {} loaded, {} enabled",
+                        skill_registry.count(),
+                        skill_registry.enabled_count()
+                    );
                     continue;
                 }
                 if input == "skills" {
                     for skill in skill_registry.list_enabled() {
-                        println!("  [ON] {} v{} — {}", skill.id(), skill.version(), skill.description());
+                        println!(
+                            "  [ON] {} v{} — {}",
+                            skill.id(),
+                            skill.version(),
+                            skill.description()
+                        );
                     }
                     continue;
                 }
@@ -619,11 +773,46 @@ async fn main() -> anyhow::Result<()> {
             println!("  [API Keys]");
             println!("    Groq:      {} keys", keys.groq_keys.len());
             println!("    Mistral:   {} keys", keys.mistral_keys.len());
-            println!("    Anthropic: {}", if keys.anthropic.is_some() { "OK" } else { "NOT SET" });
-            println!("    OpenAI:    {}", if keys.openai.is_some() { "OK" } else { "NOT SET" });
-            println!("    Gemini:    {}", if keys.gemini.is_some() { "OK" } else { "NOT SET" });
-            println!("    Tavily:    {}", if keys.tavily_key.is_some() { "OK" } else { "NOT SET" });
-            println!("    Brave:     {}", if keys.brave_key.is_some() { "OK" } else { "NOT SET" });
+            println!(
+                "    Anthropic: {}",
+                if keys.anthropic.is_some() {
+                    "OK"
+                } else {
+                    "NOT SET"
+                }
+            );
+            println!(
+                "    OpenAI:    {}",
+                if keys.openai.is_some() {
+                    "OK"
+                } else {
+                    "NOT SET"
+                }
+            );
+            println!(
+                "    Gemini:    {}",
+                if keys.gemini.is_some() {
+                    "OK"
+                } else {
+                    "NOT SET"
+                }
+            );
+            println!(
+                "    Tavily:    {}",
+                if keys.tavily_key.is_some() {
+                    "OK"
+                } else {
+                    "NOT SET"
+                }
+            );
+            println!(
+                "    Brave:     {}",
+                if keys.brave_key.is_some() {
+                    "OK"
+                } else {
+                    "NOT SET"
+                }
+            );
             println!();
 
             // Tools
@@ -635,20 +824,24 @@ async fn main() -> anyhow::Result<()> {
 
             // Skills
             let skills_dir = std::path::Path::new("skills");
-            let skills = monster_skills::SkillLoader::load_from_dir(skills_dir)
-                .unwrap_or_default();
+            let skills = monster_skills::SkillLoader::load_from_dir(skills_dir).unwrap_or_default();
             println!("  [Skills]");
             println!("    Loaded: {}", skills.len());
             for skill in &skills {
-                println!("    - {} v{} ({})", skill.id(), skill.version(),
-                    if skill.enabled { "ON" } else { "OFF" });
+                println!(
+                    "    - {} v{} ({})",
+                    skill.id(),
+                    skill.version(),
+                    if skill.enabled { "ON" } else { "OFF" }
+                );
             }
             println!();
 
             // Memory
             let memory_db_path = dirs::data_local_dir()
                 .unwrap_or_else(|| std::path::PathBuf::from("."))
-                .join("agenmonster").join("memory.db");
+                .join("agenmonster")
+                .join("memory.db");
             println!("  [Memory]");
             println!("    DB path: {}", memory_db_path.display());
             println!("    Exists: {}", memory_db_path.exists());
@@ -662,7 +855,8 @@ async fn main() -> anyhow::Result<()> {
             // Runtime state
             let state_path = dirs::data_local_dir()
                 .unwrap_or_else(|| std::path::PathBuf::from("."))
-                .join("agenmonster").join("runtime_state.json");
+                .join("agenmonster")
+                .join("runtime_state.json");
             println!("  [Runtime State]");
             println!("    State file: {}", state_path.display());
             println!("    Exists: {}", state_path.exists());
@@ -671,7 +865,11 @@ async fn main() -> anyhow::Result<()> {
                     if let Ok(state) = serde_json::from_str::<serde_json::Value>(&content) {
                         println!("    Stage: {}", state["stage"].as_str().unwrap_or("?"));
                         println!("    Mood: {}", state["mood"].as_str().unwrap_or("?"));
-                        println!("    XP: {}/{}", state["xp"].as_u64().unwrap_or(0), state["xp_to_next"].as_u64().unwrap_or(0));
+                        println!(
+                            "    XP: {}/{}",
+                            state["xp"].as_u64().unwrap_or(0),
+                            state["xp_to_next"].as_u64().unwrap_or(0)
+                        );
                     }
                 }
             }
@@ -679,13 +877,22 @@ async fn main() -> anyhow::Result<()> {
 
             // Model selector
             let selector = monster_llm::ModelSelector::detect(
-                &keys.groq_keys, &keys.mistral_keys,
-                &keys.anthropic, &keys.openai, &keys.gemini,
+                &keys.groq_keys,
+                &keys.mistral_keys,
+                &keys.anthropic,
+                &keys.openai,
+                &keys.gemini,
             );
             println!("  [Models]");
             for status in selector.status() {
-                if !status.available { continue; }
-                println!("    {} ({} keys):", status.provider.as_str(), status.key_count);
+                if !status.available {
+                    continue;
+                }
+                println!(
+                    "    {} ({} keys):",
+                    status.provider.as_str(),
+                    status.key_count
+                );
                 for model in &status.models {
                     println!("      - {model}");
                 }
@@ -726,11 +933,14 @@ async fn main() -> anyhow::Result<()> {
             // Initialize memory subsystem
             let memory_db_path = dirs::data_local_dir()
                 .unwrap_or_else(|| std::path::PathBuf::from("."))
-                .join("agenmonster").join("memory.db");
+                .join("agenmonster")
+                .join("memory.db");
             std::fs::create_dir_all(memory_db_path.parent().unwrap()).ok();
             let _mem_handle = match monster_memory::MemorySubsystem::boot(
-                memory_db_path.to_str().unwrap_or("memory.db")
-            ).await {
+                memory_db_path.to_str().unwrap_or("memory.db"),
+            )
+            .await
+            {
                 Ok(subsystem) => {
                     let handle = monster_tools::memory::MemoryHandle::new(subsystem);
                     monster_tools::registry::init_memory_handle(handle);
@@ -753,8 +963,8 @@ async fn main() -> anyhow::Result<()> {
 
             // Auto-match and inject skills
             let skills_dir = std::path::Path::new("skills");
-            let loaded_skills = monster_skills::SkillLoader::load_from_dir(skills_dir)
-                .unwrap_or_default();
+            let loaded_skills =
+                monster_skills::SkillLoader::load_from_dir(skills_dir).unwrap_or_default();
             let mut skill_registry = monster_skills::SkillRegistry::new();
             for skill in loaded_skills {
                 skill_registry.register(skill);
@@ -770,7 +980,10 @@ async fn main() -> anyhow::Result<()> {
                     continue;
                 }
                 let msg_lower = message.to_lowercase();
-                let has_trigger = skill.triggers().iter().any(|t| msg_lower.contains(&t.to_lowercase()));
+                let has_trigger = skill
+                    .triggers()
+                    .iter()
+                    .any(|t| msg_lower.contains(&t.to_lowercase()));
                 if has_trigger {
                     ctx.inject_skill(skill);
                     injected_skills.push(skill.id().to_string());
@@ -817,7 +1030,12 @@ async fn main() -> anyhow::Result<()> {
                     rt.feed_tokens(usage);
 
                     println!();
-                    println!("XP: {}/{} ({:.0}%)", rt.xp, rt.xp_to_next, rt.xp_progress() * 100.0);
+                    println!(
+                        "XP: {}/{} ({:.0}%)",
+                        rt.xp,
+                        rt.xp_to_next,
+                        rt.xp_progress() * 100.0
+                    );
                     println!("Energy: {}/{}", rt.economy.energy, rt.economy.max_energy);
                     println!("Tokens fed: {tokens}");
 

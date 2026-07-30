@@ -3,21 +3,21 @@
 //! Priority for free/cheap: Groq (fastest) → Mistral (strong) → custom keys.
 //! Key rotation: we cycle through multiple API keys per provider for throughput.
 
-pub mod anthropic;
-pub mod openai;
-pub mod gemini;
-pub mod ollama;
-pub mod groq;
-pub mod mistral;
-pub mod routing;
 pub mod adaptive;
-pub mod stream;
-pub mod sse;
+pub mod anthropic;
 pub mod clients;
-pub mod model_selector;
+pub mod gemini;
+pub mod groq;
 pub mod key_rotation;
+pub mod mistral;
+pub mod model_selector;
+pub mod ollama;
+pub mod openai;
+pub mod routing;
+pub mod sse;
+pub mod stream;
 
-pub use model_selector::{ModelSelector, Provider, TaskType, Selection, ProviderStatus};
+pub use model_selector::{ModelSelector, Provider, ProviderStatus, Selection, TaskType};
 
 use routing::RouterCfg;
 
@@ -47,8 +47,11 @@ pub struct Router {
 impl Router {
     pub fn new(keys: ApiKeys, cfg: RouterCfg) -> Self {
         let selector = ModelSelector::detect(
-            &keys.groq_keys, &keys.mistral_keys,
-            &keys.anthropic, &keys.openai, &keys.gemini,
+            &keys.groq_keys,
+            &keys.mistral_keys,
+            &keys.anthropic,
+            &keys.openai,
+            &keys.gemini,
         );
         Self {
             groq_keys: keys.groq_keys,
@@ -82,12 +85,20 @@ impl Router {
             Provider::Ollama => {} // handled separately
         }
         self.selector.update_availability(
-            &self.groq_keys, &self.mistral_keys,
-            &self.anthropic_key, &self.openai_key, &self.gemini_key,
+            &self.groq_keys,
+            &self.mistral_keys,
+            &self.anthropic_key,
+            &self.openai_key,
+            &self.gemini_key,
         );
         tracing::info!(
             provider = provider.as_str(),
-            total_providers = self.selector.status().iter().filter(|s| s.available).count(),
+            total_providers = self
+                .selector
+                .status()
+                .iter()
+                .filter(|s| s.available)
+                .count(),
             "Provider added, re-detected"
         );
     }
@@ -103,8 +114,11 @@ impl Router {
             Provider::Ollama => {}
         }
         self.selector.update_availability(
-            &self.groq_keys, &self.mistral_keys,
-            &self.anthropic_key, &self.openai_key, &self.gemini_key,
+            &self.groq_keys,
+            &self.mistral_keys,
+            &self.anthropic_key,
+            &self.openai_key,
+            &self.gemini_key,
         );
     }
 
@@ -115,20 +129,31 @@ impl Router {
 
     /// Get full fallback chain for a task.
     pub fn fallback_chain(&self, task_type: &str) -> Vec<Selection> {
-        self.selector.select_with_fallback(TaskType::from_str(task_type))
+        self.selector
+            .select_with_fallback(TaskType::from_str(task_type))
     }
 
     /// Get next Groq key (round-robin rotation)
     fn next_groq_key(&self) -> Option<&str> {
-        if self.groq_keys.is_empty() { return None; }
-        let idx = self.groq_index.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % self.groq_keys.len();
+        if self.groq_keys.is_empty() {
+            return None;
+        }
+        let idx = self
+            .groq_index
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            % self.groq_keys.len();
         Some(&self.groq_keys[idx])
     }
 
     /// Get next Mistral key (round-robin rotation)
     fn next_mistral_key(&self) -> Option<&str> {
-        if self.mistral_keys.is_empty() { return None; }
-        let idx = self.mistral_index.fetch_add(1, std::sync::atomic::Ordering::Relaxed) % self.mistral_keys.len();
+        if self.mistral_keys.is_empty() {
+            return None;
+        }
+        let idx = self
+            .mistral_index
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            % self.mistral_keys.len();
         Some(&self.mistral_keys[idx])
     }
 
@@ -140,13 +165,23 @@ impl Router {
         if let Some(key) = self.next_groq_key() {
             let client = groq::GroqClient::new(key);
             let messages = vec![
-                groq::GroqMessage { role: "system".into(), content: groq::default_system_prompt() },
-                groq::GroqMessage { role: "user".into(), content: prompt.to_string() },
+                groq::GroqMessage {
+                    role: "system".into(),
+                    content: groq::default_system_prompt(),
+                },
+                groq::GroqMessage {
+                    role: "user".into(),
+                    content: prompt.to_string(),
+                },
             ];
             match client.chat(messages).await {
                 Ok(resp) => {
                     if let Some(choice) = resp.choices.first() {
-                        let usage = resp.usage.unwrap_or(groq::GroqUsage { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
+                        let usage = resp.usage.unwrap_or(groq::GroqUsage {
+                            prompt_tokens: 0,
+                            completion_tokens: 0,
+                            total_tokens: 0,
+                        });
                         return Ok(LlmResponse {
                             text: choice.message.content.clone(),
                             provider: "groq".into(),
@@ -167,13 +202,23 @@ impl Router {
         if let Some(key) = self.next_mistral_key() {
             let client = mistral::MistralClient::new(key);
             let messages = vec![
-                mistral::MistralMessage { role: "system".into(), content: mistral::default_system_prompt() },
-                mistral::MistralMessage { role: "user".into(), content: prompt.to_string() },
+                mistral::MistralMessage {
+                    role: "system".into(),
+                    content: mistral::default_system_prompt(),
+                },
+                mistral::MistralMessage {
+                    role: "user".into(),
+                    content: prompt.to_string(),
+                },
             ];
             match client.chat(messages).await {
                 Ok(resp) => {
                     if let Some(choice) = resp.choices.first() {
-                        let usage = resp.usage.unwrap_or(mistral::MistralUsage { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
+                        let usage = resp.usage.unwrap_or(mistral::MistralUsage {
+                            prompt_tokens: 0,
+                            completion_tokens: 0,
+                            total_tokens: 0,
+                        });
                         return Ok(LlmResponse {
                             text: choice.message.content.clone(),
                             provider: "mistral".into(),
@@ -193,15 +238,22 @@ impl Router {
         // Try Anthropic
         if let Some(ref key) = self.anthropic_key {
             let client = anthropic::AnthropicClient::new(key);
-            let messages = vec![
-                anthropic::ApiMessage { role: "user".into(), content: prompt.to_string() },
-            ];
+            let messages = vec![anthropic::ApiMessage {
+                role: "user".into(),
+                content: prompt.to_string(),
+            }];
             let req = client.build_request(&messages);
             match self.call_anthropic(key, &req).await {
-                Ok(text) => return Ok(LlmResponse {
-                    text, provider: "anthropic".into(), model: "claude-3.5-sonnet".into(),
-                    input_tokens: 0, output_tokens: 0, total_tokens: 0,
-                }),
+                Ok(text) => {
+                    return Ok(LlmResponse {
+                        text,
+                        provider: "anthropic".into(),
+                        model: "claude-3.5-sonnet".into(),
+                        input_tokens: 0,
+                        output_tokens: 0,
+                        total_tokens: 0,
+                    })
+                }
                 Err(e) => tracing::warn!(error = %e, "Anthropic failed"),
             }
         }
@@ -209,15 +261,22 @@ impl Router {
         // Try OpenAI
         if let Some(ref key) = self.openai_key {
             let client = openai::OpenAIClient::new(key);
-            let messages = vec![
-                openai::ApiMessage { role: "user".into(), content: prompt.to_string() },
-            ];
+            let messages = vec![openai::ApiMessage {
+                role: "user".into(),
+                content: prompt.to_string(),
+            }];
             let req = client.build_request(&messages);
             match self.call_openai(key, &req).await {
-                Ok(text) => return Ok(LlmResponse {
-                    text, provider: "openai".into(), model: "gpt-4o".into(),
-                    input_tokens: 0, output_tokens: 0, total_tokens: 0,
-                }),
+                Ok(text) => {
+                    return Ok(LlmResponse {
+                        text,
+                        provider: "openai".into(),
+                        model: "gpt-4o".into(),
+                        input_tokens: 0,
+                        output_tokens: 0,
+                        total_tokens: 0,
+                    })
+                }
                 Err(e) => tracing::warn!(error = %e, "OpenAI failed"),
             }
         }
@@ -225,15 +284,22 @@ impl Router {
         // Try Gemini
         if let Some(ref key) = self.gemini_key {
             let client = gemini::GeminiClient::new(key);
-            let messages = vec![
-                gemini::ApiMessage { role: "user".into(), content: prompt.to_string() },
-            ];
+            let messages = vec![gemini::ApiMessage {
+                role: "user".into(),
+                content: prompt.to_string(),
+            }];
             let req = client.build_request(&messages);
             match self.call_gemini(key, &req).await {
-                Ok(text) => return Ok(LlmResponse {
-                    text, provider: "gemini".into(), model: "gemini-2.5-flash".into(),
-                    input_tokens: 0, output_tokens: 0, total_tokens: 0,
-                }),
+                Ok(text) => {
+                    return Ok(LlmResponse {
+                        text,
+                        provider: "gemini".into(),
+                        model: "gemini-2.5-flash".into(),
+                        input_tokens: 0,
+                        output_tokens: 0,
+                        total_tokens: 0,
+                    })
+                }
                 Err(e) => tracing::warn!(error = %e, "Gemini failed"),
             }
         }
@@ -252,18 +318,26 @@ impl Router {
         if let Some(key) = self.next_groq_key() {
             let client = groq::GroqClient::new(key);
             let messages = vec![
-                groq::GroqMessage { role: "system".into(), content: groq::default_system_prompt() },
-                groq::GroqMessage { role: "user".into(), content: prompt.to_string() },
+                groq::GroqMessage {
+                    role: "system".into(),
+                    content: groq::default_system_prompt(),
+                },
+                groq::GroqMessage {
+                    role: "user".into(),
+                    content: prompt.to_string(),
+                },
             ];
             match client.chat_stream(messages, |chunk| on_chunk(chunk)).await {
-                Ok(result) => return Ok(LlmResponse {
-                    text: result.text,
-                    provider: "groq".into(),
-                    model: client.model,
-                    input_tokens: result.input_tokens,
-                    output_tokens: result.output_tokens,
-                    total_tokens: result.total_tokens,
-                }),
+                Ok(result) => {
+                    return Ok(LlmResponse {
+                        text: result.text,
+                        provider: "groq".into(),
+                        model: client.model,
+                        input_tokens: result.input_tokens,
+                        output_tokens: result.output_tokens,
+                        total_tokens: result.total_tokens,
+                    })
+                }
                 Err(e) => tracing::warn!(error = %e, "Groq stream failed"),
             }
         }
@@ -272,18 +346,26 @@ impl Router {
         if let Some(key) = self.next_mistral_key() {
             let client = mistral::MistralClient::new(key);
             let messages = vec![
-                mistral::MistralMessage { role: "system".into(), content: mistral::default_system_prompt() },
-                mistral::MistralMessage { role: "user".into(), content: prompt.to_string() },
+                mistral::MistralMessage {
+                    role: "system".into(),
+                    content: mistral::default_system_prompt(),
+                },
+                mistral::MistralMessage {
+                    role: "user".into(),
+                    content: prompt.to_string(),
+                },
             ];
             match client.chat_stream(messages, |chunk| on_chunk(chunk)).await {
-                Ok(result) => return Ok(LlmResponse {
-                    text: result.text,
-                    provider: "mistral".into(),
-                    model: client.model,
-                    input_tokens: result.input_tokens,
-                    output_tokens: result.output_tokens,
-                    total_tokens: result.total_tokens,
-                }),
+                Ok(result) => {
+                    return Ok(LlmResponse {
+                        text: result.text,
+                        provider: "mistral".into(),
+                        model: client.model,
+                        input_tokens: result.input_tokens,
+                        output_tokens: result.output_tokens,
+                        total_tokens: result.total_tokens,
+                    })
+                }
                 Err(e) => tracing::warn!(error = %e, "Mistral stream failed"),
             }
         }
@@ -330,7 +412,10 @@ impl Router {
         }
 
         let v: serde_json::Value = resp.json().await?;
-        Ok(v["choices"][0]["message"]["content"].as_str().unwrap_or("").to_string())
+        Ok(v["choices"][0]["message"]["content"]
+            .as_str()
+            .unwrap_or("")
+            .to_string())
     }
 
     async fn call_gemini(&self, key: &str, req: &serde_json::Value) -> anyhow::Result<String> {
@@ -349,7 +434,10 @@ impl Router {
         }
 
         let v: serde_json::Value = resp.json().await?;
-        Ok(v["candidates"][0]["content"]["parts"][0]["text"].as_str().unwrap_or("").to_string())
+        Ok(v["candidates"][0]["content"]["parts"][0]["text"]
+            .as_str()
+            .unwrap_or("")
+            .to_string())
     }
 
     pub fn anthropic_default(&self) -> Option<String> {
@@ -358,11 +446,21 @@ impl Router {
 
     pub fn provider_count(&self) -> usize {
         let mut count = 0;
-        if !self.groq_keys.is_empty() { count += 1; }
-        if !self.mistral_keys.is_empty() { count += 1; }
-        if self.anthropic_key.is_some() { count += 1; }
-        if self.openai_key.is_some() { count += 1; }
-        if self.gemini_key.is_some() { count += 1; }
+        if !self.groq_keys.is_empty() {
+            count += 1;
+        }
+        if !self.mistral_keys.is_empty() {
+            count += 1;
+        }
+        if self.anthropic_key.is_some() {
+            count += 1;
+        }
+        if self.openai_key.is_some() {
+            count += 1;
+        }
+        if self.gemini_key.is_some() {
+            count += 1;
+        }
         count
     }
 

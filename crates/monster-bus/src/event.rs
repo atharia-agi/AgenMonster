@@ -4,13 +4,32 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BusEvent {
-    PetInteraction { text: String, mood: String },
-    UserTask { text: String },
-    AgentThink { thought: String },
-    ToolCall { name: String, args: serde_json::Value, result: Option<String> },
-    Skill { id: String, action: SkillAction },
-    Memory { action: MemoryAction, block_id: Option<String> },
-    Render { frame: RenderFrame },
+    PetInteraction {
+        text: String,
+        mood: String,
+    },
+    UserTask {
+        text: String,
+    },
+    AgentThink {
+        thought: String,
+    },
+    ToolCall {
+        name: String,
+        args: serde_json::Value,
+        result: Option<String>,
+    },
+    Skill {
+        id: String,
+        action: SkillAction,
+    },
+    Memory {
+        action: MemoryAction,
+        block_id: Option<String>,
+    },
+    Render {
+        frame: RenderFrame,
+    },
     TelemetryTick,
     Custom,
 }

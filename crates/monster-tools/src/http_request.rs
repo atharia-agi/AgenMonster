@@ -5,9 +5,13 @@ use serde_json::Value;
 pub struct HttpRequestTool;
 
 impl HttpRequestTool {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn name(&self) -> &str { "http_request" }
+    pub fn name(&self) -> &str {
+        "http_request"
+    }
 
     pub fn description(&self) -> &str {
         "Make an HTTP request. Supports GET, POST, PUT, DELETE. Returns status, headers, and body."
@@ -36,13 +40,12 @@ impl HttpRequestTool {
     }
 
     pub async fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let url = args.get("url")
+        let url = args
+            .get("url")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("url is required"))?;
 
-        let method = args.get("method")
-            .and_then(|v| v.as_str())
-            .unwrap_or("GET");
+        let method = args.get("method").and_then(|v| v.as_str()).unwrap_or("GET");
 
         let client = reqwest::Client::new();
         let mut req = match method {
@@ -60,14 +63,19 @@ impl HttpRequestTool {
         let status = response.status().as_u16();
         let body = response.text().await.unwrap_or_default();
         let body_len = body.len();
-        let body_display = if body_len > 2000 { format!("{}...", &body[..2000]) } else { body };
+        let body_display = if body_len > 2000 {
+            format!("{}...", &body[..2000])
+        } else {
+            body
+        };
 
         Ok(serde_json::json!({
             "status": status,
             "ok": status >= 200 && status < 300,
             "body": body_display,
             "body_length": body_len,
-        }).to_string())
+        })
+        .to_string())
     }
 }
 
@@ -78,9 +86,12 @@ mod tests {
     #[tokio::test]
     async fn test_http_get() {
         let tool = HttpRequestTool::new();
-        let result = tool.execute(&serde_json::json!({
-            "url": "https://httpbin.org/get"
-        })).await.unwrap();
+        let result = tool
+            .execute(&serde_json::json!({
+                "url": "https://httpbin.org/get"
+            }))
+            .await
+            .unwrap();
         assert!(result.contains("200"));
     }
 }

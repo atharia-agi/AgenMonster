@@ -4,7 +4,9 @@
 mod test_utils {
     use tokio::sync::broadcast;
 
-    pub fn create_channel(capacity: usize) -> (broadcast::Sender<String>, broadcast::Receiver<String>) {
+    pub fn create_channel(
+        capacity: usize,
+    ) -> (broadcast::Sender<String>, broadcast::Receiver<String>) {
         broadcast::channel(capacity)
     }
 

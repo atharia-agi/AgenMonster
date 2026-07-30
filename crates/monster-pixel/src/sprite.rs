@@ -56,7 +56,9 @@ pub struct SpriteRegistry {
 
 impl SpriteRegistry {
     pub fn new() -> Self {
-        Self { sheets: HashMap::new() }
+        Self {
+            sheets: HashMap::new(),
+        }
     }
 
     pub fn register(&mut self, sheet: SpriteSheet) {

@@ -99,7 +99,12 @@ pub fn personality_for_stage(stage: &str) -> StagePersonality {
         },
         "adult" => StagePersonality {
             name: "adult".into(),
-            traits: vec!["wise".into(), "calm".into(), "powerful".into(), "mysterious".into()],
+            traits: vec![
+                "wise".into(),
+                "calm".into(),
+                "powerful".into(),
+                "mysterious".into(),
+            ],
             preferred_mood: "idle".into(),
             default_speech: vec![".".into(), "I see.".into(), "hmm.".into()],
             bob_amplitude: 1.5,

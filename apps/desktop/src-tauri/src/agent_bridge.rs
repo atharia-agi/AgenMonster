@@ -1,7 +1,7 @@
 //! Agent bridge — connects Tauri IPC to the real agent loop (LLM + tools).
 
-use std::sync::{Arc, Mutex};
 use monster_runtime::Runtime;
+use std::sync::{Arc, Mutex};
 
 pub struct AgentBridge {
     pub runtime: Arc<Mutex<Runtime>>,
@@ -18,14 +18,17 @@ impl AgentBridge {
 
     /// Initialize memory subsystem (call once at startup).
     pub fn init_memory(&mut self) {
-        if self.memory_initialized { return; }
+        if self.memory_initialized {
+            return;
+        }
         let db_path = dirs::data_local_dir()
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join("agenmonster").join("memory.db");
+            .join("agenmonster")
+            .join("memory.db");
         std::fs::create_dir_all(db_path.parent().unwrap()).ok();
 
         if let Ok(subsystem) = pollster::block_on(monster_memory::MemorySubsystem::boot(
-            db_path.to_str().unwrap_or("memory.db")
+            db_path.to_str().unwrap_or("memory.db"),
         )) {
             let handle = monster_tools::memory::MemoryHandle::new(subsystem);
             monster_tools::registry::init_memory_handle(handle);
@@ -57,15 +60,18 @@ impl AgentBridge {
 
         // Auto-match and inject skills
         let skills_dir = std::path::Path::new("skills");
-        let loaded_skills = monster_skills::SkillLoader::load_from_dir(skills_dir)
-            .unwrap_or_default();
+        let loaded_skills =
+            monster_skills::SkillLoader::load_from_dir(skills_dir).unwrap_or_default();
         let mut skill_registry = monster_skills::SkillRegistry::new();
         for skill in loaded_skills {
             skill_registry.register(skill);
         }
         let msg_lower = user_message.to_lowercase();
         for skill in skill_registry.list_enabled() {
-            let has_trigger = skill.triggers().iter().any(|t| msg_lower.contains(&t.to_lowercase()));
+            let has_trigger = skill
+                .triggers()
+                .iter()
+                .any(|t| msg_lower.contains(&t.to_lowercase()));
             if has_trigger {
                 ctx.inject_skill(skill);
                 break;

@@ -34,7 +34,9 @@ pub struct SkillMeta {
     pub tags: Vec<String>,
 }
 
-fn default_stage() -> String { "egg".into() }
+fn default_stage() -> String {
+    "egg".into()
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkillTool {
@@ -56,7 +58,9 @@ pub struct SkillToolParam {
     pub required: bool,
 }
 
-fn default_param_type() -> String { "string".into() }
+fn default_param_type() -> String {
+    "string".into()
+}
 
 // ── Skill (loaded + parsed) ───────────────────────────────────
 
@@ -68,12 +72,24 @@ pub struct Skill {
 }
 
 impl Skill {
-    pub fn id(&self) -> &str { &self.manifest.skill.name }
-    pub fn version(&self) -> &str { &self.manifest.skill.version }
-    pub fn description(&self) -> &str { &self.manifest.skill.description }
-    pub fn tags(&self) -> &[String] { &self.manifest.skill.tags }
-    pub fn triggers(&self) -> &[String] { &self.manifest.triggers }
-    pub fn tools(&self) -> &[SkillTool] { &self.manifest.tools }
+    pub fn id(&self) -> &str {
+        &self.manifest.skill.name
+    }
+    pub fn version(&self) -> &str {
+        &self.manifest.skill.version
+    }
+    pub fn description(&self) -> &str {
+        &self.manifest.skill.description
+    }
+    pub fn tags(&self) -> &[String] {
+        &self.manifest.skill.tags
+    }
+    pub fn triggers(&self) -> &[String] {
+        &self.manifest.triggers
+    }
+    pub fn tools(&self) -> &[SkillTool] {
+        &self.manifest.tools
+    }
     pub fn prompt(&self, key: &str) -> Option<&str> {
         self.manifest.prompts.get(key).map(|s| s.as_str())
     }
@@ -212,10 +228,7 @@ impl SkillLoader {
     pub fn load_from_dir(skills_dir: &Path) -> anyhow::Result<Vec<Skill>> {
         let mut skills = Vec::new();
         if !skills_dir.is_dir() {
-            tracing::warn!(
-                "skills directory not found: {}",
-                skills_dir.display()
-            );
+            tracing::warn!("skills directory not found: {}", skills_dir.display());
             return Ok(skills);
         }
         for entry in std::fs::read_dir(skills_dir)? {
@@ -230,18 +243,11 @@ impl SkillLoader {
             }
             match Self::load_skill(&toml_path) {
                 Ok(skill) => {
-                    tracing::info!(
-                        "loaded skill: {} v{}",
-                        skill.id(),
-                        skill.version()
-                    );
+                    tracing::info!("loaded skill: {} v{}", skill.id(), skill.version());
                     skills.push(skill);
                 }
                 Err(e) => {
-                    tracing::warn!(
-                        "failed to load skill from {}: {e}",
-                        toml_path.display()
-                    );
+                    tracing::warn!("failed to load skill from {}: {e}", toml_path.display());
                 }
             }
         }
@@ -252,10 +258,7 @@ impl SkillLoader {
     pub fn load_skill(toml_path: &Path) -> anyhow::Result<Skill> {
         let content = std::fs::read_to_string(toml_path)?;
         let manifest: SkillManifest = toml::from_str(&content)?;
-        let path = toml_path
-            .parent()
-            .unwrap_or(toml_path)
-            .to_path_buf();
+        let path = toml_path.parent().unwrap_or(toml_path).to_path_buf();
         Ok(Skill {
             manifest,
             path,

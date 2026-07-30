@@ -5,8 +5,12 @@ use serde_json::Value;
 pub struct NetworkInfoTool;
 
 impl NetworkInfoTool {
-    pub fn new() -> Self { Self }
-    pub fn name(&self) -> &str { "network_info" }
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn name(&self) -> &str {
+        "network_info"
+    }
     pub fn description(&self) -> &str {
         "Get network information: local IP, hostname, public IP (via DNS lookup)."
     }
@@ -27,8 +31,9 @@ impl NetworkInfoTool {
         let mut result = serde_json::Map::new();
 
         if query == "all" || query == "hostname" {
-            if let Ok(hostname) = std::env::var("COMPUTERNAME")
-                    .or_else(|_| std::env::var("HOSTNAME")) {
+            if let Ok(hostname) =
+                std::env::var("COMPUTERNAME").or_else(|_| std::env::var("HOSTNAME"))
+            {
                 result.insert("hostname".into(), serde_json::Value::String(hostname));
             }
         }
@@ -38,7 +43,10 @@ impl NetworkInfoTool {
             if let Ok(socket) = std::net::UdpSocket::bind("0.0.0.0:0") {
                 let _ = socket.connect("8.8.8.8:80");
                 if let Ok(addr) = socket.local_addr() {
-                    result.insert("local_ip".into(), serde_json::Value::String(addr.ip().to_string()));
+                    result.insert(
+                        "local_ip".into(),
+                        serde_json::Value::String(addr.ip().to_string()),
+                    );
                 }
             }
         }
@@ -54,8 +62,16 @@ impl NetworkInfoTool {
                     if line.contains("Address:") && !line.contains("127.0.0") {
                         let parts: Vec<&str> = line.split_whitespace().collect();
                         if let Some(ip) = parts.last() {
-                            if ip.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) {
-                                result.insert("public_ip".into(), serde_json::Value::String(ip.to_string()));
+                            if ip
+                                .chars()
+                                .next()
+                                .map(|c| c.is_ascii_digit())
+                                .unwrap_or(false)
+                            {
+                                result.insert(
+                                    "public_ip".into(),
+                                    serde_json::Value::String(ip.to_string()),
+                                );
                                 break;
                             }
                         }
@@ -75,7 +91,9 @@ mod tests {
     #[test]
     fn test_network_info_hostname() {
         let tool = NetworkInfoTool::new();
-        let result = tool.execute(&serde_json::json!({"query": "hostname"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"query": "hostname"}))
+            .unwrap();
         assert!(result.contains("hostname"));
     }
 

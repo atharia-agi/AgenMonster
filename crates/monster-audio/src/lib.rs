@@ -30,7 +30,12 @@ pub struct Envelope {
 
 impl Default for Envelope {
     fn default() -> Self {
-        Self { attack_ms: 5, decay_ms: 60, sustain: 0.65, release_ms: 60 }
+        Self {
+            attack_ms: 5,
+            decay_ms: 60,
+            sustain: 0.65,
+            release_ms: 60,
+        }
     }
 }
 
@@ -49,9 +54,10 @@ impl Voice {
         let total_ms = self.duration_ms;
         let total_samples = ((SAMPLE_RATE as u32 * total_ms) / 1000) as usize;
         let mut out = Vec::with_capacity(total_samples);
-        let release_start = total_samples.saturating_sub((SAMPLE_RATE as u32 * self.envelope.release_ms / 1000) as usize);
+        let release_start = total_samples
+            .saturating_sub((SAMPLE_RATE as u32 * self.envelope.release_ms / 1000) as usize);
         let attack = (SAMPLE_RATE as u32 * self.envelope.attack_ms.max(1) / 1000) as f32;
-        let decay  = (SAMPLE_RATE as u32 * self.envelope.decay_ms.max(1) / 1000) as f32;
+        let decay = (SAMPLE_RATE as u32 * self.envelope.decay_ms.max(1) / 1000) as f32;
 
         let mut phase: u32 = 0;
         let phase_inc = (self.freq_hz / SAMPLE_RATE as f32 * u32::MAX as f32) as u32;
@@ -79,21 +85,33 @@ impl Voice {
                 Wave::Square => {
                     // phase / u32::MAX gives a 0..1 saw
                     let v = (phase as f32 / u32::MAX as f32) * 2.0 - 1.0;
-                    if v >= 0.0 { 1.0 } else { -1.0 }
+                    if v >= 0.0 {
+                        1.0
+                    } else {
+                        -1.0
+                    }
                 }
                 Wave::Triangle => {
                     let v = (phase as f32 / u32::MAX as f32) * 2.0 - 1.0;
-                    if v >= 0.0 { 1.0 - v } else { 1.0 + v } 
+                    if v >= 0.0 {
+                        1.0 - v
+                    } else {
+                        1.0 + v
+                    }
                 }
-                Wave::Saw => {
-                    (phase as f32 / u32::MAX as f32) * 2.0 - 1.0
-                }
+                Wave::Saw => (phase as f32 / u32::MAX as f32) * 2.0 - 1.0,
                 Wave::Noise => {
                     // LFSR
                     let b = seed & 1;
                     seed >>= 1;
-                    if b == 1 { seed ^= 0x8000_0059; }
-                    if seed & 1 == 1 { 1.0 } else { -1.0 }
+                    if b == 1 {
+                        seed ^= 0x8000_0059;
+                    }
+                    if seed & 1 == 1 {
+                        1.0
+                    } else {
+                        -1.0
+                    }
                 }
             };
             let sample = (s * amp * 0.85 * i16::MAX as f32) as i16;
@@ -105,7 +123,9 @@ impl Voice {
 }
 
 pub fn write_wav(path: &Path, samples: &[i16]) -> anyhow::Result<()> {
-    if let Some(dir) = path.parent() { std::fs::create_dir_all(dir).ok(); }
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).ok();
+    }
     let spec = WavSpec {
         channels: 1,
         sample_rate: SAMPLE_RATE,
@@ -113,7 +133,9 @@ pub fn write_wav(path: &Path, samples: &[i16]) -> anyhow::Result<()> {
         sample_format: SampleFormat::Int,
     };
     let mut w = WavWriter::create(path, spec)?;
-    for s in samples { w.write_sample(*s)?; }
+    for s in samples {
+        w.write_sample(*s)?;
+    }
     w.finalize().ok();
     Ok(())
 }
@@ -126,47 +148,218 @@ pub fn mixed(voices: &[Voice]) -> Vec<i16> {
         cur = v.render();
         out.extend(cur);
     }
-    let max = out.iter().map(|v| v.unsigned_abs() as i32).max().unwrap_or(1).max(1);
-    if max > i16::MAX as i32 { // already saturated
+    let max = out
+        .iter()
+        .map(|v| v.unsigned_abs() as i32)
+        .max()
+        .unwrap_or(1)
+        .max(1);
+    if max > i16::MAX as i32 {
+        // already saturated
         let factor = i16::MAX as f32 / max as f32;
         out.iter().map(|v| (*v as f32 * factor) as i16).collect()
-    } else { out }
+    } else {
+        out
+    }
 }
 
 pub fn presets() -> Vec<(&'static str, Vec<Voice>)> {
     use Wave::*;
-    let env_short = Envelope { attack_ms: 1, decay_ms: 20, sustain: 0.4, release_ms: 30 };
-    let env_mid   = Envelope { attack_ms: 2, decay_ms: 40, sustain: 0.5, release_ms: 60 };
+    let env_short = Envelope {
+        attack_ms: 1,
+        decay_ms: 20,
+        sustain: 0.4,
+        release_ms: 30,
+    };
+    let env_mid = Envelope {
+        attack_ms: 2,
+        decay_ms: 40,
+        sustain: 0.5,
+        release_ms: 60,
+    };
     vec![
-        ("click", vec![Voice { wave: Square, freq_hz: 880.0, duration_ms: 60, envelope: env_short.clone(), volume: 0.5 }]),
-        ("bark",  vec![
-            Voice { wave: Square, freq_hz: 660.0, duration_ms: 50, envelope: env_short.clone(), volume: 0.55 },
-            Voice { wave: Square, freq_hz: 990.0, duration_ms: 60, envelope: Envelope { release_ms: 80, ..env_short.clone() }, volume: 0.5 },
-        ]),
-        ("happy", vec![
-            Voice { wave: Triangle, freq_hz: 523.25, duration_ms: 70, envelope: env_mid.clone(), volume: 0.5 },
-            Voice { wave: Triangle, freq_hz: 659.25, duration_ms: 70, envelope: env_mid.clone(), volume: 0.55 },
-            Voice { wave: Triangle, freq_hz: 783.99, duration_ms: 70, envelope: env_mid.clone(), volume: 0.6 },
-            Voice { wave: Triangle, freq_hz: 1046.50, duration_ms: 140, envelope: Envelope { release_ms: 120, ..env_mid.clone() }, volume: 0.55 },
-        ]),
-        ("evolve", vec![
-            Voice { wave: Square, freq_hz: 440.0, duration_ms: 60, envelope: env_mid.clone(), volume: 0.45 },
-            Voice { wave: Square, freq_hz: 554.36, duration_ms: 80, envelope: env_mid.clone(), volume: 0.50 },
-            Voice { wave: Square, freq_hz: 659.25, duration_ms: 80, envelope: env_mid.clone(), volume: 0.55 },
-            Voice { wave: Square, freq_hz: 880.0, duration_ms: 100, envelope: env_mid.clone(), volume: 0.55 },
-            Voice { wave: Square, freq_hz: 1108.73, duration_ms: 100, envelope: env_mid.clone(), volume: 0.55 },
-            Voice { wave: Square, freq_hz: 1318.51, duration_ms: 120, envelope: Envelope { release_ms: 200, ..env_mid.clone() }, volume: 0.55 },
-            Voice { wave: Square, freq_hz: 1760.0, duration_ms: 160, envelope: Envelope { release_ms: 280, ..env_mid.clone() }, volume: 0.55 },
-            Voice { wave: Square, freq_hz: 2637.02, duration_ms: 220, envelope: Envelope { release_ms: 360, ..env_mid.clone() }, volume: 0.6 },
-        ]),
-        ("error", vec![
-            Voice { wave: Square, freq_hz: 220.0, duration_ms: 80, envelope: env_short.clone(), volume: 0.5 },
-            Voice { wave: Square, freq_hz: 165.0, duration_ms: 80, envelope: env_short.clone(), volume: 0.5 },
-            Voice { wave: Square, freq_hz: 110.0, duration_ms: 200, envelope: Envelope { release_ms: 180, ..env_short.clone() }, volume: 0.5 },
-        ]),
-        ("busy", vec![
-            Voice { wave: Noise, freq_hz: 6000.0, duration_ms: 70, envelope: Envelope { attack_ms: 1, decay_ms: 20, sustain: 0.4, release_ms: 30 }, volume: 0.35 },
-        ]),
+        (
+            "click",
+            vec![Voice {
+                wave: Square,
+                freq_hz: 880.0,
+                duration_ms: 60,
+                envelope: env_short.clone(),
+                volume: 0.5,
+            }],
+        ),
+        (
+            "bark",
+            vec![
+                Voice {
+                    wave: Square,
+                    freq_hz: 660.0,
+                    duration_ms: 50,
+                    envelope: env_short.clone(),
+                    volume: 0.55,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 990.0,
+                    duration_ms: 60,
+                    envelope: Envelope {
+                        release_ms: 80,
+                        ..env_short.clone()
+                    },
+                    volume: 0.5,
+                },
+            ],
+        ),
+        (
+            "happy",
+            vec![
+                Voice {
+                    wave: Triangle,
+                    freq_hz: 523.25,
+                    duration_ms: 70,
+                    envelope: env_mid.clone(),
+                    volume: 0.5,
+                },
+                Voice {
+                    wave: Triangle,
+                    freq_hz: 659.25,
+                    duration_ms: 70,
+                    envelope: env_mid.clone(),
+                    volume: 0.55,
+                },
+                Voice {
+                    wave: Triangle,
+                    freq_hz: 783.99,
+                    duration_ms: 70,
+                    envelope: env_mid.clone(),
+                    volume: 0.6,
+                },
+                Voice {
+                    wave: Triangle,
+                    freq_hz: 1046.50,
+                    duration_ms: 140,
+                    envelope: Envelope {
+                        release_ms: 120,
+                        ..env_mid.clone()
+                    },
+                    volume: 0.55,
+                },
+            ],
+        ),
+        (
+            "evolve",
+            vec![
+                Voice {
+                    wave: Square,
+                    freq_hz: 440.0,
+                    duration_ms: 60,
+                    envelope: env_mid.clone(),
+                    volume: 0.45,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 554.36,
+                    duration_ms: 80,
+                    envelope: env_mid.clone(),
+                    volume: 0.50,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 659.25,
+                    duration_ms: 80,
+                    envelope: env_mid.clone(),
+                    volume: 0.55,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 880.0,
+                    duration_ms: 100,
+                    envelope: env_mid.clone(),
+                    volume: 0.55,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 1108.73,
+                    duration_ms: 100,
+                    envelope: env_mid.clone(),
+                    volume: 0.55,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 1318.51,
+                    duration_ms: 120,
+                    envelope: Envelope {
+                        release_ms: 200,
+                        ..env_mid.clone()
+                    },
+                    volume: 0.55,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 1760.0,
+                    duration_ms: 160,
+                    envelope: Envelope {
+                        release_ms: 280,
+                        ..env_mid.clone()
+                    },
+                    volume: 0.55,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 2637.02,
+                    duration_ms: 220,
+                    envelope: Envelope {
+                        release_ms: 360,
+                        ..env_mid.clone()
+                    },
+                    volume: 0.6,
+                },
+            ],
+        ),
+        (
+            "error",
+            vec![
+                Voice {
+                    wave: Square,
+                    freq_hz: 220.0,
+                    duration_ms: 80,
+                    envelope: env_short.clone(),
+                    volume: 0.5,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 165.0,
+                    duration_ms: 80,
+                    envelope: env_short.clone(),
+                    volume: 0.5,
+                },
+                Voice {
+                    wave: Square,
+                    freq_hz: 110.0,
+                    duration_ms: 200,
+                    envelope: Envelope {
+                        release_ms: 180,
+                        ..env_short.clone()
+                    },
+                    volume: 0.5,
+                },
+            ],
+        ),
+        (
+            "busy",
+            vec![Voice {
+                wave: Noise,
+                freq_hz: 6000.0,
+                duration_ms: 70,
+                envelope: Envelope {
+                    attack_ms: 1,
+                    decay_ms: 20,
+                    sustain: 0.4,
+                    release_ms: 30,
+                },
+                volume: 0.35,
+            }],
+        ),
     ]
 }
 
@@ -184,7 +377,9 @@ pub fn export_all() -> anyhow::Result<()> {
 
 pub fn preview(name: &str) -> Option<Vec<i16>> {
     for (n, voices) in presets() {
-        if n == name { return Some(mixed(&voices)); }
+        if n == name {
+            return Some(mixed(&voices));
+        }
     }
     None
 }

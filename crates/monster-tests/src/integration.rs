@@ -3,15 +3,19 @@
 
 #[cfg(test)]
 mod tests {
-    use monster_bus::{Bus, BusConfig};
     use monster_bus::event::BusEvent;
     use monster_bus::topic::Topic;
+    use monster_bus::{Bus, BusConfig};
 
     #[tokio::test]
     async fn bus_publish_subscribe() {
-        let bus = Bus::new(BusConfig { default_capacity: 64 });
+        let bus = Bus::new(BusConfig {
+            default_capacity: 64,
+        });
         let (_h, mut rx) = bus.subscribe(Topic::Telemetry).await;
-        bus.publish(Topic::Telemetry, BusEvent::TelemetryTick).await.unwrap();
+        bus.publish(Topic::Telemetry, BusEvent::TelemetryTick)
+            .await
+            .unwrap();
         let env = rx.recv().await.unwrap();
         assert!(format!("{:?}", env.payload).contains("Telemetry"));
     }
@@ -19,7 +23,9 @@ mod tests {
     #[tokio::test]
     async fn memory_ingest_recall() {
         let db = tempfile::NamedTempFile::new().unwrap();
-        let mem = monster_memory::MemorySubsystem::boot(db.path().to_str().unwrap()).await.unwrap();
+        let mem = monster_memory::MemorySubsystem::boot(db.path().to_str().unwrap())
+            .await
+            .unwrap();
         let block = monster_memory::block::MemoryBlock::new(
             1,
             monster_memory::block::MemoryTier::Hot,
@@ -99,7 +105,9 @@ mod tests {
         assert!(!cs.flash_visible());
         cs.tick();
         assert_eq!(cs.current_frame, 1);
-        for _ in 1..48 { cs.tick(); }
+        for _ in 1..48 {
+            cs.tick();
+        }
         assert!(!cs.active);
     }
 
@@ -126,7 +134,7 @@ mod tests {
 
     #[tokio::test]
     async fn tile_pattern_all_stages() {
-        for stage in &["egg","hatchling","baby","child","teen","adult","mega"] {
+        for stage in &["egg", "hatchling", "baby", "child", "teen", "adult", "mega"] {
             let name = monster_tile::pattern_for_stage(stage);
             assert!(!name.is_empty());
         }
@@ -234,7 +242,11 @@ mod tests {
         let jobs = sched.snapshot().await;
         for job in &jobs {
             if job.enabled {
-                assert!(sched.is_due(job).await, "{} should be due on first run", job.name);
+                assert!(
+                    sched.is_due(job).await,
+                    "{} should be due on first run",
+                    job.name
+                );
             }
         }
     }
@@ -338,7 +350,7 @@ mod tests {
 
     #[test]
     fn stats_for_stage_all() {
-        for stage in &["egg","hatchling","baby","child","teen","adult","mega"] {
+        for stage in &["egg", "hatchling", "baby", "child", "teen", "adult", "mega"] {
             let stats = monster_runtime::stats_for_stage(stage);
             assert!(stats.max_energy > 0);
             assert!(stats.memory_capacity > 0);
@@ -357,21 +369,24 @@ mod tests {
     fn model_selector_detect_from_keys() {
         let groq_keys = vec!["gsk_test1".into(), "gsk_test2".into()];
         let mistral_keys = vec!["mistral_test1".into()];
-        let selector = monster_llm::ModelSelector::detect(
-            &groq_keys, &mistral_keys, &None, &None, &None,
-        );
+        let selector =
+            monster_llm::ModelSelector::detect(&groq_keys, &mistral_keys, &None, &None, &None);
         let status = selector.status();
-        assert!(status.iter().any(|s| s.provider == monster_llm::Provider::Groq && s.available));
-        assert!(status.iter().any(|s| s.provider == monster_llm::Provider::Mistral && s.available));
-        assert!(status.iter().all(|s| s.provider != monster_llm::Provider::Anthropic || !s.available));
+        assert!(status
+            .iter()
+            .any(|s| s.provider == monster_llm::Provider::Groq && s.available));
+        assert!(status
+            .iter()
+            .any(|s| s.provider == monster_llm::Provider::Mistral && s.available));
+        assert!(status
+            .iter()
+            .all(|s| s.provider != monster_llm::Provider::Anthropic || !s.available));
     }
 
     #[test]
     fn model_selector_select_chat() {
         let groq_keys = vec!["gsk_test1".into()];
-        let selector = monster_llm::ModelSelector::detect(
-            &groq_keys, &vec![], &None, &None, &None,
-        );
+        let selector = monster_llm::ModelSelector::detect(&groq_keys, &vec![], &None, &None, &None);
         let selection = selector.select(monster_llm::TaskType::Chat);
         assert!(selection.is_some());
         let sel = selection.unwrap();
@@ -382,12 +397,15 @@ mod tests {
     fn model_selector_select_vision_excludes_groq() {
         let groq_keys = vec!["gsk_test1".into()];
         let mistral_keys = vec!["mistral_test1".into()];
-        let selector = monster_llm::ModelSelector::detect(
-            &groq_keys, &mistral_keys, &None, &None, &None,
-        );
+        let selector =
+            monster_llm::ModelSelector::detect(&groq_keys, &mistral_keys, &None, &None, &None);
         let selection = selector.select(monster_llm::TaskType::Vision);
         if let Some(sel) = selection {
-            assert_ne!(sel.provider, monster_llm::Provider::Groq, "Groq should not be selected for vision tasks");
+            assert_ne!(
+                sel.provider,
+                monster_llm::Provider::Groq,
+                "Groq should not be selected for vision tasks"
+            );
         }
     }
 
@@ -395,9 +413,8 @@ mod tests {
     fn model_selector_fallback_chain() {
         let groq_keys = vec!["gsk_test1".into()];
         let mistral_keys = vec!["mistral_test1".into()];
-        let selector = monster_llm::ModelSelector::detect(
-            &groq_keys, &mistral_keys, &None, &None, &None,
-        );
+        let selector =
+            monster_llm::ModelSelector::detect(&groq_keys, &mistral_keys, &None, &None, &None);
         let chain = selector.select_with_fallback(monster_llm::TaskType::Chat);
         assert!(!chain.is_empty());
         // Should have at least Groq and Mistral in the chain
@@ -406,28 +423,48 @@ mod tests {
 
     #[test]
     fn model_selector_runtime_key_add() {
-        let selector = monster_llm::ModelSelector::detect(
-            &vec![], &vec![], &None, &None, &None,
-        );
+        let selector = monster_llm::ModelSelector::detect(&vec![], &vec![], &None, &None, &None);
         // Initially no providers available
         assert!(selector.status().iter().all(|s| !s.available));
         // Add a Groq key
-        selector.update_availability(
-            &vec!["gsk_new".into()], &vec![], &None, &None, &None,
-        );
+        selector.update_availability(&vec!["gsk_new".into()], &vec![], &None, &None, &None);
         assert!(selector.status().iter().any(|s| s.available));
     }
 
     #[test]
     fn model_selector_task_type_from_str() {
-        assert!(matches!(monster_llm::TaskType::from_str("chat"), monster_llm::TaskType::Chat));
-        assert!(matches!(monster_llm::TaskType::from_str("code"), monster_llm::TaskType::Code));
-        assert!(matches!(monster_llm::TaskType::from_str("vision"), monster_llm::TaskType::Vision));
-        assert!(matches!(monster_llm::TaskType::from_str("fast"), monster_llm::TaskType::Fast));
-        assert!(matches!(monster_llm::TaskType::from_str("creative"), monster_llm::TaskType::Creative));
-        assert!(matches!(monster_llm::TaskType::from_str("summarize"), monster_llm::TaskType::Summarize));
-        assert!(matches!(monster_llm::TaskType::from_str("analyze"), monster_llm::TaskType::Analyze));
-        assert!(matches!(monster_llm::TaskType::from_str("unknown"), monster_llm::TaskType::Chat));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("chat"),
+            monster_llm::TaskType::Chat
+        ));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("code"),
+            monster_llm::TaskType::Code
+        ));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("vision"),
+            monster_llm::TaskType::Vision
+        ));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("fast"),
+            monster_llm::TaskType::Fast
+        ));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("creative"),
+            monster_llm::TaskType::Creative
+        ));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("summarize"),
+            monster_llm::TaskType::Summarize
+        ));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("analyze"),
+            monster_llm::TaskType::Analyze
+        ));
+        assert!(matches!(
+            monster_llm::TaskType::from_str("unknown"),
+            monster_llm::TaskType::Chat
+        ));
     }
 
     #[test]
@@ -494,7 +531,9 @@ mod tests {
             // Skip if no key
             return;
         }
-        let result = monster_tools::web::brave_search("rust programming", brave_key.as_deref().unwrap(), 5).await;
+        let result =
+            monster_tools::web::brave_search("rust programming", brave_key.as_deref().unwrap(), 5)
+                .await;
         assert!(result.is_ok());
         let r = result.unwrap();
         assert!(!r.results.is_empty() || r.results.is_empty()); // May return empty on rate limit
@@ -530,7 +569,10 @@ mod tests {
         agent.start();
         assert!(agent.running);
         let r1 = agent.step();
-        assert!(matches!(r1, monster_agent::loop_main::AgentStepResult::Continue));
+        assert!(matches!(
+            r1,
+            monster_agent::loop_main::AgentStepResult::Continue
+        ));
         assert_eq!(agent.current_iteration, 1);
         assert_eq!(agent.total_energy_spent, 10);
         agent.stop();
@@ -580,27 +622,35 @@ mod tests {
 
     #[test]
     fn test_embedding_similarity() {
-        use monster_memory::embedding::{EmbeddingEngine, cosine_similarity};
+        use monster_memory::embedding::{cosine_similarity, EmbeddingEngine};
         let engine = EmbeddingEngine::new();
         let a = engine.embed("rust programming language");
         let b = engine.embed("rust code language");
         let sim = cosine_similarity(&a, &b);
-        assert!(sim > 0.3, "Similar texts should have similarity > 0.3, got {}", sim);
+        assert!(
+            sim > 0.3,
+            "Similar texts should have similarity > 0.3, got {}",
+            sim
+        );
     }
 
     #[test]
     fn test_embedding_different_texts() {
-        use monster_memory::embedding::{EmbeddingEngine, cosine_similarity};
+        use monster_memory::embedding::{cosine_similarity, EmbeddingEngine};
         let engine = EmbeddingEngine::new();
         let a = engine.embed("rust programming");
         let b = engine.embed("cooking recipe food");
         let sim = cosine_similarity(&a, &b);
-        assert!(sim < 0.5, "Different texts should have similarity < 0.5, got {}", sim);
+        assert!(
+            sim < 0.5,
+            "Different texts should have similarity < 0.5, got {}",
+            sim
+        );
     }
 
     #[test]
     fn test_embedding_bytes_roundtrip() {
-        use monster_memory::embedding::{vec_to_bytes, bytes_to_vec};
+        use monster_memory::embedding::{bytes_to_vec, vec_to_bytes};
         let original = vec![0.5, -0.3, 1.0, 0.0, 0.75];
         let bytes = vec_to_bytes(&original);
         let restored = bytes_to_vec(&bytes);
@@ -612,10 +662,19 @@ mod tests {
 
     #[tokio::test]
     async fn test_memory_ingest_with_embedding() {
-        let db_path = std::env::temp_dir().join(format!("agenmonster_test_memory_embed_{}.sqlite", std::process::id()));
+        let db_path = std::env::temp_dir().join(format!(
+            "agenmonster_test_memory_embed_{}.sqlite",
+            std::process::id()
+        ));
         let _ = std::fs::remove_file(&db_path);
-        let mem = monster_memory::MemorySubsystem::boot(db_path.to_str().unwrap()).await.unwrap();
-        let block = monster_memory::block::MemoryBlock::new(1, monster_memory::block::MemoryTier::Hot, "test memory content");
+        let mem = monster_memory::MemorySubsystem::boot(db_path.to_str().unwrap())
+            .await
+            .unwrap();
+        let block = monster_memory::block::MemoryBlock::new(
+            1,
+            monster_memory::block::MemoryTier::Hot,
+            "test memory content",
+        );
         mem.ingest_with_embedding(block).await.unwrap();
         let results = mem.recall("test", 10).await.unwrap();
         assert!(!results.is_empty());
@@ -626,9 +685,15 @@ mod tests {
     async fn test_memory_consolidation() {
         let db_path = std::env::temp_dir().join("agenmonster_test_consolidate.sqlite");
         let _ = std::fs::remove_file(&db_path);
-        let mem = monster_memory::MemorySubsystem::boot(db_path.to_str().unwrap()).await.unwrap();
+        let mem = monster_memory::MemorySubsystem::boot(db_path.to_str().unwrap())
+            .await
+            .unwrap();
         for i in 0..5 {
-            let mut block = monster_memory::block::MemoryBlock::new(i, monster_memory::block::MemoryTier::Hot, &format!("memory {i}"));
+            let mut block = monster_memory::block::MemoryBlock::new(
+                i,
+                monster_memory::block::MemoryTier::Hot,
+                &format!("memory {i}"),
+            );
             block.access_count = 1; // low access
             block.decay_score = 0.4; // low decay
             mem.ingest(block).await.unwrap();
@@ -646,7 +711,9 @@ mod tests {
         let rt = tokio::runtime::Runtime::new().unwrap();
         rt.block_on(async {
             let rotator = KeyRotator::new();
-            rotator.register_provider("groq", vec!["key1".into(), "key2".into()]).await;
+            rotator
+                .register_provider("groq", vec!["key1".into(), "key2".into()])
+                .await;
             let k1 = rotator.next_key("groq").await.unwrap();
             let k2 = rotator.next_key("groq").await.unwrap();
             assert_ne!(k1, k2);
@@ -671,7 +738,10 @@ mod tests {
         let reg = monster_tools::ToolRegistry::bootstrap_global();
         assert!(reg.get("date_time").is_some());
         let args = std::collections::HashMap::new();
-        let input = monster_tools::ToolInput { name: "date_time".into(), args };
+        let input = monster_tools::ToolInput {
+            name: "date_time".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(output.content.contains("20"));
@@ -689,7 +759,11 @@ mod tests {
     fn test_skill_loader_loads_samples() {
         let skills_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../skills");
         let skills = monster_skills::SkillLoader::load_from_dir(&skills_dir).unwrap();
-        assert!(skills.len() >= 3, "Expected at least 3 sample skills, got {}", skills.len());
+        assert!(
+            skills.len() >= 3,
+            "Expected at least 3 sample skills, got {}",
+            skills.len()
+        );
         let ids: Vec<&str> = skills.iter().map(|s| s.id()).collect();
         assert!(ids.contains(&"web-research"));
         assert!(ids.contains(&"code-helper"));
@@ -742,7 +816,11 @@ mod tests {
         let skills_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../skills");
         let skills = monster_skills::SkillLoader::load_from_dir(&skills_dir).unwrap();
         let json = monster_skills::skill_tools_to_json(&skills);
-        assert!(json.len() >= 5, "Expected at least 5 skill tools, got {}", json.len());
+        assert!(
+            json.len() >= 5,
+            "Expected at least 5 skill tools, got {}",
+            json.len()
+        );
         for tool_def in &json {
             assert!(tool_def["name"].as_str().unwrap().starts_with("skill_"));
         }
@@ -755,7 +833,8 @@ mod tests {
             dir.path(),
             "test-skill",
             "A test skill for unit tests",
-        ).unwrap();
+        )
+        .unwrap();
         assert!(skill_dir.join("skill.toml").exists());
         let skill = monster_skills::SkillLoader::load_skill(&skill_dir.join("skill.toml")).unwrap();
         assert_eq!(skill.id(), "test-skill");

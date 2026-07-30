@@ -1,8 +1,8 @@
 //! Tool registry — dynamic tool registration, dispatch, and execution.
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicPtr, Ordering};
-use serde::{Deserialize, Serialize};
 
 use crate::memory::MemoryHandle;
 
@@ -20,7 +20,11 @@ pub fn init_memory_handle(handle: MemoryHandle) {
 /// Safe only if init_memory_handle was called exactly once before any reads.
 pub fn get_memory_handle() -> Option<&'static MemoryHandle> {
     let ptr = MEMORY_PTR.load(Ordering::Acquire);
-    if ptr.is_null() { None } else { Some(unsafe { &*ptr }) }
+    if ptr.is_null() {
+        None
+    } else {
+        Some(unsafe { &*ptr })
+    }
 }
 
 pub struct ToolDef {
@@ -46,7 +50,10 @@ pub struct ToolInput {
 impl ToolInput {
     pub fn args_as_value(&self) -> serde_json::Value {
         serde_json::Value::Object(
-            self.args.iter().map(|(k, v)| (k.clone(), v.clone())).collect()
+            self.args
+                .iter()
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect(),
         )
     }
 }
@@ -64,7 +71,9 @@ pub struct ToolRegistry {
 
 impl ToolRegistry {
     pub fn new() -> Self {
-        Self { tools: HashMap::new() }
+        Self {
+            tools: HashMap::new(),
+        }
     }
 
     pub fn register(&mut self, tool: ToolDef) {
@@ -84,14 +93,17 @@ impl ToolRegistry {
     }
 
     pub fn search(&self, query: &str) -> Vec<&ToolDef> {
-        self.tools.values()
+        self.tools
+            .values()
             .filter(|t| t.name.contains(query) || t.description.contains(query))
             .collect()
     }
 
     /// Execute a tool by name with the given arguments.
     pub fn execute(&self, input: &ToolInput) -> anyhow::Result<ToolOutput> {
-        let tool = self.tools.get(&input.name)
+        let tool = self
+            .tools
+            .get(&input.name)
             .ok_or_else(|| anyhow::anyhow!("Tool '{}' not found", input.name))?;
 
         if let Some(handler) = tool.handler {
@@ -112,11 +124,18 @@ impl ToolRegistry {
         // Web tools — real implementations
         reg.register(ToolDef {
             name: "web_search".into(),
-            description: "Search the web using Brave/Tavily API. Returns titles, URLs, snippets.".into(),
-            params: vec![ToolParam { name: "query".into(), ptype: "string".into(), required: true }],
+            description: "Search the web using Brave/Tavily API. Returns titles, URLs, snippets."
+                .into(),
+            params: vec![ToolParam {
+                name: "query".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 5,
             handler: Some(|input| {
-                let query = input.args.get("query")
+                let query = input
+                    .args
+                    .get("query")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 let tavily_key = std::env::var("TAVILY_API_KEY").ok();
@@ -138,12 +157,19 @@ impl ToolRegistry {
                             content.push_str(&format!("Answer: {answer}\n\n"));
                         }
                         for item in &r.results {
-                            content.push_str(&format!("{} — {}\n{}\n\n", item.title, item.url, item.snippet));
+                            content.push_str(&format!(
+                                "{} — {}\n{}\n\n",
+                                item.title, item.url, item.snippet
+                            ));
                         }
                         if content.is_empty() {
                             content = format!("No results for: {query}");
                         }
-                        Ok(ToolOutput { success: true, content, artifacts: vec![] })
+                        Ok(ToolOutput {
+                            success: true,
+                            content,
+                            artifacts: vec![],
+                        })
                     }
                     Err(e) => Ok(ToolOutput {
                         success: false,
@@ -175,18 +201,24 @@ impl ToolRegistry {
         reg.register(ToolDef {
             name: "web_fetch".into(),
             description: "Fetch and extract text content from a URL".into(),
-            params: vec![ToolParam { name: "url".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "url".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 3,
             handler: Some(|input| {
-                let url = input.args.get("url")
-                    .and_then(|v| v.as_str())
-                    .unwrap_or("");
+                let url = input.args.get("url").and_then(|v| v.as_str()).unwrap_or("");
                 let rt = tokio::runtime::Builder::new_current_thread()
                     .enable_all()
                     .build()
                     .unwrap();
                 match rt.block_on(super::web::web_fetch(url)) {
-                    Ok(content) => Ok(ToolOutput { success: true, content, artifacts: vec![] }),
+                    Ok(content) => Ok(ToolOutput {
+                        success: true,
+                        content,
+                        artifacts: vec![],
+                    }),
                     Err(e) => Ok(ToolOutput {
                         success: false,
                         content: format!("[web_fetch] Error: {e}"),
@@ -209,19 +241,28 @@ impl ToolRegistry {
                 {
                     Ok(output) => {
                         let stdout = String::from_utf8_lossy(&output.stdout);
-                        let lines: Vec<&str> = stdout.lines()
+                        let lines: Vec<&str> = stdout
+                            .lines()
                             .filter(|l| !l.is_empty())
                             .take(30) // Limit to first 30 processes
                             .collect();
                         let mut content = format!("Running processes ({} shown):\n", lines.len());
                         for line in &lines {
                             // Parse CSV: "name","PID","Session","Session#","Mem"
-                            let parts: Vec<&str> = line.split(',').map(|s| s.trim_matches('"')).collect();
+                            let parts: Vec<&str> =
+                                line.split(',').map(|s| s.trim_matches('"')).collect();
                             if parts.len() >= 5 {
-                                content.push_str(&format!("  {} (PID: {}, Mem: {})\n", parts[0], parts[1], parts[4]));
+                                content.push_str(&format!(
+                                    "  {} (PID: {}, Mem: {})\n",
+                                    parts[0], parts[1], parts[4]
+                                ));
                             }
                         }
-                        Ok(ToolOutput { success: true, content, artifacts: vec![] })
+                        Ok(ToolOutput {
+                            success: true,
+                            content,
+                            artifacts: vec![],
+                        })
                     }
                     Err(e) => Ok(ToolOutput {
                         success: false,
@@ -235,10 +276,16 @@ impl ToolRegistry {
         reg.register(ToolDef {
             name: "os_clipboard".into(),
             description: "Get/set clipboard content on Windows (via powershell)".into(),
-            params: vec![ToolParam { name: "action".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "action".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 1,
             handler: Some(|input| {
-                let action = input.args.get("action")
+                let action = input
+                    .args
+                    .get("action")
                     .and_then(|v| v.as_str())
                     .unwrap_or("get");
                 match action {
@@ -248,11 +295,20 @@ impl ToolRegistry {
                             .output()
                         {
                             Ok(output) => {
-                                let content = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                                let content =
+                                    String::from_utf8_lossy(&output.stdout).trim().to_string();
                                 if content.is_empty() {
-                                    Ok(ToolOutput { success: true, content: "(clipboard empty)".into(), artifacts: vec![] })
+                                    Ok(ToolOutput {
+                                        success: true,
+                                        content: "(clipboard empty)".into(),
+                                        artifacts: vec![],
+                                    })
                                 } else {
-                                    Ok(ToolOutput { success: true, content, artifacts: vec![] })
+                                    Ok(ToolOutput {
+                                        success: true,
+                                        content,
+                                        artifacts: vec![],
+                                    })
                                 }
                             }
                             Err(e) => Ok(ToolOutput {
@@ -263,7 +319,9 @@ impl ToolRegistry {
                         }
                     }
                     "set" => {
-                        let text = input.args.get("text")
+                        let text = input
+                            .args
+                            .get("text")
                             .and_then(|v| v.as_str())
                             .unwrap_or("");
                         match std::process::Command::new("powershell")
@@ -284,7 +342,9 @@ impl ToolRegistry {
                     }
                     _ => Ok(ToolOutput {
                         success: false,
-                        content: format!("[os_clipboard] Unknown action: {action}. Use 'get' or 'set'."),
+                        content: format!(
+                            "[os_clipboard] Unknown action: {action}. Use 'get' or 'set'."
+                        ),
                         artifacts: vec![],
                     }),
                 }
@@ -295,13 +355,20 @@ impl ToolRegistry {
         reg.register(ToolDef {
             name: "screenshot".into(),
             description: "Capture screenshot to file using Windows .NET".into(),
-            params: vec![ToolParam { name: "path".into(), ptype: "string".into(), required: false }],
+            params: vec![ToolParam {
+                name: "path".into(),
+                ptype: "string".into(),
+                required: false,
+            }],
             cost: 10,
             handler: Some(|input| {
-                let path = input.args.get("path")
+                let path = input
+                    .args
+                    .get("path")
                     .and_then(|v| v.as_str())
                     .unwrap_or("screenshot.png");
-                let ps_script = format!(r#"
+                let ps_script = format!(
+                    r#"
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
@@ -312,7 +379,8 @@ $bmp.Save('{path}')
 $gfx.Dispose()
 $bmp.Dispose()
 Write-Output "Screenshot saved to {path}"
-"#);
+"#
+                );
                 match std::process::Command::new("powershell")
                     .args(["-NoProfile", "-Command", &ps_script])
                     .output()
@@ -401,15 +469,22 @@ Write-Output "Clicked {button} at ({x}, {y})"
         reg.register(ToolDef {
             name: "type_text".into(),
             description: "Type text at cursor using Windows user32.dll SendInput".into(),
-            params: vec![ToolParam { name: "text".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "text".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 5,
             handler: Some(|input| {
-                let text = input.args.get("text")
+                let text = input
+                    .args
+                    .get("text")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 // Escape single quotes for PowerShell
                 let escaped = text.replace('\'', "''");
-                let ps_script = format!(r#"
+                let ps_script = format!(
+                    r#"
 Add-Type @"
 using System;
 using System.Runtime.InteropServices;
@@ -427,7 +502,8 @@ foreach ($char in $keys.ToCharArray()) {{
     Start-Sleep -Milliseconds 10
 }}
 Write-Output "Typed: $keys"
-"#);
+"#
+                );
                 match std::process::Command::new("powershell")
                     .args(["-NoProfile", "-Command", &ps_script])
                     .output()
@@ -435,13 +511,25 @@ Write-Output "Typed: $keys"
                     Ok(output) => {
                         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
                         if output.status.success() {
-                            Ok(ToolOutput { success: true, content: format!("[type_text] {stdout}"), artifacts: vec![] })
+                            Ok(ToolOutput {
+                                success: true,
+                                content: format!("[type_text] {stdout}"),
+                                artifacts: vec![],
+                            })
                         } else {
                             let stderr = String::from_utf8_lossy(&output.stderr).trim().to_string();
-                            Ok(ToolOutput { success: false, content: format!("[type_text] Error: {stderr}"), artifacts: vec![] })
+                            Ok(ToolOutput {
+                                success: false,
+                                content: format!("[type_text] Error: {stderr}"),
+                                artifacts: vec![],
+                            })
                         }
                     }
-                    Err(e) => Ok(ToolOutput { success: false, content: format!("[type_text] Failed: {e}"), artifacts: vec![] }),
+                    Err(e) => Ok(ToolOutput {
+                        success: false,
+                        content: format!("[type_text] Failed: {e}"),
+                        artifacts: vec![],
+                    }),
                 }
             }),
         });
@@ -451,22 +539,35 @@ Write-Output "Typed: $keys"
             name: "code_format".into(),
             description: "Analyze and format code (counts lines, detects patterns)".into(),
             params: vec![
-                ToolParam { name: "code".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "lang".into(), ptype: "string".into(), required: false },
+                ToolParam {
+                    name: "code".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "lang".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
             ],
             cost: 2,
             handler: Some(|input| {
-                let code = input.args.get("code")
+                let code = input
+                    .args
+                    .get("code")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let lang = input.args.get("lang")
+                let lang = input
+                    .args
+                    .get("lang")
                     .and_then(|v| v.as_str())
                     .unwrap_or("unknown");
                 let lines: Vec<&str> = code.lines().collect();
                 let line_count = lines.len();
                 let char_count = code.len();
                 let non_empty = lines.iter().filter(|l| !l.trim().is_empty()).count();
-                let trimmed: String = lines.iter()
+                let trimmed: String = lines
+                    .iter()
                     .map(|l| l.trim_end())
                     .collect::<Vec<_>>()
                     .join("\n");
@@ -484,9 +585,15 @@ Write-Output "Typed: $keys"
                     let fn_count = code.matches("fn ").count();
                     let impl_count = code.matches("impl ").count();
                     analysis.push(format!("Functions: {fn_count}, Impls: {impl_count}"));
-                    if has_unwrap { analysis.push("Warning: uses .unwrap() — consider error handling".into()); }
-                    if has_unsafe { analysis.push("Warning: contains unsafe code".into()); }
-                    if has_expect { analysis.push("Info: uses .expect() for error messages".into()); }
+                    if has_unwrap {
+                        analysis.push("Warning: uses .unwrap() — consider error handling".into());
+                    }
+                    if has_unsafe {
+                        analysis.push("Warning: contains unsafe code".into());
+                    }
+                    if has_expect {
+                        analysis.push("Info: uses .expect() for error messages".into());
+                    }
                 }
                 Ok(ToolOutput {
                     success: true,
@@ -497,7 +604,8 @@ Write-Output "Typed: $keys"
                         "characters": char_count,
                         "analysis": analysis,
                         "formatted": formatted,
-                    }).to_string(),
+                    })
+                    .to_string(),
                     artifacts: vec![],
                 })
             }),
@@ -508,15 +616,27 @@ Write-Output "Typed: $keys"
             name: "memory_store".into(),
             description: "Store a memory with auto-embedding for semantic search".into(),
             params: vec![
-                ToolParam { name: "content".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "tier".into(), ptype: "string".into(), required: false },
+                ToolParam {
+                    name: "content".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "tier".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
             ],
             cost: 3,
             handler: Some(|input| {
-                let content = input.args.get("content")
+                let content = input
+                    .args
+                    .get("content")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let tier_str = input.args.get("tier")
+                let tier_str = input
+                    .args
+                    .get("tier")
                     .and_then(|v| v.as_str())
                     .unwrap_or("hot");
                 if let Some(handle) = get_memory_handle() {
@@ -534,7 +654,9 @@ Write-Output "Typed: $keys"
                     match rt.block_on(handle.ingest_with_embedding(block)) {
                         Ok(()) => Ok(ToolOutput {
                             success: true,
-                            content: serde_json::json!({"stored": true, "id": id, "tier": tier_str}).to_string(),
+                            content:
+                                serde_json::json!({"stored": true, "id": id, "tier": tier_str})
+                                    .to_string(),
                             artifacts: vec![],
                         }),
                         Err(e) => Ok(ToolOutput {
@@ -643,21 +765,35 @@ Write-Output "Typed: $keys"
             name: "voice_speak".into(),
             description: "Speak text using Windows TTS (SAPI)".into(),
             params: vec![
-                ToolParam { name: "text".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "voice".into(), ptype: "string".into(), required: false },
-                ToolParam { name: "rate".into(), ptype: "integer".into(), required: false },
+                ToolParam {
+                    name: "text".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "voice".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
+                ToolParam {
+                    name: "rate".into(),
+                    ptype: "integer".into(),
+                    required: false,
+                },
             ],
             cost: 10,
             handler: Some(|input| {
-                let text = input.args.get("text")
+                let text = input
+                    .args
+                    .get("text")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let voice = input.args.get("voice")
+                let voice = input
+                    .args
+                    .get("voice")
                     .and_then(|v| v.as_str())
                     .unwrap_or("Microsoft David Desktop");
-                let rate = input.args.get("rate")
-                    .and_then(|v| v.as_i64())
-                    .unwrap_or(0) as i32;
+                let rate = input.args.get("rate").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
                 match super::voice::tts_speak(text, voice, rate) {
                     Ok(result) => Ok(ToolOutput {
                         success: true,
@@ -676,12 +812,16 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "voice_listen".into(),
             description: "Listen for speech via Windows Speech Recognition".into(),
-            params: vec![
-                ToolParam { name: "timeout".into(), ptype: "integer".into(), required: false },
-            ],
+            params: vec![ToolParam {
+                name: "timeout".into(),
+                ptype: "integer".into(),
+                required: false,
+            }],
             cost: 10,
             handler: Some(|input| {
-                let timeout = input.args.get("timeout")
+                let timeout = input
+                    .args
+                    .get("timeout")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(10) as u32;
                 let timeout = timeout.clamp(1, 300);
@@ -709,10 +849,16 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "fs_read".into(),
             description: "Read a file".into(),
-            params: vec![ToolParam { name: "path".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "path".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 2,
             handler: Some(|input| {
-                let path = input.args.get("path")
+                let path = input
+                    .args
+                    .get("path")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 match std::fs::read_to_string(path) {
@@ -734,15 +880,27 @@ Write-Output "Typed: $keys"
             name: "fs_write".into(),
             description: "Write to a file".into(),
             params: vec![
-                ToolParam { name: "path".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "content".into(), ptype: "string".into(), required: true },
+                ToolParam {
+                    name: "path".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "content".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
             ],
             cost: 3,
             handler: Some(|input| {
-                let path = input.args.get("path")
+                let path = input
+                    .args
+                    .get("path")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
-                let content = input.args.get("content")
+                let content = input
+                    .args
+                    .get("content")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 match std::fs::write(path, content) {
@@ -763,10 +921,16 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "fs_list_dir".into(),
             description: "List directory contents".into(),
-            params: vec![ToolParam { name: "path".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "path".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 2,
             handler: Some(|input| {
-                let path = input.args.get("path")
+                let path = input
+                    .args
+                    .get("path")
                     .and_then(|v| v.as_str())
                     .unwrap_or(".");
                 match std::fs::read_dir(path) {
@@ -795,15 +959,27 @@ Write-Output "Typed: $keys"
             name: "fs_find".into(),
             description: "Recursively find files matching a pattern".into(),
             params: vec![
-                ToolParam { name: "path".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "pattern".into(), ptype: "string".into(), required: true },
+                ToolParam {
+                    name: "path".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "pattern".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
             ],
             cost: 3,
             handler: Some(|input| {
-                let path = input.args.get("path")
+                let path = input
+                    .args
+                    .get("path")
                     .and_then(|v| v.as_str())
                     .unwrap_or(".");
-                let pattern = input.args.get("pattern")
+                let pattern = input
+                    .args
+                    .get("pattern")
                     .and_then(|v| v.as_str())
                     .unwrap_or("*");
                 let mut results = Vec::new();
@@ -816,8 +992,15 @@ Write-Output "Typed: $keys"
                     });
                 }
                 // Simple recursive search with depth limit
-                fn walk_dir(dir: &std::path::Path, pattern: &str, results: &mut Vec<String>, depth: usize) {
-                    if depth > 10 { return; }
+                fn walk_dir(
+                    dir: &std::path::Path,
+                    pattern: &str,
+                    results: &mut Vec<String>,
+                    depth: usize,
+                ) {
+                    if depth > 10 {
+                        return;
+                    }
                     if let Ok(entries) = std::fs::read_dir(dir) {
                         for entry in entries.flatten() {
                             let path = entry.path();
@@ -826,7 +1009,8 @@ Write-Output "Typed: $keys"
                             } else if let Some(name) = path.file_name() {
                                 let name_str = name.to_string_lossy();
                                 // Simple glob: match if pattern is * or name contains the pattern minus *
-                                let pat_clean = pattern.trim_start_matches('*').trim_end_matches('*');
+                                let pat_clean =
+                                    pattern.trim_start_matches('*').trim_end_matches('*');
                                 if pat_clean.is_empty() || name_str.contains(pat_clean) {
                                     results.push(path.to_string_lossy().to_string());
                                 }
@@ -862,10 +1046,16 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "os_shell".into(),
             description: "Execute a shell command (Windows cmd.exe)".into(),
-            params: vec![ToolParam { name: "command".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "command".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 5,
             handler: Some(|input| {
-                let command = input.args.get("command")
+                let command = input
+                    .args
+                    .get("command")
                     .and_then(|v| v.as_str())
                     .unwrap_or("");
                 match std::process::Command::new("cmd")
@@ -880,11 +1070,16 @@ Write-Output "Typed: $keys"
                             content.push_str(&stdout);
                         }
                         if !stderr.is_empty() {
-                            if !content.is_empty() { content.push_str("\n"); }
+                            if !content.is_empty() {
+                                content.push_str("\n");
+                            }
                             content.push_str(&format!("[stderr] {stderr}"));
                         }
                         if content.is_empty() {
-                            content = format!("Command executed (exit code: {})", output.status.code().unwrap_or(-1));
+                            content = format!(
+                                "Command executed (exit code: {})",
+                                output.status.code().unwrap_or(-1)
+                            );
                         }
                         Ok(ToolOutput {
                             success: output.status.success(),
@@ -905,10 +1100,16 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "date_time".into(),
             description: "Get current date and time (format: iso, unix, human, date, time)".into(),
-            params: vec![ToolParam { name: "format".into(), ptype: "string".into(), required: false }],
+            params: vec![ToolParam {
+                name: "format".into(),
+                ptype: "string".into(),
+                required: false,
+            }],
             cost: 0,
             handler: Some(|input| {
-                let format = input.args.get("format")
+                let format = input
+                    .args
+                    .get("format")
                     .and_then(|v| v.as_str())
                     .unwrap_or("human");
                 let now = chrono::Local::now();
@@ -932,26 +1133,45 @@ Write-Output "Typed: $keys"
             name: "http_request".into(),
             description: "Make HTTP requests (GET, POST, PUT, DELETE)".into(),
             params: vec![
-                ToolParam { name: "url".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "method".into(), ptype: "string".into(), required: false },
-                ToolParam { name: "body".into(), ptype: "string".into(), required: false },
+                ToolParam {
+                    name: "url".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "method".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
+                ToolParam {
+                    name: "body".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
             ],
             cost: 5,
             handler: Some(|input| {
-                let url = input.args.get("url")
+                let url = input
+                    .args
+                    .get("url")
                     .and_then(|v| v.as_str())
                     .unwrap_or("")
                     .to_string();
-                let method = input.args.get("method")
+                let method = input
+                    .args
+                    .get("method")
                     .and_then(|v| v.as_str())
                     .unwrap_or("GET")
                     .to_string();
-                let body = input.args.get("body")
+                let body = input
+                    .args
+                    .get("body")
                     .and_then(|v| v.as_str())
                     .unwrap_or("")
                     .to_string();
 
-                let rt = tokio::runtime::Runtime::new().map_err(|e| anyhow::anyhow!("tokio: {e}"))?;
+                let rt =
+                    tokio::runtime::Runtime::new().map_err(|e| anyhow::anyhow!("tokio: {e}"))?;
                 rt.block_on(async move {
                     let client = reqwest::Client::new();
                     let mut req = match method.as_str() {
@@ -988,29 +1208,65 @@ Write-Output "Typed: $keys"
             name: "json_query".into(),
             description: "Query JSON data using dot notation (e.g. 'users.0.name')".into(),
             params: vec![
-                ToolParam { name: "json".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "path".into(), ptype: "string".into(), required: true },
+                ToolParam {
+                    name: "json".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "path".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
             ],
             cost: 0,
             handler: Some(|input| {
-                let json_str = input.args.get("json").and_then(|v| v.as_str()).unwrap_or("{}");
-                let path = input.args.get("path").and_then(|v| v.as_str()).unwrap_or("");
+                let json_str = input
+                    .args
+                    .get("json")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("{}");
+                let path = input
+                    .args
+                    .get("path")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 let data: serde_json::Value = match serde_json::from_str(json_str) {
                     Ok(v) => v,
-                    Err(e) => return Ok(ToolOutput { success: false, content: format!("Invalid JSON: {e}"), artifacts: vec![] }),
+                    Err(e) => {
+                        return Ok(ToolOutput {
+                            success: false,
+                            content: format!("Invalid JSON: {e}"),
+                            artifacts: vec![],
+                        })
+                    }
                 };
                 let mut current = &data;
                 for part in path.split('.') {
-                    if part.is_empty() { continue; }
+                    if part.is_empty() {
+                        continue;
+                    }
                     if let Ok(idx) = part.parse::<usize>() {
                         current = match current.get(idx) {
                             Some(v) => v,
-                            None => return Ok(ToolOutput { success: false, content: format!("Index {idx} out of bounds"), artifacts: vec![] }),
+                            None => {
+                                return Ok(ToolOutput {
+                                    success: false,
+                                    content: format!("Index {idx} out of bounds"),
+                                    artifacts: vec![],
+                                })
+                            }
                         };
                     } else {
                         current = match current.get(part) {
                             Some(v) => v,
-                            None => return Ok(ToolOutput { success: false, content: format!("Key '{part}' not found"), artifacts: vec![] }),
+                            None => {
+                                return Ok(ToolOutput {
+                                    success: false,
+                                    content: format!("Key '{part}' not found"),
+                                    artifacts: vec![],
+                                })
+                            }
                         };
                     }
                 }
@@ -1027,16 +1283,32 @@ Write-Output "Typed: $keys"
             name: "hash_generate".into(),
             description: "Generate hash from string (blake3, sha256)".into(),
             params: vec![
-                ToolParam { name: "input".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "algorithm".into(), ptype: "string".into(), required: false },
+                ToolParam {
+                    name: "input".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "algorithm".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
             ],
             cost: 0,
             handler: Some(|input| {
-                let input_str = input.args.get("input").and_then(|v| v.as_str()).unwrap_or("");
-                let algorithm = input.args.get("algorithm").and_then(|v| v.as_str()).unwrap_or("blake3");
+                let input_str = input
+                    .args
+                    .get("input")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                let algorithm = input
+                    .args
+                    .get("algorithm")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("blake3");
                 let hash = match algorithm {
                     "sha256" => {
-                        use sha2::{Sha256, Digest};
+                        use sha2::{Digest, Sha256};
                         let mut hasher = Sha256::new();
                         hasher.update(input_str.as_bytes());
                         format!("{:x}", hasher.finalize())
@@ -1056,31 +1328,52 @@ Write-Output "Typed: $keys"
             name: "random_string".into(),
             description: "Generate random string (alphanumeric, hex, uuid, numeric)".into(),
             params: vec![
-                ToolParam { name: "length".into(), ptype: "integer".into(), required: false },
-                ToolParam { name: "format".into(), ptype: "string".into(), required: false },
+                ToolParam {
+                    name: "length".into(),
+                    ptype: "integer".into(),
+                    required: false,
+                },
+                ToolParam {
+                    name: "format".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
             ],
             cost: 0,
             handler: Some(|input| {
-                let length = input.args.get("length").and_then(|v| v.as_u64()).unwrap_or(16).min(256) as usize;
-                let format = input.args.get("format").and_then(|v| v.as_str()).unwrap_or("alphanumeric");
+                let length = input
+                    .args
+                    .get("length")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(16)
+                    .min(256) as usize;
+                let format = input
+                    .args
+                    .get("format")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("alphanumeric");
                 let output = match format {
                     "uuid" => uuid::Uuid::new_v4().to_string(),
                     "hex" => {
                         let bytes: Vec<u8> = (0..length).map(|_| rand::random::<u8>()).collect();
-                        bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()[..length].to_string()
+                        bytes.iter().map(|b| format!("{b:02x}")).collect::<String>()[..length]
+                            .to_string()
                     }
-                    "numeric" => {
-                        (0..length).map(|_| {
+                    "numeric" => (0..length)
+                        .map(|_| {
                             let idx = rand::random::<u8>() % 10;
                             (b'0' + idx) as char
-                        }).collect()
-                    }
+                        })
+                        .collect(),
                     _ => {
-                        const CHARS: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-                        (0..length).map(|_| {
-                            let idx = rand::random::<u8>() as usize % CHARS.len();
-                            CHARS[idx] as char
-                        }).collect()
+                        const CHARS: &[u8] =
+                            b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+                        (0..length)
+                            .map(|_| {
+                                let idx = rand::random::<u8>() as usize % CHARS.len();
+                                CHARS[idx] as char
+                            })
+                            .collect()
                     }
                 };
                 Ok(ToolOutput {
@@ -1095,13 +1388,25 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "env_get".into(),
             description: "Get an environment variable value".into(),
-            params: vec![ToolParam { name: "key".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "key".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 0,
             handler: Some(|input| {
                 let key = input.args.get("key").and_then(|v| v.as_str()).unwrap_or("");
                 match std::env::var(key) {
-                    Ok(val) => Ok(ToolOutput { success: true, content: val, artifacts: vec![] }),
-                    Err(_) => Ok(ToolOutput { success: false, content: format!("Variable '{key}' not set"), artifacts: vec![] }),
+                    Ok(val) => Ok(ToolOutput {
+                        success: true,
+                        content: val,
+                        artifacts: vec![],
+                    }),
+                    Err(_) => Ok(ToolOutput {
+                        success: false,
+                        content: format!("Variable '{key}' not set"),
+                        artifacts: vec![],
+                    }),
                 }
             }),
         });
@@ -1111,15 +1416,31 @@ Write-Output "Typed: $keys"
             name: "env_set".into(),
             description: "Set an environment variable for this session".into(),
             params: vec![
-                ToolParam { name: "key".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "value".into(), ptype: "string".into(), required: true },
+                ToolParam {
+                    name: "key".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "value".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
             ],
             cost: 0,
             handler: Some(|input| {
                 let key = input.args.get("key").and_then(|v| v.as_str()).unwrap_or("");
-                let value = input.args.get("value").and_then(|v| v.as_str()).unwrap_or("");
+                let value = input
+                    .args
+                    .get("value")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 std::env::set_var(key, value);
-                Ok(ToolOutput { success: true, content: format!("Set {key}={value}"), artifacts: vec![] })
+                Ok(ToolOutput {
+                    success: true,
+                    content: format!("Set {key}={value}"),
+                    artifacts: vec![],
+                })
             }),
         });
 
@@ -1128,20 +1449,48 @@ Write-Output "Typed: $keys"
             name: "file_watch".into(),
             description: "List files in a directory with sizes and metadata".into(),
             params: vec![
-                ToolParam { name: "path".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "depth".into(), ptype: "integer".into(), required: false },
+                ToolParam {
+                    name: "path".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "depth".into(),
+                    ptype: "integer".into(),
+                    required: false,
+                },
             ],
             cost: 0,
             handler: Some(|input| {
-                let path = input.args.get("path").and_then(|v| v.as_str()).unwrap_or(".");
-                let max_depth = input.args.get("depth").and_then(|v| v.as_u64()).unwrap_or(1).min(5) as usize;
+                let path = input
+                    .args
+                    .get("path")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(".");
+                let max_depth = input
+                    .args
+                    .get("depth")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(1)
+                    .min(5) as usize;
                 let p = std::path::Path::new(path);
                 if !p.exists() {
-                    return Ok(ToolOutput { success: false, content: format!("Path not found: {path}"), artifacts: vec![] });
+                    return Ok(ToolOutput {
+                        success: false,
+                        content: format!("Path not found: {path}"),
+                        artifacts: vec![],
+                    });
                 }
                 let mut entries = Vec::new();
-                fn walk(dir: &std::path::Path, entries: &mut Vec<String>, depth: usize, max: usize) {
-                    if depth >= max { return; }
+                fn walk(
+                    dir: &std::path::Path,
+                    entries: &mut Vec<String>,
+                    depth: usize,
+                    max: usize,
+                ) {
+                    if depth >= max {
+                        return;
+                    }
                     if let Ok(rd) = std::fs::read_dir(dir) {
                         for e in rd.flatten() {
                             let p = e.path();
@@ -1149,12 +1498,18 @@ Write-Output "Typed: $keys"
                             let size = meta.as_ref().map(|m| m.len()).unwrap_or(0);
                             let kind = if p.is_dir() { "dir" } else { "file" };
                             entries.push(format!("[{kind}] {} ({} bytes)", p.display(), size));
-                            if p.is_dir() { walk(&p, entries, depth + 1, max); }
+                            if p.is_dir() {
+                                walk(&p, entries, depth + 1, max);
+                            }
                         }
                     }
                 }
                 walk(p, &mut entries, 0, max_depth);
-                Ok(ToolOutput { success: true, content: entries.join("\n"), artifacts: vec![] })
+                Ok(ToolOutput {
+                    success: true,
+                    content: entries.join("\n"),
+                    artifacts: vec![],
+                })
             }),
         });
 
@@ -1165,12 +1520,15 @@ Write-Output "Typed: $keys"
             params: vec![],
             cost: 0,
             handler: Some(|_| {
-                let hostname = std::env::var("COMPUTERNAME").or_else(|_| std::env::var("HOSTNAME")).unwrap_or_default();
+                let hostname = std::env::var("COMPUTERNAME")
+                    .or_else(|_| std::env::var("HOSTNAME"))
+                    .unwrap_or_default();
                 let local_ip = (|| {
                     let socket = std::net::UdpSocket::bind("0.0.0.0:0").ok()?;
                     socket.connect("8.8.8.8:80").ok()?;
                     Some(socket.local_addr().ok()?.ip().to_string())
-                })().unwrap_or_default();
+                })()
+                .unwrap_or_default();
                 Ok(ToolOutput {
                     success: true,
                     content: format!("hostname: {hostname}\nlocal_ip: {local_ip}"),
@@ -1184,13 +1542,29 @@ Write-Output "Typed: $keys"
             name: "process_kill".into(),
             description: "Kill a process by name (use with caution)".into(),
             params: vec![
-                ToolParam { name: "name".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "force".into(), ptype: "boolean".into(), required: false },
+                ToolParam {
+                    name: "name".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "force".into(),
+                    ptype: "boolean".into(),
+                    required: false,
+                },
             ],
             cost: 10,
             handler: Some(|input| {
-                let name = input.args.get("name").and_then(|v| v.as_str()).unwrap_or("");
-                let force = input.args.get("force").and_then(|v| v.as_bool()).unwrap_or(false);
+                let name = input
+                    .args
+                    .get("name")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                let force = input
+                    .args
+                    .get("force")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false);
                 let flag = if force { "/F" } else { "" };
                 let output = std::process::Command::new("taskkill")
                     .args(["/IM", name, flag])
@@ -1199,9 +1573,17 @@ Write-Output "Typed: $keys"
                     Ok(out) => {
                         let stdout = String::from_utf8_lossy(&out.stdout);
                         let stderr = String::from_utf8_lossy(&out.stderr);
-                        Ok(ToolOutput { success: out.status.success(), content: format!("{stdout}{stderr}"), artifacts: vec![] })
+                        Ok(ToolOutput {
+                            success: out.status.success(),
+                            content: format!("{stdout}{stderr}"),
+                            artifacts: vec![],
+                        })
                     }
-                    Err(e) => Ok(ToolOutput { success: false, content: format!("Failed: {e}"), artifacts: vec![] }),
+                    Err(e) => Ok(ToolOutput {
+                        success: false,
+                        content: format!("Failed: {e}"),
+                        artifacts: vec![],
+                    }),
                 }
             }),
         });
@@ -1219,9 +1601,17 @@ Write-Output "Typed: $keys"
                 match output {
                     Ok(out) => {
                         let content = String::from_utf8_lossy(&out.stdout).trim().to_string();
-                        Ok(ToolOutput { success: true, content, artifacts: vec![] })
+                        Ok(ToolOutput {
+                            success: true,
+                            content,
+                            artifacts: vec![],
+                        })
                     }
-                    Err(e) => Ok(ToolOutput { success: false, content: format!("Failed: {e}"), artifacts: vec![] }),
+                    Err(e) => Ok(ToolOutput {
+                        success: false,
+                        content: format!("Failed: {e}"),
+                        artifacts: vec![],
+                    }),
                 }
             }),
         });
@@ -1230,16 +1620,32 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "clipboard_set".into(),
             description: "Set clipboard to a text value".into(),
-            params: vec![ToolParam { name: "text".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "text".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 0,
             handler: Some(|input| {
-                let text = input.args.get("text").and_then(|v| v.as_str()).unwrap_or("");
+                let text = input
+                    .args
+                    .get("text")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 let output = std::process::Command::new("powershell")
                     .args(["-Command", &format!("Set-Clipboard -Value '{text}'")])
                     .output();
                 match output {
-                    Ok(out) => Ok(ToolOutput { success: out.status.success(), content: format!("Clipboard set ({} chars)", text.len()), artifacts: vec![] }),
-                    Err(e) => Ok(ToolOutput { success: false, content: format!("Failed: {e}"), artifacts: vec![] }),
+                    Ok(out) => Ok(ToolOutput {
+                        success: out.status.success(),
+                        content: format!("Clipboard set ({} chars)", text.len()),
+                        artifacts: vec![],
+                    }),
+                    Err(e) => Ok(ToolOutput {
+                        success: false,
+                        content: format!("Failed: {e}"),
+                        artifacts: vec![],
+                    }),
                 }
             }),
         });
@@ -1248,13 +1654,24 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "sys_info".into(),
             description: "Get system info: CPU, memory, disk usage".into(),
-            params: vec![ToolParam { name: "query".into(), ptype: "string".into(), required: false }],
+            params: vec![ToolParam {
+                name: "query".into(),
+                ptype: "string".into(),
+                required: false,
+            }],
             cost: 2,
             handler: Some(|input| {
-                let query = input.args.get("query").and_then(|v| v.as_str()).unwrap_or("all");
+                let query = input
+                    .args
+                    .get("query")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("all");
                 let mut parts = Vec::new();
                 if query == "all" || query == "cpu" {
-                    if let Ok(out) = std::process::Command::new("wmic").args(["cpu", "get", "LoadPercentage", "/value"]).output() {
+                    if let Ok(out) = std::process::Command::new("wmic")
+                        .args(["cpu", "get", "LoadPercentage", "/value"])
+                        .output()
+                    {
                         let s = String::from_utf8_lossy(&out.stdout);
                         for line in s.lines() {
                             if let Some(v) = line.strip_prefix("LoadPercentage=") {
@@ -1264,12 +1681,25 @@ Write-Output "Typed: $keys"
                     }
                 }
                 if query == "all" || query == "memory" {
-                    if let Ok(out) = std::process::Command::new("wmic").args(["OS", "get", "FreePhysicalMemory,TotalVisibleMemorySize", "/value"]).output() {
+                    if let Ok(out) = std::process::Command::new("wmic")
+                        .args([
+                            "OS",
+                            "get",
+                            "FreePhysicalMemory,TotalVisibleMemorySize",
+                            "/value",
+                        ])
+                        .output()
+                    {
                         let s = String::from_utf8_lossy(&out.stdout);
-                        let mut free = 0u64; let mut total = 0u64;
+                        let mut free = 0u64;
+                        let mut total = 0u64;
                         for line in s.lines() {
-                            if let Some(v) = line.strip_prefix("FreePhysicalMemory=") { free = v.trim().parse().unwrap_or(0); }
-                            if let Some(v) = line.strip_prefix("TotalVisibleMemorySize=") { total = v.trim().parse().unwrap_or(0); }
+                            if let Some(v) = line.strip_prefix("FreePhysicalMemory=") {
+                                free = v.trim().parse().unwrap_or(0);
+                            }
+                            if let Some(v) = line.strip_prefix("TotalVisibleMemorySize=") {
+                                total = v.trim().parse().unwrap_or(0);
+                            }
                         }
                         if total > 0 {
                             let used_mb = (total - free) / 1024;
@@ -1278,7 +1708,11 @@ Write-Output "Typed: $keys"
                         }
                     }
                 }
-                Ok(ToolOutput { success: true, content: parts.join("\n"), artifacts: vec![] })
+                Ok(ToolOutput {
+                    success: true,
+                    content: parts.join("\n"),
+                    artifacts: vec![],
+                })
             }),
         });
 
@@ -1286,25 +1720,46 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "git_info".into(),
             description: "Get git repo info: branch, status, recent commits".into(),
-            params: vec![ToolParam { name: "path".into(), ptype: "string".into(), required: false }],
+            params: vec![ToolParam {
+                name: "path".into(),
+                ptype: "string".into(),
+                required: false,
+            }],
             cost: 2,
             handler: Some(|input| {
-                let path = input.args.get("path").and_then(|v| v.as_str()).unwrap_or(".");
+                let path = input
+                    .args
+                    .get("path")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or(".");
                 let mut parts = Vec::new();
-                if let Ok(out) = std::process::Command::new("git").args(["-C", path, "branch", "--show-current"]).output() {
+                if let Ok(out) = std::process::Command::new("git")
+                    .args(["-C", path, "branch", "--show-current"])
+                    .output()
+                {
                     let branch = String::from_utf8_lossy(&out.stdout).trim().to_string();
                     parts.push(format!("Branch: {branch}"));
                 }
-                if let Ok(out) = std::process::Command::new("git").args(["-C", path, "status", "--porcelain"]).output() {
+                if let Ok(out) = std::process::Command::new("git")
+                    .args(["-C", path, "status", "--porcelain"])
+                    .output()
+                {
                     let s = String::from_utf8_lossy(&out.stdout);
                     let count = s.lines().filter(|l| !l.is_empty()).count();
                     parts.push(format!("Changed files: {count}"));
                 }
-                if let Ok(out) = std::process::Command::new("git").args(["-C", path, "log", "--oneline", "-5"]).output() {
+                if let Ok(out) = std::process::Command::new("git")
+                    .args(["-C", path, "log", "--oneline", "-5"])
+                    .output()
+                {
                     let s = String::from_utf8_lossy(&out.stdout);
                     parts.push(format!("Recent:\n{}", s.trim()));
                 }
-                Ok(ToolOutput { success: true, content: parts.join("\n"), artifacts: vec![] })
+                Ok(ToolOutput {
+                    success: true,
+                    content: parts.join("\n"),
+                    artifacts: vec![],
+                })
             }),
         });
 
@@ -1312,12 +1767,24 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "base64_encode".into(),
             description: "Encode string to base64".into(),
-            params: vec![ToolParam { name: "input".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "input".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 0,
             handler: Some(|input| {
-                let input_str = input.args.get("input").and_then(|v| v.as_str()).unwrap_or("");
+                let input_str = input
+                    .args
+                    .get("input")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 let encoded = base64_encode(input_str.as_bytes());
-                Ok(ToolOutput { success: true, content: encoded, artifacts: vec![] })
+                Ok(ToolOutput {
+                    success: true,
+                    content: encoded,
+                    artifacts: vec![],
+                })
             }),
         });
 
@@ -1325,13 +1792,29 @@ Write-Output "Typed: $keys"
         reg.register(ToolDef {
             name: "base64_decode".into(),
             description: "Decode base64 string to text".into(),
-            params: vec![ToolParam { name: "input".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "input".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 0,
             handler: Some(|input| {
-                let input_str = input.args.get("input").and_then(|v| v.as_str()).unwrap_or("");
+                let input_str = input
+                    .args
+                    .get("input")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
                 match base64_decode(input_str) {
-                    Ok(decoded) => Ok(ToolOutput { success: true, content: decoded, artifacts: vec![] }),
-                    Err(e) => Ok(ToolOutput { success: false, content: format!("Decode error: {e}"), artifacts: vec![] }),
+                    Ok(decoded) => Ok(ToolOutput {
+                        success: true,
+                        content: decoded,
+                        artifacts: vec![],
+                    }),
+                    Err(e) => Ok(ToolOutput {
+                        success: false,
+                        content: format!("Decode error: {e}"),
+                        artifacts: vec![],
+                    }),
                 }
             }),
         });
@@ -1339,15 +1822,32 @@ Write-Output "Typed: $keys"
         // String utils
         reg.register(ToolDef {
             name: "string_utils".into(),
-            description: "Transform text: uppercase, lowercase, trim, reverse, length, count_words".into(),
+            description: "Transform text: uppercase, lowercase, trim, reverse, length, count_words"
+                .into(),
             params: vec![
-                ToolParam { name: "input".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "operation".into(), ptype: "string".into(), required: true },
+                ToolParam {
+                    name: "input".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "operation".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
             ],
             cost: 0,
             handler: Some(|input| {
-                let input_str = input.args.get("input").and_then(|v| v.as_str()).unwrap_or("");
-                let op = input.args.get("operation").and_then(|v| v.as_str()).unwrap_or("length");
+                let input_str = input
+                    .args
+                    .get("input")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("");
+                let op = input
+                    .args
+                    .get("operation")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("length");
                 let result = match op {
                     "uppercase" => input_str.to_uppercase(),
                     "lowercase" => input_str.to_lowercase(),
@@ -1364,7 +1864,11 @@ Write-Output "Typed: $keys"
                     }
                     _ => format!("Unknown operation: {op}"),
                 };
-                Ok(ToolOutput { success: true, content: result, artifacts: vec![] })
+                Ok(ToolOutput {
+                    success: true,
+                    content: result,
+                    artifacts: vec![],
+                })
             }),
         });
 
@@ -1374,9 +1878,21 @@ Write-Output "Typed: $keys"
             description: "Fetch up-to-date library documentation. Prevents hallucinated APIs."
                 .into(),
             params: vec![
-                ToolParam { name: "library".into(), ptype: "string".into(), required: true },
-                ToolParam { name: "topic".into(), ptype: "string".into(), required: false },
-                ToolParam { name: "version".into(), ptype: "string".into(), required: false },
+                ToolParam {
+                    name: "library".into(),
+                    ptype: "string".into(),
+                    required: true,
+                },
+                ToolParam {
+                    name: "topic".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
+                ToolParam {
+                    name: "version".into(),
+                    ptype: "string".into(),
+                    required: false,
+                },
             ],
             cost: 3,
             handler: Some(|input| {
@@ -1386,7 +1902,11 @@ Write-Output "Typed: $keys"
                     .unwrap();
                 let tool = crate::docs_fetch::DocsFetchTool::new();
                 let result = rt.block_on(tool.execute(&input.args_as_value()))?;
-                Ok(ToolOutput { success: true, content: result, artifacts: vec![] })
+                Ok(ToolOutput {
+                    success: true,
+                    content: result,
+                    artifacts: vec![],
+                })
             }),
         });
 
@@ -1405,31 +1925,54 @@ fn base64_encode(data: &[u8]) -> String {
         let triple = (b0 << 16) | (b1 << 8) | b2;
         result.push(BASE64_CHARS[((triple >> 18) & 0x3F) as usize] as char);
         result.push(BASE64_CHARS[((triple >> 12) & 0x3F) as usize] as char);
-        if chunk.len() > 1 { result.push(BASE64_CHARS[((triple >> 6) & 0x3F) as usize] as char); } else { result.push('='); }
-        if chunk.len() > 2 { result.push(BASE64_CHARS[(triple & 0x3F) as usize] as char); } else { result.push('='); }
+        if chunk.len() > 1 {
+            result.push(BASE64_CHARS[((triple >> 6) & 0x3F) as usize] as char);
+        } else {
+            result.push('=');
+        }
+        if chunk.len() > 2 {
+            result.push(BASE64_CHARS[(triple & 0x3F) as usize] as char);
+        } else {
+            result.push('=');
+        }
     }
     result
 }
 
 fn base64_decode(input: &str) -> anyhow::Result<String> {
-    let input: Vec<u8> = input.bytes().filter(|b| *b != b'=' && *b != b'\n' && *b != b'\r').collect();
+    let input: Vec<u8> = input
+        .bytes()
+        .filter(|b| *b != b'=' && *b != b'\n' && *b != b'\r')
+        .collect();
     let mut result = Vec::new();
     for chunk in input.chunks(4) {
-        if chunk.len() < 2 { break; }
+        if chunk.len() < 2 {
+            break;
+        }
         let mut vals = [0u32; 4];
         for (i, &b) in chunk.iter().enumerate() {
-            vals[i] = BASE64_CHARS.iter().position(|&c| c == b).map(|p| p as u32).unwrap_or(0);
+            vals[i] = BASE64_CHARS
+                .iter()
+                .position(|&c| c == b)
+                .map(|p| p as u32)
+                .unwrap_or(0);
         }
         let triple = (vals[0] << 18) | (vals[1] << 12) | (vals[2] << 6) | vals[3];
         result.push((triple >> 16) as u8);
-        if chunk.len() > 2 { result.push((triple >> 8) as u8); }
-        if chunk.len() > 3 { result.push(triple as u8); }
+        if chunk.len() > 2 {
+            result.push((triple >> 8) as u8);
+        }
+        if chunk.len() > 3 {
+            result.push(triple as u8);
+        }
     }
     String::from_utf8(result).map_err(|e| anyhow::anyhow!("Invalid UTF-8: {e}"))
 }
 
 impl Default for ToolRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -1442,7 +1985,11 @@ mod tests {
         reg.register(ToolDef {
             name: "web_search".into(),
             description: "Search the web".into(),
-            params: vec![ToolParam { name: "query".into(), ptype: "string".into(), required: true }],
+            params: vec![ToolParam {
+                name: "query".into(),
+                ptype: "string".into(),
+                required: true,
+            }],
             cost: 5,
             handler: None,
         });
@@ -1465,7 +2012,10 @@ mod tests {
         let reg = ToolRegistry::bootstrap_global();
         let mut args = std::collections::HashMap::new();
         args.insert("query".into(), serde_json::json!("test"));
-        let input = ToolInput { name: "web_search".into(), args };
+        let input = ToolInput {
+            name: "web_search".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         // May succeed or fail depending on API keys being available
         // The important thing is that it doesn't panic
@@ -1479,7 +2029,10 @@ mod tests {
         let reg = ToolRegistry::bootstrap_global();
         assert!(reg.get("date_time").is_some());
         let args = std::collections::HashMap::new();
-        let input = ToolInput { name: "date_time".into(), args };
+        let input = ToolInput {
+            name: "date_time".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(output.content.contains("20"));
@@ -1498,7 +2051,10 @@ mod tests {
         let mut args = std::collections::HashMap::new();
         args.insert("json".into(), serde_json::json!(r#"{"key": "value"}"#));
         args.insert("path".into(), serde_json::json!("key"));
-        let input = ToolInput { name: "json_query".into(), args };
+        let input = ToolInput {
+            name: "json_query".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(output.content.contains("value"));
@@ -1510,7 +2066,10 @@ mod tests {
         assert!(reg.get("hash_generate").is_some());
         let mut args = std::collections::HashMap::new();
         args.insert("input".into(), serde_json::json!("hello"));
-        let input = ToolInput { name: "hash_generate".into(), args };
+        let input = ToolInput {
+            name: "hash_generate".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(!output.content.is_empty());
@@ -1521,7 +2080,10 @@ mod tests {
         let reg = ToolRegistry::bootstrap_global();
         assert!(reg.get("random_string").is_some());
         let mut args = std::collections::HashMap::new();
-        let input = ToolInput { name: "random_string".into(), args };
+        let input = ToolInput {
+            name: "random_string".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert_eq!(output.content.len(), 16); // default length
@@ -1530,7 +2092,11 @@ mod tests {
     #[test]
     fn test_tool_count() {
         let reg = ToolRegistry::bootstrap_global();
-        assert!(reg.count() >= 34, "Expected at least 34 tools, got {}", reg.count());
+        assert!(
+            reg.count() >= 34,
+            "Expected at least 34 tools, got {}",
+            reg.count()
+        );
     }
 
     #[test]
@@ -1539,7 +2105,10 @@ mod tests {
         assert!(reg.get("env_get").is_some());
         let mut args = std::collections::HashMap::new();
         args.insert("key".into(), serde_json::json!("PATH"));
-        let input = ToolInput { name: "env_get".into(), args };
+        let input = ToolInput {
+            name: "env_get".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(!output.content.is_empty());
@@ -1557,7 +2126,10 @@ mod tests {
         assert!(reg.get("file_watch").is_some());
         let mut args = std::collections::HashMap::new();
         args.insert("path".into(), serde_json::json!("."));
-        let input = ToolInput { name: "file_watch".into(), args };
+        let input = ToolInput {
+            name: "file_watch".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(output.content.contains("file") || output.content.contains("dir"));
@@ -1568,7 +2140,10 @@ mod tests {
         let reg = ToolRegistry::bootstrap_global();
         assert!(reg.get("network_info").is_some());
         let args = std::collections::HashMap::new();
-        let input = ToolInput { name: "network_info".into(), args };
+        let input = ToolInput {
+            name: "network_info".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(output.content.contains("hostname"));
@@ -1593,7 +2168,10 @@ mod tests {
         assert!(reg.get("sys_info").is_some());
         let mut args = std::collections::HashMap::new();
         args.insert("query".into(), serde_json::json!("cpu"));
-        let input = ToolInput { name: "sys_info".into(), args };
+        let input = ToolInput {
+            name: "sys_info".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
     }
@@ -1609,7 +2187,10 @@ mod tests {
         let reg = ToolRegistry::bootstrap_global();
         let mut args = std::collections::HashMap::new();
         args.insert("input".into(), serde_json::json!("Hello AgenMonster"));
-        let input = ToolInput { name: "base64_encode".into(), args };
+        let input = ToolInput {
+            name: "base64_encode".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(!output.content.is_empty());
@@ -1622,7 +2203,10 @@ mod tests {
         let mut args = std::collections::HashMap::new();
         args.insert("input".into(), serde_json::json!("hello world"));
         args.insert("operation".into(), serde_json::json!("uppercase"));
-        let input = ToolInput { name: "string_utils".into(), args };
+        let input = ToolInput {
+            name: "string_utils".into(),
+            args,
+        };
         let output = reg.execute(&input).unwrap();
         assert!(output.success);
         assert!(output.content.contains("HELLO WORLD"));

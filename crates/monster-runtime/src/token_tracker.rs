@@ -207,13 +207,17 @@ impl TokenTracker {
     /// Get tokens per hour (for activity tracking)
     pub fn tokens_per_hour(&self) -> f64 {
         let hours = self.last_feed_time.elapsed().as_secs_f64() / 3600.0;
-        if hours < 0.01 { return 0.0; }
+        if hours < 0.01 {
+            return 0.0;
+        }
         self.session_tokens as f64 / hours
     }
 
     /// Get the dominant task type from recent usage (for personality drift)
     pub fn dominant_task(&self) -> Option<String> {
-        if self.recent_usage.is_empty() { return None; }
+        if self.recent_usage.is_empty() {
+            return None;
+        }
         let mut counts = std::collections::HashMap::new();
         for u in &self.recent_usage {
             *counts.entry(u.task_type.clone()).or_insert(0) += 1;
@@ -223,7 +227,9 @@ impl TokenTracker {
 
     /// Get average cost per call
     pub fn avg_cost_per_call(&self) -> f64 {
-        if self.calls_today == 0 { return 0.0; }
+        if self.calls_today == 0 {
+            return 0.0;
+        }
         self.total_cost_usd / self.calls_today as f64
     }
 
@@ -242,7 +248,9 @@ impl TokenTracker {
 }
 
 impl Default for TokenTracker {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

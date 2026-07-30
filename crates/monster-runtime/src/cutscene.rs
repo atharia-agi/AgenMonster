@@ -21,28 +21,46 @@ pub struct CutsceneConfig {
 pub fn get_cutscene_config(from: &str, to: &str) -> Option<CutsceneConfig> {
     match (from, to) {
         ("egg", "hatchling") => Some(CutsceneConfig {
-            from: from.into(), to: to.into(),
-            duration_frames: 32, flash_text: "HATCHED!".into(), particle_count: 40,
+            from: from.into(),
+            to: to.into(),
+            duration_frames: 32,
+            flash_text: "HATCHED!".into(),
+            particle_count: 40,
         }),
         ("hatchling", "baby") => Some(CutsceneConfig {
-            from: from.into(), to: to.into(),
-            duration_frames: 40, flash_text: "GROWING!".into(), particle_count: 50,
+            from: from.into(),
+            to: to.into(),
+            duration_frames: 40,
+            flash_text: "GROWING!".into(),
+            particle_count: 50,
         }),
         ("baby", "child") => Some(CutsceneConfig {
-            from: from.into(), to: to.into(),
-            duration_frames: 40, flash_text: "LEARNING!".into(), particle_count: 50,
+            from: from.into(),
+            to: to.into(),
+            duration_frames: 40,
+            flash_text: "LEARNING!".into(),
+            particle_count: 50,
         }),
         ("child", "teen") => Some(CutsceneConfig {
-            from: from.into(), to: to.into(),
-            duration_frames: 48, flash_text: "POWER UP!".into(), particle_count: 60,
+            from: from.into(),
+            to: to.into(),
+            duration_frames: 48,
+            flash_text: "POWER UP!".into(),
+            particle_count: 60,
         }),
         ("teen", "adult") => Some(CutsceneConfig {
-            from: from.into(), to: to.into(),
-            duration_frames: 56, flash_text: "EVOLVED!".into(), particle_count: 70,
+            from: from.into(),
+            to: to.into(),
+            duration_frames: 56,
+            flash_text: "EVOLVED!".into(),
+            particle_count: 70,
         }),
         ("adult", "mega") => Some(CutsceneConfig {
-            from: from.into(), to: to.into(),
-            duration_frames: 64, flash_text: "MEGA EVOLUTION!".into(), particle_count: 80,
+            from: from.into(),
+            to: to.into(),
+            duration_frames: 64,
+            flash_text: "MEGA EVOLUTION!".into(),
+            particle_count: 80,
         }),
         _ => None,
     }
@@ -51,11 +69,13 @@ pub fn get_cutscene_config(from: &str, to: &str) -> Option<CutsceneConfig> {
 impl Cutscene {
     pub fn start(config: CutsceneConfig) -> Self {
         Self {
-            from: config.from, to: config.to,
+            from: config.from,
+            to: config.to,
             duration_frames: config.duration_frames,
             flash_text: config.flash_text,
             particle_count: config.particle_count,
-            current_frame: 0, active: true,
+            current_frame: 0,
+            active: true,
         }
     }
 
@@ -69,7 +89,9 @@ impl Cutscene {
     }
 
     pub fn progress(&self) -> f32 {
-        if self.duration_frames == 0 { return 1.0; }
+        if self.duration_frames == 0 {
+            return 1.0;
+        }
         self.current_frame as f32 / self.duration_frames as f32
     }
 
@@ -96,7 +118,9 @@ mod tests {
         let mut cs = Cutscene::start(cfg);
         assert!(cs.active);
         assert!(!cs.flash_visible());
-        for _ in 0..48 { cs.tick(); }
+        for _ in 0..48 {
+            cs.tick();
+        }
         assert!(!cs.active);
         assert_eq!(cs.progress(), 1.0);
     }

@@ -8,7 +8,11 @@ pub struct LlmStream {
 
 impl LlmStream {
     pub fn new(model: &str) -> Self {
-        Self { model: model.to_string(), buffer: String::new(), done: false }
+        Self {
+            model: model.to_string(),
+            buffer: String::new(),
+            done: false,
+        }
     }
 
     pub fn push_chunk(&mut self, chunk: &str) {

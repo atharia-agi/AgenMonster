@@ -9,7 +9,9 @@ fn main_pwd() -> PathBuf {
 }
 
 fn main() -> anyhow::Result<()> {
-    let out = std::env::args().nth(1).map(PathBuf::from)
+    let out = std::env::args()
+        .nth(1)
+        .map(PathBuf::from)
         .unwrap_or_else(|| main_pwd().join("apps/desktop/static/ogg"));
     std::fs::create_dir_all(&out)?;
     for (name, voices) in presets() {

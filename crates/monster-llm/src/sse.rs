@@ -11,7 +11,9 @@ pub struct SseParser {
 
 impl SseParser {
     pub fn new() -> Self {
-        Self { buffer: String::new() }
+        Self {
+            buffer: String::new(),
+        }
     }
 
     pub fn feed(&mut self, chunk: &str) -> Vec<SseEvent> {
@@ -28,12 +30,21 @@ impl SseParser {
 
             if let Some(data) = line.strip_prefix("data: ") {
                 if data == "[DONE]" {
-                    events.push(SseEvent { event: "done".into(), data: String::new() });
+                    events.push(SseEvent {
+                        event: "done".into(),
+                        data: String::new(),
+                    });
                 } else {
-                    events.push(SseEvent { event: "message".into(), data: data.to_string() });
+                    events.push(SseEvent {
+                        event: "message".into(),
+                        data: data.to_string(),
+                    });
                 }
             } else if let Some(event) = line.strip_prefix("event: ") {
-                events.push(SseEvent { event: event.to_string(), data: String::new() });
+                events.push(SseEvent {
+                    event: event.to_string(),
+                    data: String::new(),
+                });
             }
         }
 
@@ -42,7 +53,9 @@ impl SseParser {
 }
 
 impl Default for SseParser {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]

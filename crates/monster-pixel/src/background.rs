@@ -8,7 +8,11 @@ pub struct Background {
 
 impl Background {
     pub fn new(stage: &str, width: u32, height: u32) -> Self {
-        Self { stage: stage.to_string(), width, height }
+        Self {
+            stage: stage.to_string(),
+            width,
+            height,
+        }
     }
 
     pub fn render_frame(&self, _frame: u32, _time_s: f32) -> Vec<u8> {

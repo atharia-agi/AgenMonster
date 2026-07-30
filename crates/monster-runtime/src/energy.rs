@@ -44,7 +44,9 @@ impl EnergyEconomy {
     }
 
     pub fn try_spend(&mut self, cost: u32) -> bool {
-        if self.energy < cost { return false; }
+        if self.energy < cost {
+            return false;
+        }
         self.energy -= cost;
         self.total_spent += cost as u64;
         true
@@ -61,12 +63,16 @@ impl EnergyEconomy {
     }
 
     pub fn percentage(&self) -> f32 {
-        if self.max_energy == 0 { return 0.0; }
+        if self.max_energy == 0 {
+            return 0.0;
+        }
         self.energy as f32 / self.max_energy as f32
     }
 
     pub fn time_to_regen(&self, amount: u32) -> u64 {
-        if self.regen_per_hour == 0 { return u64::MAX; }
+        if self.regen_per_hour == 0 {
+            return u64::MAX;
+        }
         let needed = amount.saturating_sub(self.energy);
         (needed as u64 * 3600) / self.regen_per_hour as u64
     }
@@ -89,7 +95,9 @@ pub struct EnergySnapshot {
 }
 
 impl Default for EnergyEconomy {
-    fn default() -> Self { Self::new(1000, 25) }
+    fn default() -> Self {
+        Self::new(1000, 25)
+    }
 }
 
 #[cfg(test)]

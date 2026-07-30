@@ -23,7 +23,8 @@ impl OpenAIClient {
     }
 
     pub fn build_request(&self, messages: &[ApiMessage]) -> serde_json::Value {
-        let msgs: Vec<serde_json::Value> = messages.iter()
+        let msgs: Vec<serde_json::Value> = messages
+            .iter()
             .map(|m| serde_json::json!({"role": m.role, "content": m.content}))
             .collect();
 
@@ -41,8 +42,8 @@ impl OpenAIClient {
             "gpt-4o-mini" => (0.15, 0.6),
             _ => (2.5, 10.0),
         };
-        input_tokens as f32 * input_rate / 1_000_000.0 +
-        output_tokens as f32 * output_rate / 1_000_000.0
+        input_tokens as f32 * input_rate / 1_000_000.0
+            + output_tokens as f32 * output_rate / 1_000_000.0
     }
 }
 

@@ -15,25 +15,25 @@
 
 use std::path::PathBuf;
 
-pub mod token_tracker;
-pub mod monitor;
+pub mod computer_use;
+pub mod cutscene;
 pub mod energy;
+pub mod idle_engine;
+pub mod monitor;
+pub mod orchestrator;
+pub mod personality;
+pub mod render_state;
+pub mod token_tracker;
+pub mod vision_planner;
 pub mod webhook;
 pub mod webhook_handler;
-pub mod computer_use;
-pub mod vision_planner;
-pub mod cutscene;
-pub mod personality;
-pub mod idle_engine;
-pub mod render_state;
-pub mod orchestrator;
 
-pub use orchestrator::Runtime;
-pub use monitor::Monitor;
 pub use energy::EnergyEconomy;
-pub use personality::personality_for_stage;
 pub use idle_engine::IdleEngine;
-pub use token_tracker::{TokenTracker, TokenUsage, stats_for_stage, xp_for_stage};
+pub use monitor::Monitor;
+pub use orchestrator::Runtime;
+pub use personality::personality_for_stage;
+pub use token_tracker::{stats_for_stage, xp_for_stage, TokenTracker, TokenUsage};
 
 pub struct RuntimeConfig {
     pub app_dir: PathBuf,
@@ -59,7 +59,11 @@ impl ApiKeys {
             groq_keys.push(key);
         }
         for i in 0..=9 {
-            let var = if i == 0 { "GROQ_API_KEY".to_string() } else { format!("GROQ_API_KEY_{i}") };
+            let var = if i == 0 {
+                "GROQ_API_KEY".to_string()
+            } else {
+                format!("GROQ_API_KEY_{i}")
+            };
             if let Ok(key) = std::env::var(&var) {
                 if !groq_keys.contains(&key) {
                     groq_keys.push(key);
@@ -87,8 +91,11 @@ impl ApiKeys {
     }
 
     pub fn has_any_llm(&self) -> bool {
-        !self.groq_keys.is_empty() || !self.mistral_keys.is_empty() ||
-        self.anthropic.is_some() || self.openai.is_some() || self.gemini.is_some()
+        !self.groq_keys.is_empty()
+            || !self.mistral_keys.is_empty()
+            || self.anthropic.is_some()
+            || self.openai.is_some()
+            || self.gemini.is_some()
     }
 
     pub fn has_any_search(&self) -> bool {

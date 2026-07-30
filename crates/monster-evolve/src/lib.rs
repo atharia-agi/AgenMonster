@@ -2,8 +2,8 @@
 //!
 //! Self-evolution subsystem — skill library, pet evolution, auto-MCP.
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Skill {
@@ -25,10 +25,18 @@ pub struct Skill {
 pub struct SkillLibrary;
 
 impl SkillLibrary {
-    pub fn open(_path: &str) -> anyhow::Result<Self> { Ok(Self) }
-    pub async fn upsert(&self, _skill: Skill) -> anyhow::Result<()> { Ok(()) }
-    pub fn search(&self, _query: &str) -> Vec<SkillHit> { vec![] }
-    pub fn count(&self) -> usize { 0 }
+    pub fn open(_path: &str) -> anyhow::Result<Self> {
+        Ok(Self)
+    }
+    pub async fn upsert(&self, _skill: Skill) -> anyhow::Result<()> {
+        Ok(())
+    }
+    pub fn search(&self, _query: &str) -> Vec<SkillHit> {
+        vec![]
+    }
+    pub fn count(&self) -> usize {
+        0
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -42,7 +50,9 @@ pub struct SkillStrength;
 pub struct StageManager;
 
 impl StageManager {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,7 +68,12 @@ pub struct SkillProposal {
 pub struct SkillAuthoring;
 
 impl SkillAuthoring {
-    pub async fn write_to_disk(_proposal: &SkillProposal, _dir: &std::path::Path) -> anyhow::Result<()> { Ok(()) }
+    pub async fn write_to_disk(
+        _proposal: &SkillProposal,
+        _dir: &std::path::Path,
+    ) -> anyhow::Result<()> {
+        Ok(())
+    }
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -87,7 +102,9 @@ pub struct SkillHub;
 pub struct EvolutionPolicy;
 
 impl Default for EvolutionPolicy {
-    fn default() -> Self { Self }
+    fn default() -> Self {
+        Self
+    }
 }
 
 #[derive(Debug, Clone)]

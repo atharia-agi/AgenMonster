@@ -53,12 +53,36 @@ pub struct MarketplaceConfig {
 impl Default for AgenConfig {
     fn default() -> Self {
         Self {
-            app_dir: dirs::data_dir().unwrap_or_else(|| PathBuf::from(".")).join("agenmonster"),
-            api_keys: ApiKeysConfig { anthropic: None, openai: None, gemini: None, fal: None },
-            personality: PersonalityConfig { stage: "egg".into(), mood: "idle".into(), attention_rate: 0.02 },
-            energy: EnergyConfig { max: 1000, regen_per_hour: 25.0, cost_per_llm: 5, cost_per_tool: 1, cost_per_evo: 50 },
-            sync: SyncConfig { enabled: false, port: 0, peers: vec![] },
-            marketplace: MarketplaceConfig { registry_url: "https://registry.agenmonster.dev".into(), auto_publish: false },
+            app_dir: dirs::data_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join("agenmonster"),
+            api_keys: ApiKeysConfig {
+                anthropic: None,
+                openai: None,
+                gemini: None,
+                fal: None,
+            },
+            personality: PersonalityConfig {
+                stage: "egg".into(),
+                mood: "idle".into(),
+                attention_rate: 0.02,
+            },
+            energy: EnergyConfig {
+                max: 1000,
+                regen_per_hour: 25.0,
+                cost_per_llm: 5,
+                cost_per_tool: 1,
+                cost_per_evo: 50,
+            },
+            sync: SyncConfig {
+                enabled: false,
+                port: 0,
+                peers: vec![],
+            },
+            marketplace: MarketplaceConfig {
+                registry_url: "https://registry.agenmonster.dev".into(),
+                auto_publish: false,
+            },
         }
     }
 }

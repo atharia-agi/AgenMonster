@@ -16,16 +16,26 @@ pub enum Stage {
 impl Stage {
     pub fn as_str(&self) -> &str {
         match self {
-            Stage::Egg => "egg", Stage::Hatchling => "hatchling",
-            Stage::Baby => "baby", Stage::Child => "child",
-            Stage::Teen => "teen", Stage::Adult => "adult",
+            Stage::Egg => "egg",
+            Stage::Hatchling => "hatchling",
+            Stage::Baby => "baby",
+            Stage::Child => "child",
+            Stage::Teen => "teen",
+            Stage::Adult => "adult",
             Stage::Mega => "mega",
         }
     }
 
     pub fn all() -> &'static [Stage] {
-        &[Stage::Egg, Stage::Hatchling, Stage::Baby, Stage::Child,
-          Stage::Teen, Stage::Adult, Stage::Mega]
+        &[
+            Stage::Egg,
+            Stage::Hatchling,
+            Stage::Baby,
+            Stage::Child,
+            Stage::Teen,
+            Stage::Adult,
+            Stage::Mega,
+        ]
     }
 
     pub fn next(&self) -> Option<Stage> {
@@ -42,8 +52,12 @@ impl Stage {
 
     pub fn index(&self) -> usize {
         match self {
-            Stage::Egg => 0, Stage::Hatchling => 1, Stage::Baby => 2,
-            Stage::Child => 3, Stage::Teen => 4, Stage::Adult => 5,
+            Stage::Egg => 0,
+            Stage::Hatchling => 1,
+            Stage::Baby => 2,
+            Stage::Child => 3,
+            Stage::Teen => 4,
+            Stage::Adult => 5,
             Stage::Mega => 6,
         }
     }
@@ -59,9 +73,12 @@ impl std::str::FromStr for Stage {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "egg" => Ok(Stage::Egg), "hatchling" => Ok(Stage::Hatchling),
-            "baby" => Ok(Stage::Baby), "child" => Ok(Stage::Child),
-            "teen" => Ok(Stage::Teen), "adult" => Ok(Stage::Adult),
+            "egg" => Ok(Stage::Egg),
+            "hatchling" => Ok(Stage::Hatchling),
+            "baby" => Ok(Stage::Baby),
+            "child" => Ok(Stage::Child),
+            "teen" => Ok(Stage::Teen),
+            "adult" => Ok(Stage::Adult),
             "mega" => Ok(Stage::Mega),
             _ => Err(format!("unknown stage: {s}")),
         }
@@ -81,8 +98,12 @@ pub struct PetState {
 impl Default for PetState {
     fn default() -> Self {
         Self {
-            stage: Stage::Egg, mood: "idle".into(), energy: 1000,
-            skills_count: 0, memory_blocks: 0, uptime_secs: 0,
+            stage: Stage::Egg,
+            mood: "idle".into(),
+            energy: 1000,
+            skills_count: 0,
+            memory_blocks: 0,
+            uptime_secs: 0,
         }
     }
 }

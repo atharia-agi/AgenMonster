@@ -6,9 +6,15 @@ pub struct ClipboardGetTool;
 pub struct ClipboardSetTool;
 
 impl ClipboardGetTool {
-    pub fn new() -> Self { Self }
-    pub fn name(&self) -> &str { "clipboard_get" }
-    pub fn description(&self) -> &str { "Get the current clipboard text content." }
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn name(&self) -> &str {
+        "clipboard_get"
+    }
+    pub fn description(&self) -> &str {
+        "Get the current clipboard text content."
+    }
     pub fn parameters(&self) -> Value {
         serde_json::json!({"type": "object", "properties": {}})
     }
@@ -20,14 +26,21 @@ impl ClipboardGetTool {
         Ok(serde_json::json!({
             "content": content,
             "length": content.len(),
-        }).to_string())
+        })
+        .to_string())
     }
 }
 
 impl ClipboardSetTool {
-    pub fn new() -> Self { Self }
-    pub fn name(&self) -> &str { "clipboard_set" }
-    pub fn description(&self) -> &str { "Set the clipboard to a text value." }
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn name(&self) -> &str {
+        "clipboard_set"
+    }
+    pub fn description(&self) -> &str {
+        "Set the clipboard to a text value."
+    }
     pub fn parameters(&self) -> Value {
         serde_json::json!({
             "type": "object",
@@ -38,7 +51,9 @@ impl ClipboardSetTool {
         })
     }
     pub fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let text = args.get("text").and_then(|v| v.as_str())
+        let text = args
+            .get("text")
+            .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("text is required"))?;
         let output = std::process::Command::new("powershell")
             .args(["-Command", &format!("Set-Clipboard -Value '{text}'")])
@@ -46,7 +61,8 @@ impl ClipboardSetTool {
         Ok(serde_json::json!({
             "success": output.status.success(),
             "length": text.len(),
-        }).to_string())
+        })
+        .to_string())
     }
 }
 
@@ -65,7 +81,9 @@ mod tests {
     #[test]
     fn test_clipboard_set() {
         let tool = ClipboardSetTool::new();
-        let result = tool.execute(&serde_json::json!({"text": "test clipboard"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"text": "test clipboard"}))
+            .unwrap();
         assert!(result.contains("success"));
     }
 }

@@ -5,9 +5,13 @@ use serde_json::Value;
 pub struct JsonQueryTool;
 
 impl JsonQueryTool {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn name(&self) -> &str { "json_query" }
+    pub fn name(&self) -> &str {
+        "json_query"
+    }
 
     pub fn description(&self) -> &str {
         "Query JSON data using dot notation. Example: 'users.0.name' extracts first user's name."
@@ -31,11 +35,13 @@ impl JsonQueryTool {
     }
 
     pub fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let json_str = args.get("json")
+        let json_str = args
+            .get("json")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("json is required"))?;
 
-        let path = args.get("path")
+        let path = args
+            .get("path")
             .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("path is required"))?;
 
@@ -49,12 +55,16 @@ impl JsonQueryTool {
 fn query_path<'a>(data: &'a Value, path: &str) -> anyhow::Result<&'a Value> {
     let mut current = data;
     for part in path.split('.') {
-        if part.is_empty() { continue; }
+        if part.is_empty() {
+            continue;
+        }
         if let Ok(idx) = part.parse::<usize>() {
-            current = current.get(idx)
+            current = current
+                .get(idx)
                 .ok_or_else(|| anyhow::anyhow!("index {idx} out of bounds"))?;
         } else {
-            current = current.get(part)
+            current = current
+                .get(part)
                 .ok_or_else(|| anyhow::anyhow!("key '{part}' not found"))?;
         }
     }
@@ -68,20 +78,24 @@ mod tests {
     #[test]
     fn test_json_query_nested() {
         let tool = JsonQueryTool::new();
-        let result = tool.execute(&serde_json::json!({
-            "json": r#"{"users": [{"name": "Alice"}, {"name": "Bob"}]}"#,
-            "path": "users.1.name"
-        })).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({
+                "json": r#"{"users": [{"name": "Alice"}, {"name": "Bob"}]}"#,
+                "path": "users.1.name"
+            }))
+            .unwrap();
         assert!(result.contains("Bob"));
     }
 
     #[test]
     fn test_json_query_simple() {
         let tool = JsonQueryTool::new();
-        let result = tool.execute(&serde_json::json!({
-            "json": r#"{"key": "value"}"#,
-            "path": "key"
-        })).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({
+                "json": r#"{"key": "value"}"#,
+                "path": "key"
+            }))
+            .unwrap();
         assert!(result.contains("value"));
     }
 

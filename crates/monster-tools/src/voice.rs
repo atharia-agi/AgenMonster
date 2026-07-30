@@ -27,7 +27,10 @@ pub fn tts_speak(text: &str, voice: &str, rate: i32) -> anyhow::Result<String> {
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout).trim().to_string();
         if stdout.contains("ok") {
-            Ok(format!("Spoken: \"{}\"", if text.len() > 50 { &text[..50] } else { text }))
+            Ok(format!(
+                "Spoken: \"{}\"",
+                if text.len() > 50 { &text[..50] } else { text }
+            ))
         } else {
             Ok(format!("TTS output: {stdout}"))
         }
@@ -54,7 +57,8 @@ pub fn tts_voices() -> anyhow::Result<Vec<String>> {
 
     if output.status.success() {
         let stdout = String::from_utf8_lossy(&output.stdout);
-        let voices: Vec<String> = stdout.lines()
+        let voices: Vec<String> = stdout
+            .lines()
             .map(|l| l.trim().to_string())
             .filter(|l| !l.is_empty())
             .collect();
@@ -67,7 +71,8 @@ pub fn tts_voices() -> anyhow::Result<Vec<String>> {
 /// Listen for speech using Windows Speech Recognition via PowerShell.
 /// Records from default microphone, returns recognized text.
 pub fn stt_listen(timeout_secs: u32) -> anyhow::Result<String> {
-    let ps_script = format!(r#"
+    let ps_script = format!(
+        r#"
         Add-Type -AssemblyName System.Speech
         $recog = New-Object System.Speech.Recognition.SpeechRecognitionEngine
         $recog.SetInputToDefaultAudioDevice()
@@ -86,7 +91,8 @@ pub fn stt_listen(timeout_secs: u32) -> anyhow::Result<String> {
         }}
 
         $recog.Dispose()
-    "#);
+    "#
+    );
 
     let output = Command::new("powershell")
         .args(["-NoProfile", "-NonInteractive", "-Command", &ps_script])

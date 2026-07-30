@@ -8,19 +8,26 @@ pub struct RecallEngine {
 
 impl RecallEngine {
     pub fn new() -> Self {
-        Self { hot_limit: 100, warm_limit: 500, cold_limit: 2000 }
+        Self {
+            hot_limit: 100,
+            warm_limit: 500,
+            cold_limit: 2000,
+        }
     }
 
     pub fn recall<'a>(&self, query: &str, memories: &'a [MemoryEntry]) -> Vec<&'a MemoryEntry> {
         let query_lower = query.to_lowercase();
-        let mut results: Vec<&MemoryEntry> = memories.iter()
+        let mut results: Vec<&MemoryEntry> = memories
+            .iter()
             .filter(|m| m.content.to_lowercase().contains(&query_lower))
             .collect();
 
         results.sort_by(|a, b| {
             let score_a = a.access_count as f32 * a.decay_score;
             let score_b = b.access_count as f32 * b.decay_score;
-            score_b.partial_cmp(&score_a).unwrap_or(std::cmp::Ordering::Equal)
+            score_b
+                .partial_cmp(&score_a)
+                .unwrap_or(std::cmp::Ordering::Equal)
         });
 
         results.truncate(10);
@@ -59,5 +66,7 @@ pub struct TierStats {
 }
 
 impl Default for RecallEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

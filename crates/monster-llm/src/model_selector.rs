@@ -30,8 +30,12 @@ impl Provider {
 
     pub fn all() -> &'static [Provider] {
         &[
-            Provider::Groq, Provider::Mistral, Provider::Anthropic,
-            Provider::OpenAI, Provider::Gemini, Provider::Ollama,
+            Provider::Groq,
+            Provider::Mistral,
+            Provider::Anthropic,
+            Provider::OpenAI,
+            Provider::Gemini,
+            Provider::Ollama,
         ]
     }
 }
@@ -63,9 +67,9 @@ pub enum SpeedTier {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum QualityTier {
-    Flagship,  // best available
-    Strong,    // very capable
-    Standard,  // good enough
+    Flagship,    // best available
+    Strong,      // very capable
+    Standard,    // good enough
     Lightweight, // fast + cheap
 }
 
@@ -146,7 +150,11 @@ impl ModelSelector {
             available_providers: Arc::new(RwLock::new(Vec::new())),
         };
         selector.update_availability(
-            groq_keys, mistral_keys, anthropic_key, openai_key, gemini_key,
+            groq_keys,
+            mistral_keys,
+            anthropic_key,
+            openai_key,
+            gemini_key,
         );
         selector
     }
@@ -165,38 +173,62 @@ impl ModelSelector {
             let (available, key_count) = match provider {
                 Provider::Groq => (!groq_keys.is_empty(), groq_keys.len()),
                 Provider::Mistral => (!mistral_keys.is_empty(), mistral_keys.len()),
-                Provider::Anthropic => (anthropic_key.is_some(), if anthropic_key.is_some() { 1 } else { 0 }),
-                Provider::OpenAI => (openai_key.is_some(), if openai_key.is_some() { 1 } else { 0 }),
-                Provider::Gemini => (gemini_key.is_some(), if gemini_key.is_some() { 1 } else { 0 }),
+                Provider::Anthropic => (
+                    anthropic_key.is_some(),
+                    if anthropic_key.is_some() { 1 } else { 0 },
+                ),
+                Provider::OpenAI => (
+                    openai_key.is_some(),
+                    if openai_key.is_some() { 1 } else { 0 },
+                ),
+                Provider::Gemini => (
+                    gemini_key.is_some(),
+                    if gemini_key.is_some() { 1 } else { 0 },
+                ),
                 Provider::Ollama => (false, 0), // detected separately
             };
-            let models: Vec<String> = self.models.iter()
+            let models: Vec<String> = self
+                .models
+                .iter()
                 .filter(|m| m.provider == provider)
                 .map(|m| m.id.clone())
                 .collect();
-            statuses.push(ProviderStatus { provider, available, key_count, models });
+            statuses.push(ProviderStatus {
+                provider,
+                available,
+                key_count,
+                models,
+            });
         }
         *self.available_providers.write().unwrap() = statuses;
     }
 
     /// Select the best model for a task type.
     pub fn select(&self, task: TaskType) -> Option<Selection> {
-        let candidates: Vec<&ModelInfo> = self.models.iter()
+        let candidates: Vec<&ModelInfo> = self
+            .models
+            .iter()
             .filter(|m| self.is_provider_available(m.provider))
             .filter(|m| {
                 // For vision tasks, only select models that support vision
-                if task == TaskType::Vision && !m.supports_vision { return false; }
+                if task == TaskType::Vision && !m.supports_vision {
+                    return false;
+                }
                 true
             })
             .collect();
 
-        if candidates.is_empty() { return None; }
+        if candidates.is_empty() {
+            return None;
+        }
 
-        let scored: Vec<(&ModelInfo, f64)> = candidates.iter()
+        let scored: Vec<(&ModelInfo, f64)> = candidates
+            .iter()
             .map(|m| (*m, self.score_model(m, task)))
             .collect();
 
-        let best = scored.iter()
+        let best = scored
+            .iter()
             .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))?;
 
         Some(Selection {
@@ -209,10 +241,14 @@ impl ModelSelector {
 
     /// Select with fallback — tries primary, then falls back.
     pub fn select_with_fallback(&self, task: TaskType) -> Vec<Selection> {
-        let mut candidates: Vec<(&ModelInfo, f64)> = self.models.iter()
+        let mut candidates: Vec<(&ModelInfo, f64)> = self
+            .models
+            .iter()
             .filter(|m| self.is_provider_available(m.provider))
             .filter(|m| {
-                if task == TaskType::Vision && !m.supports_vision { return false; }
+                if task == TaskType::Vision && !m.supports_vision {
+                    return false;
+                }
                 true
             })
             .map(|m| (m, self.score_model(m, task)))
@@ -220,12 +256,15 @@ impl ModelSelector {
 
         candidates.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
 
-        candidates.into_iter().map(|(m, _)| Selection {
-            model: m.id.clone(),
-            provider: m.provider,
-            model_info: m.clone(),
-            reason: self.explain_selection(m, task),
-        }).collect()
+        candidates
+            .into_iter()
+            .map(|(m, _)| Selection {
+                model: m.id.clone(),
+                provider: m.provider,
+                model_info: m.clone(),
+                reason: self.explain_selection(m, task),
+            })
+            .collect()
     }
 
     /// Add a provider key at runtime.
@@ -242,7 +281,8 @@ impl ModelSelector {
 
     /// Get all models for an available provider.
     pub fn models_for_provider(&self, provider: Provider) -> Vec<&ModelInfo> {
-        self.models.iter()
+        self.models
+            .iter()
             .filter(|m| m.provider == provider && self.is_provider_available(provider))
             .collect()
     }
@@ -254,16 +294,26 @@ impl ModelSelector {
         if available.is_empty() {
             return "No LLM providers configured. Add API keys to .env or at runtime.".into();
         }
-        let parts: Vec<String> = available.iter().map(|s| {
-            format!("{} ({} keys, {} models)", s.provider.as_str(), s.key_count, s.models.len())
-        }).collect();
+        let parts: Vec<String> = available
+            .iter()
+            .map(|s| {
+                format!(
+                    "{} ({} keys, {} models)",
+                    s.provider.as_str(),
+                    s.key_count,
+                    s.models.len()
+                )
+            })
+            .collect();
         format!("{} providers: {}", available.len(), parts.join(", "))
     }
 
     // ── Private helpers ──
 
     fn is_provider_available(&self, provider: Provider) -> bool {
-        self.available_providers.read().unwrap()
+        self.available_providers
+            .read()
+            .unwrap()
             .iter()
             .any(|s| s.provider == provider && s.available)
     }
@@ -282,16 +332,30 @@ impl ModelSelector {
         // Task-specific bonuses
         match task {
             TaskType::Code => {
-                if model.id.contains("code") || model.id.contains("codestral") { score += 25.0; }
-                if model.supports_tools { score += 10.0; }
-                if model.context_window >= 32_000 { score += 5.0; }
+                if model.id.contains("code") || model.id.contains("codestral") {
+                    score += 25.0;
+                }
+                if model.supports_tools {
+                    score += 10.0;
+                }
+                if model.context_window >= 32_000 {
+                    score += 5.0;
+                }
             }
             TaskType::Creative => {
-                if model.quality_tier == QualityTier::Flagship { score += 20.0; }
-                if model.context_window >= 64_000 { score += 10.0; }
+                if model.quality_tier == QualityTier::Flagship {
+                    score += 20.0;
+                }
+                if model.context_window >= 64_000 {
+                    score += 10.0;
+                }
             }
             TaskType::Vision => {
-                if model.supports_vision { score += 30.0; } else { score -= 50.0; }
+                if model.supports_vision {
+                    score += 30.0;
+                } else {
+                    score -= 50.0;
+                }
             }
             TaskType::Fast => {
                 match model.speed_tier {
@@ -301,20 +365,34 @@ impl ModelSelector {
                     SpeedTier::Slow => score -= 10.0,
                 }
                 // Penalize expensive models for fast tasks
-                if model.cost_per_1k_input > 0.005 { score -= 15.0; }
+                if model.cost_per_1k_input > 0.005 {
+                    score -= 15.0;
+                }
             }
             TaskType::Summarize => {
-                if model.cost_per_1k_input < 0.001 { score += 15.0; } // prefer cheap
-                if model.context_window >= 128_000 { score += 10.0; }
+                if model.cost_per_1k_input < 0.001 {
+                    score += 15.0;
+                } // prefer cheap
+                if model.context_window >= 128_000 {
+                    score += 10.0;
+                }
             }
             TaskType::Analyze => {
-                if model.context_window >= 128_000 { score += 15.0; }
-                if model.quality_tier == QualityTier::Flagship { score += 15.0; }
+                if model.context_window >= 128_000 {
+                    score += 15.0;
+                }
+                if model.quality_tier == QualityTier::Flagship {
+                    score += 15.0;
+                }
             }
             TaskType::Chat => {
                 // Balanced: prefer good quality + reasonable cost
-                if model.cost_per_1k_input < 0.001 { score += 10.0; }
-                if model.supports_tools { score += 5.0; }
+                if model.cost_per_1k_input < 0.001 {
+                    score += 10.0;
+                }
+                if model.supports_tools {
+                    score += 5.0;
+                }
             }
         }
 
@@ -329,7 +407,11 @@ impl ModelSelector {
     fn explain_selection(&self, model: &ModelInfo, task: TaskType) -> String {
         let task_str = TaskType::as_str(&task);
         match task {
-            TaskType::Fast => format!("{} selected for speed ({} tier)", model.id, format!("{:?}", model.speed_tier).to_lowercase()),
+            TaskType::Fast => format!(
+                "{} selected for speed ({} tier)",
+                model.id,
+                format!("{:?}", model.speed_tier).to_lowercase()
+            ),
             TaskType::Code => {
                 if model.id.contains("code") || model.id.contains("codestral") {
                     format!("{} selected — specialized code model", model.id)
@@ -338,7 +420,9 @@ impl ModelSelector {
                 }
             }
             TaskType::Vision => format!("{} selected — supports vision input", model.id),
-            TaskType::Summarize => format!("{} selected — cost-effective for large context", model.id),
+            TaskType::Summarize => {
+                format!("{} selected — cost-effective for large context", model.id)
+            }
             _ => format!("{} selected for {task_str} (best available)", model.id),
         }
     }
@@ -350,140 +434,230 @@ impl ModelSelector {
         // ── Groq models (ultra-fast, free tier) ──
         models.extend(vec![
             ModelInfo {
-                id: "llama-3.3-70b-versatile".into(), provider: Provider::Groq,
+                id: "llama-3.3-70b-versatile".into(),
+                provider: Provider::Groq,
                 display_name: "Llama 3.3 70B".into(),
-                context_window: 128_000, max_output: 32_768,
-                cost_per_1k_input: 0.0, cost_per_1k_output: 0.0,
-                supports_streaming: true, supports_vision: false, supports_tools: true,
-                speed_tier: SpeedTier::UltraFast, quality_tier: QualityTier::Strong,
+                context_window: 128_000,
+                max_output: 32_768,
+                cost_per_1k_input: 0.0,
+                cost_per_1k_output: 0.0,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: true,
+                speed_tier: SpeedTier::UltraFast,
+                quality_tier: QualityTier::Strong,
             },
             ModelInfo {
-                id: "llama-3.1-8b-instant".into(), provider: Provider::Groq,
+                id: "llama-3.1-8b-instant".into(),
+                provider: Provider::Groq,
                 display_name: "Llama 3.1 8B Instant".into(),
-                context_window: 131_072, max_output: 8_192,
-                cost_per_1k_input: 0.0, cost_per_1k_output: 0.0,
-                supports_streaming: true, supports_vision: false, supports_tools: false,
-                speed_tier: SpeedTier::UltraFast, quality_tier: QualityTier::Lightweight,
+                context_window: 131_072,
+                max_output: 8_192,
+                cost_per_1k_input: 0.0,
+                cost_per_1k_output: 0.0,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: false,
+                speed_tier: SpeedTier::UltraFast,
+                quality_tier: QualityTier::Lightweight,
             },
             ModelInfo {
-                id: "mixtral-8x7b-32768".into(), provider: Provider::Groq,
+                id: "mixtral-8x7b-32768".into(),
+                provider: Provider::Groq,
                 display_name: "Mixtral 8x7B".into(),
-                context_window: 32_768, max_output: 32_768,
-                cost_per_1k_input: 0.0, cost_per_1k_output: 0.0,
-                supports_streaming: true, supports_vision: false, supports_tools: false,
-                speed_tier: SpeedTier::UltraFast, quality_tier: QualityTier::Standard,
+                context_window: 32_768,
+                max_output: 32_768,
+                cost_per_1k_input: 0.0,
+                cost_per_1k_output: 0.0,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: false,
+                speed_tier: SpeedTier::UltraFast,
+                quality_tier: QualityTier::Standard,
             },
             ModelInfo {
-                id: "gemma2-9b-it".into(), provider: Provider::Groq,
+                id: "gemma2-9b-it".into(),
+                provider: Provider::Groq,
                 display_name: "Gemma 2 9B".into(),
-                context_window: 8_192, max_output: 8_192,
-                cost_per_1k_input: 0.0, cost_per_1k_output: 0.0,
-                supports_streaming: true, supports_vision: false, supports_tools: false,
-                speed_tier: SpeedTier::UltraFast, quality_tier: QualityTier::Lightweight,
+                context_window: 8_192,
+                max_output: 8_192,
+                cost_per_1k_input: 0.0,
+                cost_per_1k_output: 0.0,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: false,
+                speed_tier: SpeedTier::UltraFast,
+                quality_tier: QualityTier::Lightweight,
             },
         ]);
 
         // ── Mistral models ──
         models.extend(vec![
             ModelInfo {
-                id: "mistral-large-latest".into(), provider: Provider::Mistral,
+                id: "mistral-large-latest".into(),
+                provider: Provider::Mistral,
                 display_name: "Mistral Large".into(),
-                context_window: 128_000, max_output: 32_768,
-                cost_per_1k_input: 0.002, cost_per_1k_output: 0.006,
-                supports_streaming: true, supports_vision: false, supports_tools: true,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Flagship,
+                context_window: 128_000,
+                max_output: 32_768,
+                cost_per_1k_input: 0.002,
+                cost_per_1k_output: 0.006,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: true,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Flagship,
             },
             ModelInfo {
-                id: "mistral-small-latest".into(), provider: Provider::Mistral,
+                id: "mistral-small-latest".into(),
+                provider: Provider::Mistral,
                 display_name: "Mistral Small".into(),
-                context_window: 32_768, max_output: 8_192,
-                cost_per_1k_input: 0.001, cost_per_1k_output: 0.003,
-                supports_streaming: true, supports_vision: false, supports_tools: true,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Strong,
+                context_window: 32_768,
+                max_output: 8_192,
+                cost_per_1k_input: 0.001,
+                cost_per_1k_output: 0.003,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: true,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Strong,
             },
             ModelInfo {
-                id: "codestral-latest".into(), provider: Provider::Mistral,
+                id: "codestral-latest".into(),
+                provider: Provider::Mistral,
                 display_name: "Codestral".into(),
-                context_window: 32_768, max_output: 8_192,
-                cost_per_1k_input: 0.001, cost_per_1k_output: 0.003,
-                supports_streaming: true, supports_vision: false, supports_tools: false,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Strong,
+                context_window: 32_768,
+                max_output: 8_192,
+                cost_per_1k_input: 0.001,
+                cost_per_1k_output: 0.003,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: false,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Strong,
             },
             ModelInfo {
-                id: "open-mistral-nemo".into(), provider: Provider::Mistral,
+                id: "open-mistral-nemo".into(),
+                provider: Provider::Mistral,
                 display_name: "Mistral Nemo".into(),
-                context_window: 128_000, max_output: 8_192,
-                cost_per_1k_input: 0.0, cost_per_1k_output: 0.0,
-                supports_streaming: true, supports_vision: false, supports_tools: false,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Standard,
+                context_window: 128_000,
+                max_output: 8_192,
+                cost_per_1k_input: 0.0,
+                cost_per_1k_output: 0.0,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: false,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Standard,
             },
         ]);
 
         // ── Anthropic models ──
         models.extend(vec![
             ModelInfo {
-                id: "claude-sonnet-4-20250514".into(), provider: Provider::Anthropic,
+                id: "claude-sonnet-4-20250514".into(),
+                provider: Provider::Anthropic,
                 display_name: "Claude Sonnet 4".into(),
-                context_window: 200_000, max_output: 64_000,
-                cost_per_1k_input: 0.003, cost_per_1k_output: 0.015,
-                supports_streaming: true, supports_vision: true, supports_tools: true,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Flagship,
+                context_window: 200_000,
+                max_output: 64_000,
+                cost_per_1k_input: 0.003,
+                cost_per_1k_output: 0.015,
+                supports_streaming: true,
+                supports_vision: true,
+                supports_tools: true,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Flagship,
             },
             ModelInfo {
-                id: "claude-3-5-haiku-20241022".into(), provider: Provider::Anthropic,
+                id: "claude-3-5-haiku-20241022".into(),
+                provider: Provider::Anthropic,
                 display_name: "Claude 3.5 Haiku".into(),
-                context_window: 200_000, max_output: 8_192,
-                cost_per_1k_input: 0.001, cost_per_1k_output: 0.005,
-                supports_streaming: true, supports_vision: true, supports_tools: true,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Strong,
+                context_window: 200_000,
+                max_output: 8_192,
+                cost_per_1k_input: 0.001,
+                cost_per_1k_output: 0.005,
+                supports_streaming: true,
+                supports_vision: true,
+                supports_tools: true,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Strong,
             },
         ]);
 
         // ── OpenAI models ──
         models.extend(vec![
             ModelInfo {
-                id: "gpt-4o".into(), provider: Provider::OpenAI,
+                id: "gpt-4o".into(),
+                provider: Provider::OpenAI,
                 display_name: "GPT-4o".into(),
-                context_window: 128_000, max_output: 16_384,
-                cost_per_1k_input: 0.0025, cost_per_1k_output: 0.01,
-                supports_streaming: true, supports_vision: true, supports_tools: true,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Flagship,
+                context_window: 128_000,
+                max_output: 16_384,
+                cost_per_1k_input: 0.0025,
+                cost_per_1k_output: 0.01,
+                supports_streaming: true,
+                supports_vision: true,
+                supports_tools: true,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Flagship,
             },
             ModelInfo {
-                id: "gpt-4o-mini".into(), provider: Provider::OpenAI,
+                id: "gpt-4o-mini".into(),
+                provider: Provider::OpenAI,
                 display_name: "GPT-4o Mini".into(),
-                context_window: 128_000, max_output: 16_384,
-                cost_per_1k_input: 0.00015, cost_per_1k_output: 0.0006,
-                supports_streaming: true, supports_vision: true, supports_tools: true,
-                speed_tier: SpeedTier::UltraFast, quality_tier: QualityTier::Standard,
+                context_window: 128_000,
+                max_output: 16_384,
+                cost_per_1k_input: 0.00015,
+                cost_per_1k_output: 0.0006,
+                supports_streaming: true,
+                supports_vision: true,
+                supports_tools: true,
+                speed_tier: SpeedTier::UltraFast,
+                quality_tier: QualityTier::Standard,
             },
             ModelInfo {
-                id: "o3-mini".into(), provider: Provider::OpenAI,
+                id: "o3-mini".into(),
+                provider: Provider::OpenAI,
                 display_name: "o3 Mini".into(),
-                context_window: 200_000, max_output: 100_000,
-                cost_per_1k_input: 0.0011, cost_per_1k_output: 0.0044,
-                supports_streaming: true, supports_vision: false, supports_tools: true,
-                speed_tier: SpeedTier::Medium, quality_tier: QualityTier::Flagship,
+                context_window: 200_000,
+                max_output: 100_000,
+                cost_per_1k_input: 0.0011,
+                cost_per_1k_output: 0.0044,
+                supports_streaming: true,
+                supports_vision: false,
+                supports_tools: true,
+                speed_tier: SpeedTier::Medium,
+                quality_tier: QualityTier::Flagship,
             },
         ]);
 
         // ── Gemini models ──
         models.extend(vec![
             ModelInfo {
-                id: "gemini-2.5-flash".into(), provider: Provider::Gemini,
+                id: "gemini-2.5-flash".into(),
+                provider: Provider::Gemini,
                 display_name: "Gemini 2.5 Flash".into(),
-                context_window: 1_000_000, max_output: 65_536,
-                cost_per_1k_input: 0.000075, cost_per_1k_output: 0.0003,
-                supports_streaming: true, supports_vision: true, supports_tools: true,
-                speed_tier: SpeedTier::UltraFast, quality_tier: QualityTier::Strong,
+                context_window: 1_000_000,
+                max_output: 65_536,
+                cost_per_1k_input: 0.000075,
+                cost_per_1k_output: 0.0003,
+                supports_streaming: true,
+                supports_vision: true,
+                supports_tools: true,
+                speed_tier: SpeedTier::UltraFast,
+                quality_tier: QualityTier::Strong,
             },
             ModelInfo {
-                id: "gemini-2.5-pro".into(), provider: Provider::Gemini,
+                id: "gemini-2.5-pro".into(),
+                provider: Provider::Gemini,
                 display_name: "Gemini 2.5 Pro".into(),
-                context_window: 1_000_000, max_output: 65_536,
-                cost_per_1k_input: 0.00125, cost_per_1k_output: 0.01,
-                supports_streaming: true, supports_vision: true, supports_tools: true,
-                speed_tier: SpeedTier::Fast, quality_tier: QualityTier::Flagship,
+                context_window: 1_000_000,
+                max_output: 65_536,
+                cost_per_1k_input: 0.00125,
+                cost_per_1k_output: 0.01,
+                supports_streaming: true,
+                supports_vision: true,
+                supports_tools: true,
+                speed_tier: SpeedTier::Fast,
+                quality_tier: QualityTier::Flagship,
             },
         ]);
 
@@ -500,34 +674,34 @@ mod tests {
         let sel = ModelSelector::detect(
             &["key1".into(), "key2".into()],
             &vec![],
-            &None, &None, &None,
+            &None,
+            &None,
+            &None,
         );
         let statuses = sel.status();
-        let groq = statuses.iter().find(|s| s.provider == Provider::Groq).unwrap();
+        let groq = statuses
+            .iter()
+            .find(|s| s.provider == Provider::Groq)
+            .unwrap();
         assert!(groq.available);
         assert_eq!(groq.key_count, 2);
-        let mistral = statuses.iter().find(|s| s.provider == Provider::Mistral).unwrap();
+        let mistral = statuses
+            .iter()
+            .find(|s| s.provider == Provider::Mistral)
+            .unwrap();
         assert!(!mistral.available);
     }
 
     #[test]
     fn test_select_chat() {
-        let sel = ModelSelector::detect(
-            &["key1".into()],
-            &vec![],
-            &None, &None, &None,
-        );
+        let sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
         let result = sel.select(TaskType::Chat).unwrap();
         assert_eq!(result.provider, Provider::Groq);
     }
 
     #[test]
     fn test_select_fast_prefers_groq() {
-        let sel = ModelSelector::detect(
-            &["key1".into()],
-            &vec![],
-            &None, &None, &None,
-        );
+        let sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
         let result = sel.select(TaskType::Fast).unwrap();
         assert_eq!(result.provider, Provider::Groq);
         assert!(result.model_info.speed_tier == SpeedTier::UltraFast);
@@ -535,11 +709,7 @@ mod tests {
 
     #[test]
     fn test_select_vision_requires_vision_model() {
-        let sel = ModelSelector::detect(
-            &["key1".into()],
-            &vec![],
-            &None, &None, &None,
-        );
+        let sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
         // Groq doesn't have vision models
         assert!(sel.select(TaskType::Vision).is_none());
     }
@@ -550,7 +720,8 @@ mod tests {
             &["key1".into()],
             &["key2".into()],
             &Some("sk-ant".into()),
-            &None, &None,
+            &None,
+            &None,
         );
         let chain = sel.select_with_fallback(TaskType::Chat);
         assert!(chain.len() >= 2); // Groq + Mistral at minimum
@@ -568,7 +739,9 @@ mod tests {
         let sel = ModelSelector::detect(
             &["k1".into()],
             &["k2".into(), "k3".into()],
-            &Some("sk-ant".into()), &None, &None,
+            &Some("sk-ant".into()),
+            &None,
+            &None,
         );
         let s = sel.summary();
         assert!(s.contains("3 providers"));
@@ -576,11 +749,7 @@ mod tests {
 
     #[test]
     fn test_model_catalog_size() {
-        let _sel = ModelSelector::detect(
-            &["key1".into()],
-            &vec![],
-            &None, &None, &None,
-        );
+        let _sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
         // Total catalog should have all models regardless of availability
         let all = ModelSelector::build_model_catalog();
         assert!(all.len() >= 12);

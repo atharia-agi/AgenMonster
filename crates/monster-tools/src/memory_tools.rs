@@ -22,8 +22,12 @@ impl MemoryStoreTool {
     pub fn new(db: Arc<RwLock<Option<memory::MemoryHandle>>>) -> Self {
         Self { db }
     }
-    pub fn name(&self) -> &str { "memory_store" }
-    pub fn description(&self) -> &str { "Store a memory. Content is auto-embedded for semantic search." }
+    pub fn name(&self) -> &str {
+        "memory_store"
+    }
+    pub fn description(&self) -> &str {
+        "Store a memory. Content is auto-embedded for semantic search."
+    }
     pub fn parameters(&self) -> Value {
         serde_json::json!({
             "type": "object",
@@ -35,7 +39,9 @@ impl MemoryStoreTool {
         })
     }
     pub async fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let content = args.get("content").and_then(|v| v.as_str())
+        let content = args
+            .get("content")
+            .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("content is required"))?;
         let tier_str = args.get("tier").and_then(|v| v.as_str()).unwrap_or("hot");
         let tier = match tier_str {
@@ -59,8 +65,12 @@ impl MemorySearchTool {
     pub fn new(db: Arc<RwLock<Option<memory::MemoryHandle>>>) -> Self {
         Self { db }
     }
-    pub fn name(&self) -> &str { "memory_search" }
-    pub fn description(&self) -> &str { "Search memories by semantic similarity or keyword." }
+    pub fn name(&self) -> &str {
+        "memory_search"
+    }
+    pub fn description(&self) -> &str {
+        "Search memories by semantic similarity or keyword."
+    }
     pub fn parameters(&self) -> Value {
         serde_json::json!({
             "type": "object",
@@ -72,21 +82,29 @@ impl MemorySearchTool {
         })
     }
     pub async fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let query = args.get("query").and_then(|v| v.as_str())
+        let query = args
+            .get("query")
+            .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("query is required"))?;
         let limit = args.get("limit").and_then(|v| v.as_u64()).unwrap_or(5) as usize;
         let db = self.db.read().await;
         if let Some(ref handle) = *db {
             let results: Vec<memory::MemoryBlock> = handle.recall(query, limit).await?;
-            let items: Vec<serde_json::Value> = results.into_iter().map(|m| {
-                serde_json::json!({
-                    "id": m.id,
-                    "content": m.content,
-                    "tier": format!("{:?}", m.tier),
-                    "decay_score": m.decay_score,
+            let items: Vec<serde_json::Value> = results
+                .into_iter()
+                .map(|m| {
+                    serde_json::json!({
+                        "id": m.id,
+                        "content": m.content,
+                        "tier": format!("{:?}", m.tier),
+                        "decay_score": m.decay_score,
+                    })
                 })
-            }).collect();
-            Ok(serde_json::json!({"query": query, "count": items.len(), "results": items}).to_string())
+                .collect();
+            Ok(
+                serde_json::json!({"query": query, "count": items.len(), "results": items})
+                    .to_string(),
+            )
         } else {
             Ok(serde_json::json!({"error": "Memory not initialized"}).to_string())
         }
@@ -97,8 +115,12 @@ impl MemoryForgetTool {
     pub fn new(db: Arc<RwLock<Option<memory::MemoryHandle>>>) -> Self {
         Self { db }
     }
-    pub fn name(&self) -> &str { "memory_forget" }
-    pub fn description(&self) -> &str { "Decay all memories (reduce decay_score). High decay = forgotten." }
+    pub fn name(&self) -> &str {
+        "memory_forget"
+    }
+    pub fn description(&self) -> &str {
+        "Decay all memories (reduce decay_score). High decay = forgotten."
+    }
     pub fn parameters(&self) -> Value {
         serde_json::json!({
             "type": "object",

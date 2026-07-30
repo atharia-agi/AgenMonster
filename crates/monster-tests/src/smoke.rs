@@ -2,7 +2,7 @@
 
 #[cfg(test)]
 mod tests {
-    use monster_core::types::{Stage, PetState};
+    use monster_core::types::{PetState, Stage};
 
     #[test]
     fn stage_parse_roundtrip() {

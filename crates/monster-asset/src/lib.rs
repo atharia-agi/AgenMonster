@@ -2,4 +2,4 @@
 
 pub mod pipeline;
 
-pub use pipeline::{AssetPipeline, AssetManifest, SpriteAsset, TileAsset, SoundAsset};
+pub use pipeline::{AssetManifest, AssetPipeline, SoundAsset, SpriteAsset, TileAsset};

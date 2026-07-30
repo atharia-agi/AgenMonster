@@ -6,8 +6,12 @@ use std::path::Path;
 pub struct FileWatchTool;
 
 impl FileWatchTool {
-    pub fn new() -> Self { Self }
-    pub fn name(&self) -> &str { "file_watch" }
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn name(&self) -> &str {
+        "file_watch"
+    }
     pub fn description(&self) -> &str {
         "List files in a directory with sizes and modification times. Supports recursive depth."
     }
@@ -23,17 +27,27 @@ impl FileWatchTool {
         })
     }
     pub fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let path_str = args.get("path").and_then(|v| v.as_str())
+        let path_str = args
+            .get("path")
+            .and_then(|v| v.as_str())
             .ok_or_else(|| anyhow::anyhow!("path is required"))?;
-        let max_depth = args.get("depth").and_then(|v| v.as_u64()).unwrap_or(1).min(5) as usize;
+        let max_depth = args
+            .get("depth")
+            .and_then(|v| v.as_u64())
+            .unwrap_or(1)
+            .min(5) as usize;
         let pattern = args.get("pattern").and_then(|v| v.as_str()).unwrap_or("");
 
         let path = Path::new(path_str);
         if !path.exists() {
-            return Ok(serde_json::json!({"error": format!("Path not found: {path_str}")}).to_string());
+            return Ok(
+                serde_json::json!({"error": format!("Path not found: {path_str}")}).to_string(),
+            );
         }
         if !path.is_dir() {
-            return Ok(serde_json::json!({"error": format!("Not a directory: {path_str}")}).to_string());
+            return Ok(
+                serde_json::json!({"error": format!("Not a directory: {path_str}")}).to_string(),
+            );
         }
 
         let mut entries = Vec::new();
@@ -43,17 +57,30 @@ impl FileWatchTool {
             "path": path_str,
             "count": entries.len(),
             "entries": entries,
-        }).to_string())
+        })
+        .to_string())
     }
 }
 
-fn walk_dir(dir: &Path, pattern: &str, entries: &mut Vec<Value>, depth: usize, max_depth: usize) -> anyhow::Result<()> {
-    if depth >= max_depth { return Ok(()); }
+fn walk_dir(
+    dir: &Path,
+    pattern: &str,
+    entries: &mut Vec<Value>,
+    depth: usize,
+    max_depth: usize,
+) -> anyhow::Result<()> {
+    if depth >= max_depth {
+        return Ok(());
+    }
     if let Ok(read_dir) = std::fs::read_dir(dir) {
         for entry in read_dir.flatten() {
             let path = entry.path();
             let meta = std::fs::metadata(&path).ok();
-            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
 
             if !pattern.is_empty() && path.is_file() {
                 if let Some(ext) = path.extension() {
@@ -98,7 +125,9 @@ mod tests {
     #[test]
     fn test_file_watch_nonexistent() {
         let tool = FileWatchTool::new();
-        let result = tool.execute(&serde_json::json!({"path": "/nonexistent/path/12345"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"path": "/nonexistent/path/12345"}))
+            .unwrap();
         assert!(result.contains("error"));
     }
 }

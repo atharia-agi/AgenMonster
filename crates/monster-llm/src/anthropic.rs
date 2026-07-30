@@ -32,7 +32,8 @@ impl AnthropicClient {
     }
 
     pub fn build_request(&self, messages: &[ApiMessage]) -> serde_json::Value {
-        let msgs: Vec<serde_json::Value> = messages.iter()
+        let msgs: Vec<serde_json::Value> = messages
+            .iter()
             .map(|m| serde_json::json!({"role": m.role, "content": m.content}))
             .collect();
 
@@ -74,7 +75,8 @@ mod tests {
     fn test_build_request() {
         let client = AnthropicClient::new("test-key");
         let messages = vec![ApiMessage {
-            role: "user".into(), content: "hello".into(),
+            role: "user".into(),
+            content: "hello".into(),
         }];
         let req = client.build_request(&messages);
         assert_eq!(req["model"], "claude-sonnet-4-20250514");

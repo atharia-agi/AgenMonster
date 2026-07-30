@@ -16,51 +16,72 @@ pub struct SpriteDef {
 }
 
 pub const SPRITE_EGG: SpriteDef = SpriteDef {
-    id: "egg", body_scale: 0.8,
-    has_wings: false, has_crown: false,
-    wing_style: "none", weapon_style: "none",
+    id: "egg",
+    body_scale: 0.8,
+    has_wings: false,
+    has_crown: false,
+    wing_style: "none",
+    weapon_style: "none",
     accent_dots: 2,
 };
 
 pub const SPRITE_HATCHLING: SpriteDef = SpriteDef {
-    id: "hatchling", body_scale: 1.0,
-    has_wings: false, has_crown: false,
-    wing_style: "nubs", weapon_style: "none",
+    id: "hatchling",
+    body_scale: 1.0,
+    has_wings: false,
+    has_crown: false,
+    wing_style: "nubs",
+    weapon_style: "none",
     accent_dots: 3,
 };
 
 pub const SPRITE_BABY: SpriteDef = SpriteDef {
-    id: "baby", body_scale: 1.0,
-    has_wings: true, has_crown: false,
-    wing_style: "small", weapon_style: "none",
+    id: "baby",
+    body_scale: 1.0,
+    has_wings: true,
+    has_crown: false,
+    wing_style: "small",
+    weapon_style: "none",
     accent_dots: 4,
 };
 
 pub const SPRITE_CHILD: SpriteDef = SpriteDef {
-    id: "child", body_scale: 1.1,
-    has_wings: true, has_crown: false,
-    wing_style: "growing", weapon_style: "wand",
+    id: "child",
+    body_scale: 1.1,
+    has_wings: true,
+    has_crown: false,
+    wing_style: "growing",
+    weapon_style: "wand",
     accent_dots: 5,
 };
 
 pub const SPRITE_TEEN: SpriteDef = SpriteDef {
-    id: "teen", body_scale: 1.2,
-    has_wings: true, has_crown: false,
-    wing_style: "full", weapon_style: "sword",
+    id: "teen",
+    body_scale: 1.2,
+    has_wings: true,
+    has_crown: false,
+    wing_style: "full",
+    weapon_style: "sword",
     accent_dots: 6,
 };
 
 pub const SPRITE_ADULT: SpriteDef = SpriteDef {
-    id: "adult", body_scale: 1.3,
-    has_wings: true, has_crown: false,
-    wing_style: "majestic", weapon_style: "staff",
+    id: "adult",
+    body_scale: 1.3,
+    has_wings: true,
+    has_crown: false,
+    wing_style: "majestic",
+    weapon_style: "staff",
     accent_dots: 8,
 };
 
 pub const SPRITE_MEGA: SpriteDef = SpriteDef {
-    id: "mega", body_scale: 1.5,
-    has_wings: true, has_crown: true,
-    wing_style: "cosmic", weapon_style: "scepter",
+    id: "mega",
+    body_scale: 1.5,
+    has_wings: true,
+    has_crown: true,
+    wing_style: "cosmic",
+    weapon_style: "scepter",
     accent_dots: 10,
 };
 

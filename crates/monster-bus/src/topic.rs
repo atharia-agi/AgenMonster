@@ -16,9 +16,15 @@ pub enum Topic {
 impl Topic {
     pub fn all() -> &'static [Topic] {
         &[
-            Topic::PetInteraction, Topic::UserTask, Topic::AgentThink,
-            Topic::ToolCall, Topic::Skill, Topic::Memory, Topic::Render,
-            Topic::Telemetry, Topic::Custom,
+            Topic::PetInteraction,
+            Topic::UserTask,
+            Topic::AgentThink,
+            Topic::ToolCall,
+            Topic::Skill,
+            Topic::Memory,
+            Topic::Render,
+            Topic::Telemetry,
+            Topic::Custom,
         ]
     }
 

@@ -3,18 +3,18 @@
 //! Real vector embeddings using TF-IDF (no external ML crate needed).
 //! Memories decay over time, get promoted/demoted between tiers.
 
-pub mod block;
-pub mod recall;
 pub mod archival;
+pub mod block;
 pub mod decay;
 pub mod embedding;
 pub mod graph;
+pub mod recall;
 
 use block::{MemoryBlock, MemoryTier};
 use embedding::EmbeddingEngine;
+use rusqlite::Connection;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use rusqlite::Connection;
 
 pub struct MemorySubsystem {
     db: Arc<Connection>,
@@ -25,7 +25,8 @@ pub struct MemorySubsystem {
 impl MemorySubsystem {
     pub async fn boot(db_path: &str) -> anyhow::Result<Self> {
         let db = Connection::open(db_path)?;
-        db.execute_batch("
+        db.execute_batch(
+            "
             CREATE TABLE IF NOT EXISTS memories (
                 id INTEGER PRIMARY KEY,
                 tier TEXT,
@@ -40,7 +41,8 @@ impl MemorySubsystem {
             CREATE INDEX IF NOT EXISTS idx_memories_tier ON memories(tier);
             CREATE INDEX IF NOT EXISTS idx_memories_decay ON memories(decay_score DESC);
             CREATE INDEX IF NOT EXISTS idx_memories_content ON memories(content);
-        ")?;
+        ",
+        )?;
         // Create FTS5 virtual table for full-text search (if not exists)
         let fts_result = db.execute_batch(
             "CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts USING fts5(content, tier, tags, content='memories', content_rowid='id');"
@@ -90,12 +92,14 @@ impl MemorySubsystem {
             let all = self.get_all_memories().await?;
             let has_embeddings = all.iter().any(|m| !m.embedding.is_empty());
             if has_embeddings {
-                let mut scored: Vec<(MemoryBlock, f32)> = all.into_iter()
+                let mut scored: Vec<(MemoryBlock, f32)> = all
+                    .into_iter()
                     .filter_map(|m| {
                         if m.embedding.is_empty() {
                             return None; // skip memories without embeddings
                         }
-                        let similarity = embedding::cosine_similarity(&query_embedding, &m.embedding);
+                        let similarity =
+                            embedding::cosine_similarity(&query_embedding, &m.embedding);
                         if similarity > 0.05 {
                             Some((m, similarity))
                         } else {
@@ -104,7 +108,8 @@ impl MemorySubsystem {
                     })
                     .collect();
                 scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
-                let results: Vec<MemoryBlock> = scored.into_iter().take(limit).map(|(m, _)| m).collect();
+                let results: Vec<MemoryBlock> =
+                    scored.into_iter().take(limit).map(|(m, _)| m).collect();
                 if !results.is_empty() {
                     return Ok(results);
                 }
@@ -115,7 +120,7 @@ impl MemorySubsystem {
         let pattern = format!("%{query}%");
         let mut stmt = self.db.prepare(
             "SELECT id, tier, content, access_count, created_at, last_accessed, decay_score
-             FROM memories WHERE content LIKE ?1 ORDER BY decay_score DESC LIMIT ?2"
+             FROM memories WHERE content LIKE ?1 ORDER BY decay_score DESC LIMIT ?2",
         )?;
         let rows = stmt.query_map(rusqlite::params![pattern, limit as i64], |row| {
             let tier_str: String = row.get(1)?;
@@ -218,7 +223,7 @@ impl MemorySubsystem {
     async fn get_all_memories(&self) -> anyhow::Result<Vec<MemoryBlock>> {
         let mut stmt = self.db.prepare(
             "SELECT id, tier, content, access_count, created_at, last_accessed, decay_score
-             FROM memories ORDER BY decay_score DESC"
+             FROM memories ORDER BY decay_score DESC",
         )?;
         let rows = stmt.query_map([], |row| {
             let tier_str: String = row.get(1)?;
@@ -245,7 +250,9 @@ impl MemorySubsystem {
     /// Get memory count by tier.
     pub async fn tier_counts(&self) -> anyhow::Result<TierCounts> {
         let mut counts = TierCounts::default();
-        let mut stmt = self.db.prepare("SELECT tier, COUNT(*) FROM memories GROUP BY tier")?;
+        let mut stmt = self
+            .db
+            .prepare("SELECT tier, COUNT(*) FROM memories GROUP BY tier")?;
         let rows = stmt.query_map([], |row| {
             let tier: String = row.get(0)?;
             let count: i64 = row.get(1)?;
@@ -263,10 +270,13 @@ impl MemorySubsystem {
     }
 
     pub fn stats(&self) -> MemoryStats {
-        let count: i64 = self.db
+        let count: i64 = self
+            .db
             .query_row("SELECT COUNT(*) FROM memories", [], |row| row.get(0))
             .unwrap_or(0);
-        MemoryStats { total_blocks: count as usize }
+        MemoryStats {
+            total_blocks: count as usize,
+        }
     }
 }
 

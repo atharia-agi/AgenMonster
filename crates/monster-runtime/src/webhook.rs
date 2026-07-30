@@ -15,7 +15,9 @@ struct WebhookEntry {
 
 impl WebhookRegistry {
     pub fn new() -> Self {
-        Self { hooks: RwLock::new(Vec::new()) }
+        Self {
+            hooks: RwLock::new(Vec::new()),
+        }
     }
 
     pub fn register(&self, url: &str, events: Vec<String>) {
@@ -32,5 +34,7 @@ impl WebhookRegistry {
 }
 
 impl Default for WebhookRegistry {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }

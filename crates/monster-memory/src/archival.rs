@@ -64,7 +64,9 @@ pub struct ArchivalEntry {
 }
 
 impl Default for ArchivalEngine {
-    fn default() -> Self { Self::new() }
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 #[cfg(test)]
@@ -74,9 +76,13 @@ mod tests {
     #[test]
     fn test_decay() {
         let engine = ArchivalEngine::new();
-        let mut memories = vec![
-            ArchivalEntry { id: 1, tier: "hot".into(), content: "".into(), access_count: 15, decay_score: 1.0 },
-        ];
+        let mut memories = vec![ArchivalEntry {
+            id: 1,
+            tier: "hot".into(),
+            content: "".into(),
+            access_count: 15,
+            decay_score: 1.0,
+        }];
         engine.tick_decay(&mut memories);
         assert!(memories[0].decay_score < 1.0);
     }
@@ -84,9 +90,13 @@ mod tests {
     #[test]
     fn test_promote_demote() {
         let engine = ArchivalEngine::new();
-        let mut memories = vec![
-            ArchivalEntry { id: 1, tier: "cold".into(), content: "".into(), access_count: 15, decay_score: 0.9 },
-        ];
+        let mut memories = vec![ArchivalEntry {
+            id: 1,
+            tier: "cold".into(),
+            content: "".into(),
+            access_count: 15,
+            decay_score: 0.9,
+        }];
         engine.promote_demote(&mut memories);
         assert_eq!(memories[0].tier, "hot");
     }
@@ -95,7 +105,13 @@ mod tests {
     fn test_prune() {
         let engine = ArchivalEngine::new();
         let mut memories: Vec<ArchivalEntry> = (0..10)
-            .map(|i| ArchivalEntry { id: i, tier: "archived".into(), content: "".into(), access_count: 0, decay_score: 0.0 })
+            .map(|i| ArchivalEntry {
+                id: i,
+                tier: "archived".into(),
+                content: "".into(),
+                access_count: 0,
+                decay_score: 0.0,
+            })
             .collect();
         engine.prune_archived(&mut memories, 3);
         assert_eq!(memories.len(), 3);

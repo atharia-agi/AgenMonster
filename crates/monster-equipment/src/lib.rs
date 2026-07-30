@@ -201,11 +201,19 @@ impl EquipmentLoadout {
             mood_modifier: "idle".into(),
             animation_hint: "none".into(),
         };
-        for item in [&self.head, &self.body, &self.held, &self.back, &self.accessory] {
+        for item in [
+            &self.head,
+            &self.body,
+            &self.held,
+            &self.back,
+            &self.accessory,
+        ] {
             if let Some(item) = item {
                 effects.energy_bonus += item.effects.energy_bonus;
                 effects.learning_speed += item.effects.learning_speed;
-                effects.tool_preference.extend(item.effects.tool_preference.clone());
+                effects
+                    .tool_preference
+                    .extend(item.effects.tool_preference.clone());
             }
         }
         effects
@@ -218,6 +226,7 @@ impl EquipmentLoadout {
             "held": self.held.as_ref().map(|e| &e.id),
             "back": self.back.as_ref().map(|e| &e.id),
             "accessory": self.accessory.as_ref().map(|e| &e.id),
-        }).to_string()
+        })
+        .to_string()
     }
 }

@@ -8,7 +8,11 @@ pub struct AdaptiveRouter {
 
 impl AdaptiveRouter {
     pub fn new(anthropic: Option<String>, openai: Option<String>, budget: f64) -> Self {
-        Self { anthropic_key: anthropic, openai_key: openai, budget_remaining: budget }
+        Self {
+            anthropic_key: anthropic,
+            openai_key: openai,
+            budget_remaining: budget,
+        }
     }
 
     pub fn select_model(&self, task_type: &str, complexity: f32) -> &str {

@@ -5,8 +5,12 @@ use serde_json::Value;
 pub struct ProcessKillTool;
 
 impl ProcessKillTool {
-    pub fn new() -> Self { Self }
-    pub fn name(&self) -> &str { "process_kill" }
+    pub fn new() -> Self {
+        Self
+    }
+    pub fn name(&self) -> &str {
+        "process_kill"
+    }
     pub fn description(&self) -> &str {
         "Kill a process by PID or name. Use with caution."
     }
@@ -34,7 +38,8 @@ impl ProcessKillTool {
                 "pid": pid,
                 "success": output.status.success(),
                 "output": format!("{}{}", stdout, stderr).trim(),
-            }).to_string());
+            })
+            .to_string());
         }
 
         if let Some(name) = args.get("name").and_then(|v| v.as_str()) {
@@ -48,7 +53,8 @@ impl ProcessKillTool {
                 "name": name,
                 "success": output.status.success(),
                 "output": format!("{}{}", stdout, stderr).trim(),
-            }).to_string());
+            })
+            .to_string());
         }
 
         Ok(serde_json::json!({"error": "Provide either 'pid' or 'name'"}).to_string())

@@ -21,11 +21,14 @@ impl GeminiClient {
     }
 
     pub fn build_request(&self, messages: &[ApiMessage]) -> serde_json::Value {
-        let contents: Vec<serde_json::Value> = messages.iter()
-            .map(|m| serde_json::json!({
-                "role": if m.role == "assistant" { "model" } else { "user" },
-                "parts": [{"text": m.content}]
-            }))
+        let contents: Vec<serde_json::Value> = messages
+            .iter()
+            .map(|m| {
+                serde_json::json!({
+                    "role": if m.role == "assistant" { "model" } else { "user" },
+                    "parts": [{"text": m.content}]
+                })
+            })
             .collect();
 
         serde_json::json!({
@@ -37,8 +40,7 @@ impl GeminiClient {
     }
 
     pub fn cost_estimate(&self, input_tokens: u32, output_tokens: u32) -> f32 {
-        input_tokens as f32 * 0.075 / 1_000_000.0 +
-        output_tokens as f32 * 0.3 / 1_000_000.0
+        input_tokens as f32 * 0.075 / 1_000_000.0 + output_tokens as f32 * 0.3 / 1_000_000.0
     }
 }
 
@@ -61,7 +63,8 @@ mod tests {
     fn test_build_request() {
         let client = GeminiClient::new("test");
         let messages = vec![ApiMessage {
-            role: "user".into(), content: "hello".into(),
+            role: "user".into(),
+            content: "hello".into(),
         }];
         let req = client.build_request(&messages);
         assert!(req["contents"].is_array());

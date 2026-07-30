@@ -5,9 +5,13 @@ use serde_json::Value;
 pub struct DateTimeTool;
 
 impl DateTimeTool {
-    pub fn new() -> Self { Self }
+    pub fn new() -> Self {
+        Self
+    }
 
-    pub fn name(&self) -> &str { "date_time" }
+    pub fn name(&self) -> &str {
+        "date_time"
+    }
 
     pub fn description(&self) -> &str {
         "Get current date and time. Optional format parameter: 'iso', 'unix', 'human', 'date', 'time'. Default: human-readable."
@@ -27,7 +31,8 @@ impl DateTimeTool {
     }
 
     pub fn execute(&self, args: &Value) -> anyhow::Result<String> {
-        let format = args.get("format")
+        let format = args
+            .get("format")
             .and_then(|v| v.as_str())
             .unwrap_or("human");
 
@@ -50,7 +55,8 @@ impl DateTimeTool {
             "hour": now.format("%H").to_string().parse::<u32>().unwrap_or(0),
             "minute": now.format("%M").to_string().parse::<u32>().unwrap_or(0),
             "weekday": now.format("%A").to_string(),
-        }).to_string())
+        })
+        .to_string())
     }
 }
 
@@ -76,7 +82,9 @@ mod tests {
     #[test]
     fn test_date_time_unix() {
         let tool = DateTimeTool::new();
-        let result = tool.execute(&serde_json::json!({"format": "unix"})).unwrap();
+        let result = tool
+            .execute(&serde_json::json!({"format": "unix"}))
+            .unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&result).unwrap();
         let ts = parsed["unix_timestamp"].as_i64().unwrap();
         assert!(ts > 1_700_000_000);
