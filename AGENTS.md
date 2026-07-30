@@ -2,7 +2,7 @@
 
 ## Current State
 - **Web-only SvelteKit 5 + Svelte runes** app in `apps/desktop`
-- **389 tests PASSING**, 0 failures. Build: green. svelte-check: 0 errors, 0 warnings.
+- **439 tests PASSING**, 0 failures. Build: green. svelte-check: 0 errors, 0 warnings.
 - **About panel**: 45 rows (all shipped features documented)
 - **MCP tools**: 19 (memory.*, chat.*, goal.*, config.*, theme.*, etc.)
 - **MCP server**: `src/mcp-server.mjs` — stdio JSON-lines transport (zero-dep)
@@ -20,7 +20,7 @@
 - Cost-guard toast, memory pressure indicator, AdvancedSettings
 - Mobile responsive CSS
 - Playwright e2e scaffolding (5 smoke tests, 3 projects)
-- Daily Companion (5 levels, 389 tests) — moodEnergy, systemPrompt, proactivity, routine, importance, relationship, dailyRecap, morningWakeup, memoryIndex, suggestions, analytics, backup automation, presence indicator
+- Daily Companion (5 levels, 439 tests) — moodEnergy, systemPrompt, proactivity, routine, importance, relationship, dailyRecap, morningWakeup, memoryIndex, suggestions, analytics, backup automation, presence indicator
 
 ## Architecture
 - All keys server-side (`.env` + `process.env`)

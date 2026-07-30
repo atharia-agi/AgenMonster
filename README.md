@@ -23,7 +23,7 @@ npm run lint         # svelte-check type/lint
 - **Production server via `server.mjs`** — zero-dep Node.js server that serves the built SPA and proxies LLM requests.
 - **All keys server-side** — provider API keys live only in `.env` / `process.env`. The browser never holds a key and never calls provider APIs directly, closing the key-exposure / CORS hole.
 - **LLM proxy** — `vite.config.ts` dev middleware (`POST /api/llm`) and `server.mjs` production proxy route. Both enforce key confinement.
-- **Tests**: 389/389 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+- **Tests**: 439/439 passing. svelte-check: 0 errors, 0 warnings. Build: green.
 - **About panel** = source of truth. Every visible feature must appear there (45 rows).
 - **MCP tools**: 19 tools (memory.*, chat.*, goal.*, config.*, theme.*, etc.) accessible via HTTP `POST /api/mcp` or stdio via `mcp-server.mjs`.
 - **Typography**: Press Start 2P for titles only; Share Tech Mono for body. `--font-title` double-quoted in `app.css`.

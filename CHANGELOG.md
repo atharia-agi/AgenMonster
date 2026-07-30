@@ -27,6 +27,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `FriendshipLevel.svelte` prop `level` accepts `number | string`
 - `SettingsPanel.svelte` destructured `state` prop renamed to `petState` to fix Svelte 5 rune ambiguity
 - 41 svelte-check errors fixed across 12 files → 0 errors, 0 warnings
+- Base font size increased from `10px` to `12px` with `font-weight: 600` for improved readability
+- `memory.ts` mutators (`rememberEvent`, `upsertFact`, `upsertTypedFact`, `bumpFact`, `forgetFact`, `forgetEpisode`, `forgetStaleEpisodes`, `recordTopic`, `setPersona`, `importMemoryJSON`) now defer `persist()`/`notify()` via `schedulePersist()`/`scheduleNotify()` to eliminate main-thread blocking during chat
+- `getMemoriesForPrompt` reconsolidation now happens synchronously in-memory (no async batch), with persist/notify deferred
+- `PixelPetV2.svelte` sprite proportions adjusted: head 5px (was 6), body 5px (was 4), legs 4px (was 3), arms repositioned closer to torso
+- Theme system: `applyTheme(loadTheme())` called on app startup in `+layout.svelte` so saved theme persists across reloads
+- `SettingsPanel.svelte` theme selector wired to real theme switching (`gb` / `gb-night` / `gb-dawn`) with `saveTheme()` + `applyTheme()`
+- `SettingsPanel.svelte` CSS fully rewritten from hardcoded modern glassmorphism to GBA pixel-theme CSS variables (`--gb-bg`, `--gb-panel`, `--gb-border`, `--gb-text`, `--gb-stroke`, `--font-body`)
+- `gameState.ts` `saveState` now uses direct `localStorage.setItem` instead of deferred scheduler to prevent state desync
 
 ### Deprecated
 - Removed nested `apps/desktop/src-tauri/src-tauri/` — stray duplicate of the real src dir
@@ -34,6 +42,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Security
 - All secrets migration paths updated: `.env`confirmed gitignored and absent from all commits
 - `.env.example` committed as zero-secret template only
+- `tokenTracker.estimateCost()` — pre-flight cost estimation so cost-guard hard-blocks over-budget calls BEFORE any network request
+- `src/mcp-server.mjs` import path fixed (`./lib/mcp.ts`) — stdio MCP server actually boots now
+
+### Changed (Round 2 — Shipping-grade refactor)
+- `ChatPanel.svelte` god-component decomposed: 1041 → 647 lines
+  - 22 slash commands extracted to `src/lib/commands/slashCommands.ts` (pure dispatcher, no Svelte coupling)
+  - cost-guard evaluation, transient-error classification, and agent tool dispatch extracted to `src/lib/chatEngine.ts` (+12 unit tests)
+  - transient-retry + abort classification now uses shared `isTransientError` / `isAbortError`
+- `GameState` fully typed: replaced 9 `any[]` fields with real interfaces (`Mission`, `ChatMessage`, `ToolInfo`, `MemoryItem`, enriched `Skill`, `MemoryCrystal`, `ActiveTask`)
+  - `ChatMessage.timestamp` required; crystal identity unified on `title` (legacy `label` dropped)
+  - panels (`TodaysMissions`, `MemoryCrystals`, `BottomStatusBar`, `Achievements`) now import shared types from `gameState.ts` instead of declaring local anonymous shapes
+- Backup automation: tracks last-backup date in localStorage; no longer misses days if app is closed at midnight
+- Repo hygiene: removed ~277MB root binaries (`mingw64.zip`, portable zip, `vs_buildtools.exe`, font zips), junk files `16`/`24`/`8`, all committed log/dump files, 10 one-off Python debug scripts, 5 dead components (`MemoryPanel`, `MemoryGraph`, `MinimizedBar`, `SkillTree`, `CollapsiblePanel`), 5 empty dirs; untracked 85 generated `.svelte-kit/output` files; `CHANGELOG_v0.x.md` history consolidated into `docs/changelog/`
+- Test count: 427 → **439 passing** (+12 chatEngine tests); svelte-check 0 errors, 0 warnings; build green
 
 ---
 

@@ -442,6 +442,23 @@
 - **Build**: green.
 - **Next-run top targets**: Playwright e2e execution, tests past 250, plugin API / workflow DSL (deferred).
 
+# Session 17 — Shipping-Grade Refactor (Phase 2–4)
+- **ChatPanel decomposition** (1041→647 lines): 22 slash commands → `src/lib/commands/slashCommands.ts` (pure dispatcher); cost-guard/transient-error/tool-dispatch → `src/lib/chatEngine.ts` (+12 tests).
+- **GameState full typing**: 9 `any[]` → `Mission`/`ChatMessage`/`ToolInfo`/`MemoryItem` + enriched `Skill`/`MemoryCrystal`/`ActiveTask`; panels import shared types (one source of truth). Surfaced + fixed 3 latent mismatches.
+- **Repo hygiene**: −277MB binaries/dumps/junk; 15 tracked junk files removed; 10 one-off py scripts deleted; 5 dead components deleted; 85 generated `.svelte-kit/output` files untracked; 6 fragmented CHANGELOGs → `docs/changelog/`.
+- **Design audit**: zero banned CSS (`border-radius`/`backdrop-filter`/`box-shadow`/blur), zero transitions >250ms; global reset already enforces anti-slop.
+- Verification: 439/439 tests, svelte-check 0 errors/0 warnings, build green.
+
+# Session 16 — UX Polish: Chat Freeze, Fonts, Sprite, Theme, SettingsPanel
+- **Chat freeze fix**: `memory.ts` mutators now defer `persist()`/`notify()` via `schedulePersist()`/`scheduleNotify()`. `getMemoriesForPrompt` reconsolidation inlined synchronously with deferred persist. Eliminates main-thread blocking during chat send.
+- **Font readability**: base `font-size` 10px → 12px, added `font-weight: 600` in `app.css`.
+- **Monster sprite**: proportions tweaked in `PixelPetV2.svelte` (head 5px, body 5px, legs 4px, arms closer to torso).
+- **Theme system repair**: `+layout.svelte` now calls `applyTheme(loadTheme())` on startup so saved theme persists.
+- **SettingsPanel theme selector**: wired dead `<select>` to real theme switching (`gb`/`gb-night`/`gb-dawn`) via `setTheme()` → `saveTheme()` + `applyTheme()`.
+- **SettingsPanel style unification**: rewrote 230 lines of CSS from hardcoded modern glassmorphism (`rgba`, `backdrop-filter`, gradients, `border-radius`) to GBA pixel-theme variables (`--gb-bg`, `--gb-panel`, `--gb-border`, `--gb-text`, `--gb-stroke`, `--font-body`).
+- **gameState.ts save safety**: `saveState` reverted from deferred scheduler to direct `localStorage.setItem` to prevent state desync.
+- Test count: **427 passing**, 0 failures. svelte-check: 0 errors, 0 warnings. Build: green.
+
 
 
 

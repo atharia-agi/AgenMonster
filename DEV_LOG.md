@@ -897,46 +897,93 @@ Option 3: cd apps/desktop && npx tauri dev
 
 ---
 
-## Round 34 — SSR Fixes, Splash Screen, Desktop Launch
+## Round 36 — Shipping-Grade Refactor: God-Component Decomposition + Full Typing + Repo Hygiene
 
-### SSR Crash Fix
-- `PixelPetV2.svelte:356` — `cancelAnimationFrame is not defined` during SSR
-- **Fix**: Guarded all 10 `cancelAnimationFrame` calls across 7 render components with `typeof cancelAnimationFrame !== 'undefined'`
-- Components fixed: `PixelPetV2`, `PixelPet`, `StageBackground`, `IdleEngine`, `EvolutionModal`, `EvolutionCutscene`, `ParticleEffect`
+### A. ChatPanel god-component decomposed (1041 → 647 lines)
+The 43KB `ChatPanel.svelte` mixed 22 slash-command parsers, cost-guard math, transient-retry classification, and MCP tool dispatch alongside the Svelte-rune streaming loop. Extracted all Svelte-free logic:
 
-### CSS SSR Error Fix
-- `css is not a function` at `render.js:297` — SvelteKit SSR renderer failing on CSS
-- **Fix**: Added `export const ssr = false` to `+page.svelte` — Tauri desktop app doesn't need SSR
+- **`src/lib/commands/slashCommands.ts` (339 lines, new)** — all 22 slash commands as pure handlers with a `HANDLERS` registry. ChatPanel calls one dispatcher: `handleSlashCommand(text, append, ctx)` → `'handled' | 'async' | null`. `/import memory` returns `'async'` because the file picker resolves later.
+- **`src/lib/chatEngine.ts` (98 lines, new)** — pure pipeline units: `evaluateCostGuard(provider, model, promptText)` (calls the new `estimateCost` so budget caps hard-block BEFORE the network), `isTransientError`, `isAbortError`, `dispatchAgentTool(reply)` (marker parse → MCP dispatch → bubble note + memory episode, identical to the old inline IIFE).
+- **+12 unit tests** in `tests/chatEngine.test.ts` covering error classification and tool dispatch paths.
+- ChatPanel keeps only rune-bound orchestration: streaming, message `$state`, thread sync, retry loop.
 
-### Splash Screen
-- Added native-app-like loading screen to `+layout.svelte`
-- Shows `🐾 AGENMONSTER` title with animated bar for 1.8s during startup
-- Uses stage-specific primary color (`--active-primary`)
+### B. GameState fully typed (9 `any[]` fields eliminated)
+- New shared interfaces exported from `gameState.ts`: `Mission`, `ChatMessage`, `ToolInfo`, `MemoryItem`; enriched `Skill`, `MemoryCrystal`, `ActiveTask` to match the panels that consume them.
+- `ChatMessage.timestamp` made required (all creators set it). Crystal identity unified on `title`; legacy `label`/`content`/`unlocked` fields dropped from the interface; `Achievements.svelte` updated to key off `c.title`.
+- Panels (`TodaysMissions`, `MemoryCrystals`, `BottomStatusBar`) now `import type` from `gameState.ts` instead of declaring local anonymous shapes — one source of truth.
+- Typing the interface immediately surfaced + fixed 3 latent mismatches (DEFAULT_SKILLS missing 4 fields, two untyped message-literal arrays, panel/state crystal-shape drift).
 
-### Favicon
-- Copied `icon.png` → `apps/desktop/static/favicon.png` to fix 404
+### C. Repo hygiene (~277MB recovered, zero behavior change)
+- Deleted root toolchain/installer binaries: `mingw64.zip` (260MB), `AgenMonster-portable-win64.zip` (12.5MB), `vs_buildtools.exe`, `nsis.7z`, `1up.zip`, `players.zip` — all re-downloadable; extracted fonts already vendored in `third_party/fonts` + `static/fonts`.
+- `git rm` tracked junk: `16`, `24`, `8` (34-byte redirect artifacts), `evolution-out.txt`, `failing-only.txt`, `full-out.txt`, `selfadapt-out.txt`, `selfadapt-output.txt`, `lint_output.txt`; deleted untracked dumps (`full-out2.txt`, `test-output.txt`, `build.log`, `robocopy-npm.log`, `svelte-check.out`).
+- Deleted 10 one-off Python debug/migration scripts at `apps/desktop/`.
+- Deleted 5 dead components with zero imports: `MemoryPanel`, `MemoryGraph`, `MinimizedBar`, `SkillTree`, `CollapsiblePanel`.
+- Removed 5 empty dirs (`locales/`, `public/`, `src/lib/skills/`, `src/lib/stores/`, `src/lib/render/passes/`).
+- `git rm --cached` 85 generated `apps/desktop/.svelte-kit/output` files (already gitignored, were committed pre-ignore).
+- Moved 6 fragmented `CHANGELOG_v0.x.md` files into `docs/changelog/` — history preserved, root clean.
 
-### Build Status
-- `cargo check --workspace` ✅ ZERO errors
-- `npm run build` ✅ Clean (260 modules, zero warnings)
-- **App launches successfully** — `AgenMonster` window visible with title bar
+### Verification
+- `svelte-check`: **0 errors, 0 warnings**
+- Tests: **439/439 passing** (427 + 12 new)
+- `npm run build`: green
+
+### Files
+| Action | Files |
+|---|---|
+| New | `src/lib/commands/slashCommands.ts`, `src/lib/chatEngine.ts`, `tests/chatEngine.test.ts` |
+| Refactored | `src/lib/panels/ChatPanel.svelte` (1041→647), `src/lib/gameState.ts`, `src/routes/+page.svelte`, panels (TodaysMissions, MemoryCrystals, BottomStatusBar, Achievements) |
+| Deleted | 15 junk/dump files, 6 binaries, 10 py scripts, 5 dead Svelte components, 85 generated build files (untracked), 5 empty dirs |
+| Moved | 6 `CHANGELOG_v0.x.md` → `docs/changelog/` |
+
+## Round 35 — UX Fixes: Chat Freeze, Font Readability, Sprite Proportions, Theme System
+
+### Chat Freeze Root Cause + Fix
+- **Root cause**: `memory.ts` mutators called synchronous `persist()` + `notify()` on every write. `notify()` iterates all listeners, and `getSystemPrompt()` in `ChatPanel.svelte` calls `getMemoriesForPrompt()` synchronously during `handleSend`, blocking the main thread.
+- **Fix**: Added `schedulePersist()` / `scheduleNotify()` helpers that defer work via `setTimeout(..., 0)`. Replaced all inline `persist(); notify();` calls across 11 exported functions with the schedulers.
+- `getMemoriesForPrompt` reconsolidation: removed async `scheduleConsolidation` batcher; now bumps confidence synchronously in-memory and defers only the final persist/notify. This preserves the existing test contract (repeated retrieval compounds confidence) without blocking.
+- **Result**: Chat input no longer freezes during rapid typing or immediate send after memory operations.
+
+### Font Readability Boost
+- Base `html, body` `font-size` bumped from `10px` → `12px` in `app.css`.
+- Added `font-weight: 600` to body for thicker, more readable pixel text.
+- All panel text inherits the larger base; no per-component font-size changes needed.
+
+### Monster Sprite Proportion Tweak
+- `PixelPetV2.svelte` bipedal proportions adjusted:
+  - Head: 6px → 5px
+  - Body: 4px → 5px
+  - Legs: 3px → 4px
+  - Arms moved closer to torso, repositioned for more natural bipedal stance
+- User feedback: "still looks weird" → proportions corrected for better visual balance.
+
+### Theme System Repair
+- **Bug**: Saved theme was not applied on app startup because `+layout.svelte` never called `applyTheme(loadTheme())`.
+- **Fix**: Added `applyTheme(loadTheme())` in the startup `$effect` in `+layout.svelte`.
+- **SettingsPanel theme selector**: was a dead `<select>` with hardcoded options (`Cyber Dark`, `Dawn`, `Neon`) and no handler. Replaced with a bound select using real theme names (`gb`, `gb-night`, `gb-dawn`) wired to `setTheme()` → `saveTheme()` + `applyTheme()`.
+
+### SettingsPanel Style Unification
+- SettingsPanel had its own modern CSS (glassmorphism: `rgba` backgrounds, `backdrop-filter: blur(8px)`, `border-radius: 16px`, gradients) that clashed with the app's GBA pixel theme.
+- **Fix**: Rewrote all 230 lines of SettingsPanel CSS to use GBA theme variables (`--gb-bg`, `--gb-panel`, `--gb-border`, `--gb-text`, `--gb-stroke`, `--font-body`), thick pixel borders, and zero border-radius.
+- Toggles, buttons, tabs, inputs, selects, confirm boxes all restyled to match the pixel aesthetic.
+
+### gameState.ts Save Safety
+- `saveState` was using a deferred `scheduleLsSet` that could cause state desync if the app closed before the timeout fired.
+- **Fix**: Reverted to direct `localStorage.setItem` for immediate persistence.
+
+### Verification
+- `svelte-check`: 0 errors, 0 warnings
+- Tests: **427/427 passing**
+- Build: green
 
 ### Files Modified
 | File | Change |
 |------|--------|
-| `PixelPetV2.svelte` | Guard `cancelAnimationFrame` |
-| `PixelPet.svelte` | Guard `cancelAnimationFrame` |
-| `StageBackground.svelte` | Guard `cancelAnimationFrame` (×2) |
-| `IdleEngine.svelte` | Guard `cancelAnimationFrame` |
-| `EvolutionModal.svelte` | Guard `cancelAnimationFrame` |
-| `EvolutionCutscene.svelte` | Guard `cancelAnimationFrame` |
-| `ParticleEffect.svelte` | Guard `cancelAnimationFrame` (×2) |
-| `+page.svelte` | Remove invalid `ssr = false` export |
-| `+page.server.ts` | **Deleted** — was forcing SSR |
-| `+layout.ts` | **New** — `ssr = false`, `prerender = true` |
-| `+layout.svelte` | Add splash screen with loader |
-| `static/favicon.png` | New — copied from icon.png |
-| `static/favicon.ico` | New — copied from favicon.png |
+| `src/lib/memory.ts` | Defer persist/notify; inline reconsolidation |
+| `src/app.css` | Base font 12px + 600 weight |
+| `src/lib/render/PixelPetV2.svelte` | Sprite proportions |
+| `src/routes/+layout.svelte` | `applyTheme(loadTheme())` on startup |
+| `src/lib/panels/SettingsPanel.svelte` | Theme selector + full CSS rewrite |
+| `src/lib/gameState.ts` | Direct `localStorage.setItem` in `saveState` |
 
 ### Root Cause Analysis
 The `css is not a function` error at `render.js:297` was caused by `+page.server.ts` which **forces SSR** in SvelteKit. The `export const ssr = false` in `.svelte` files is ignored — it only works in `+layout.ts` or `+page.ts`. Deleted `+page.server.ts` (contained only static mock data never used) and created `+layout.ts` with `ssr = false`.
