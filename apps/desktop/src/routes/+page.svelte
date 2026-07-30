@@ -281,19 +281,27 @@
     };
    });
 
-  // Backup automation — export memory to localStorage daily at midnight.
+  // Backup automation — export memory to localStorage daily. Track last backup date
+  // to avoid missing backups if app is closed at midnight.
   $effect(() => {
-    const checkBackup = () => {
-      const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
+      const lastBackupKey = 'agenmonster_lastBackupDate';
+      const runBackup = () => {
         try {
           const payload = exportMemoryJSON(true);
           localStorage.setItem('agenmonster_backup', payload);
+          localStorage.setItem(lastBackupKey, new Date().toDateString());
         } catch {}
-      }
-    };
-    const interval = setInterval(checkBackup, 60000);
-    return () => clearInterval(interval);
+      };
+      const checkBackup = () => {
+        const lastBackup = localStorage.getItem(lastBackupKey);
+        const today = new Date().toDateString();
+        if (lastBackup !== today) runBackup();
+      };
+      // Run immediately on app start if we haven't backed up today
+      checkBackup();
+      // Then check hourly for subsequent backups
+      const interval = setInterval(checkBackup, 60 * 60 * 1000);
+      return () => clearInterval(interval);
   });
 
   // Self-adaptation loop - trigger adapt every 10 interactions

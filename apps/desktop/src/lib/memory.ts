@@ -86,6 +86,25 @@ function persist(): void {
   } catch {}
 }
 
+let _persistTimer: ReturnType<typeof setTimeout> | null = null;
+function schedulePersist(): void {
+  if (_persistTimer) return;
+  _persistTimer = setTimeout(() => {
+    _persistTimer = null;
+    persist();
+  }, 0);
+}
+
+let _notifyTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleNotify(): void {
+  if (_notifyTimer) return;
+  _notifyTimer = setTimeout(() => {
+    _notifyTimer = null;
+    const snapshot = _state;
+    for (const fn of _listeners) fn(snapshot);
+  }, 0);
+}
+
 // ---------- public API ----------
 
 export function getMemoryState(): MemoryState {
@@ -116,8 +135,8 @@ export function rememberEvent(partial: Omit<Episode, 'id' | 'ts'>): Episode {
   _state.totalMemories++;
   _state.lastIndexedAt = Date.now();
   bumpTopics(episode.tags);
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
   return episode;
 }
 
@@ -135,8 +154,8 @@ export function upsertFact(key: string, value: string, confidence = 0.9): void {
   };
   _state.totalMemories++;
   _state.lastIndexedAt = updatedAt;
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
 }
 
 // Typed variant: validates the key prefix + value shape via memoryOntology.
@@ -156,8 +175,8 @@ export function upsertTypedFact(key: string, value: string, confidence = 0.9): {
   };
   _state.totalMemories++;
   _state.lastIndexedAt = updatedAt;
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
   return { ok: true };
 }
 
@@ -176,8 +195,8 @@ export function bumpFact(key: string): void {
   const imp = getFactImportance(key);
   f.confidence = Math.min(1, f.confidence + 0.04 * (imp.importance / 3));
   f.updatedAt = Date.now();
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
 }
 
 export function exportMemoryJSON(includeContext = false): string {
@@ -216,12 +235,12 @@ export function importMemoryJSON(json: string): { ok: boolean; reason?: string }
     _state.episodes = episodes.slice(0, maxEpisodes);
     _state.facts = facts;
     _state.topics = topics.slice(0, maxTopics);
-    _state.lastIndexedAt = Date.now();
-    _state.totalMemories = _state.episodes.length + Object.keys(_state.facts).length;
-    void maxFacts;
-    persist();
-    notify();
-    return { ok: true };
+  _state.lastIndexedAt = Date.now();
+  _state.totalMemories = _state.episodes.length + Object.keys(_state.facts).length;
+  void maxFacts;
+  schedulePersist();
+  scheduleNotify();
+  return { ok: true };
   } catch (e: any) {
     return { ok: false, reason: e?.message || 'parse error' };
   }
@@ -230,8 +249,8 @@ export function importMemoryJSON(json: string): { ok: boolean; reason?: string }
 export function forgetFact(key: string): void {
   load();
   delete _state.facts[key];
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
 }
 
 export function forgetEpisode(id: string): boolean {
@@ -239,8 +258,8 @@ export function forgetEpisode(id: string): boolean {
   const before = _state.episodes.length;
   _state.episodes = _state.episodes.filter((ep) => ep.id !== id);
   if (_state.episodes.length === before) return false;
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
   return true;
 }
 
@@ -270,8 +289,8 @@ export function recordTopic(topic: string, count = 1): void {
   }
   _state.topics.sort((a, b) => b.count - a.count);
   _state.topics = _state.topics.slice(0, MAX_TOPICS);
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
 }
 
 export function getTopTopics(n = 8): TopicCount[] {
@@ -351,7 +370,6 @@ export function getMemoriesForPrompt(text: string, limit = 3): string[] {
       if (ep.detail.toLowerCase().includes(kw)) score += 1;
       if (ep.tags.some((t) => t.toLowerCase().includes(kw))) score += 3;
     }
-    // Decay: episodes older than 7 days lose 50% confidence, older than 30 days 25%
     const ageDays = (now - ep.ts) / (1000 * 60 * 60 * 24);
     const decay = ageDays > 30 ? 0.25 : ageDays > 7 ? 0.5 : 1.0;
     score *= ep.confidence * decay;
@@ -363,15 +381,16 @@ export function getMemoriesForPrompt(text: string, limit = 3): string[] {
     .slice(0, limit);
   if (top.length === 0) return [];
 
-  // Reconsolidation: each retrieved episode's confidence climbs +0.06 (capped
-  // at 1.0). Frequently recalled memories become MORE useful over time.
   const ids = new Set(top.map(({ ep }) => ep.id));
-  _state.episodes = _state.episodes.map((ep) =>
-    ids.has(ep.id) ? { ...ep, confidence: Math.min(1, ep.confidence + 0.06) } : ep
-  );
+  for (const ep of top) {
+    const idx = _state.episodes.findIndex((e) => e.id === ep.ep.id);
+    if (idx >= 0) {
+      _state.episodes[idx] = { ..._state.episodes[idx], confidence: Math.min(1, _state.episodes[idx].confidence + 0.06) };
+    }
+  }
   _state.lastIndexedAt = Date.now();
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
 
   return top.map(({ ep }) => `[${ep.kind}] ${ep.title}: ${ep.detail}`);
 }
@@ -387,7 +406,10 @@ export function forgetStaleEpisodes(maxAgeMs = 60 * 24 * 60 * 60 * 1000): number
   const before = _state.episodes.length;
   _state.episodes = _state.episodes.filter((ep) => ep.ts >= cutoff);
   const removed = before - _state.episodes.length;
-  if (removed > 0) persist(), notify();
+  if (removed > 0) {
+    schedulePersist();
+    scheduleNotify();
+  }
   return removed;
 }
 
@@ -404,7 +426,7 @@ export function setPersona(text: string): void {
   } catch {}
   if (_state.facts[PERSONA_KEY]) {
     delete _state.facts[PERSONA_KEY];
-    notify();
+    scheduleNotify();
   }
 }
 
@@ -457,8 +479,8 @@ export function iterateDecay(): void {
     if (f.confidence <= 0.1) delete _state.facts[f.key];
   }
   _state.lastIndexedAt = now;
-  persist();
-  notify();
+  schedulePersist();
+  scheduleNotify();
 }
 
 export { MAX_EPISODES, MAX_FACTS, MAX_TOPICS };

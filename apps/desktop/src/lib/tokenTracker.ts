@@ -90,6 +90,14 @@ export function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
 }
 
+// Estimate cost for a call before it happens (pre-flight budget check).
+export function estimateCost(provider: string, model: string, promptText: string, estimatedCompletionChars = 500): number {
+  const promptTokens = estimateTokens(promptText);
+  const completionTokens = estimateTokens(typeof estimatedCompletionChars === 'string' ? estimatedCompletionChars : ' '.repeat(estimatedCompletionChars));
+  const pricing = PRICING_PER_1K[model] || { input: 0.0001, output: 0.0001 };
+  return (promptTokens * pricing.input + completionTokens * pricing.output) / 1000;
+}
+
 export function recordTokenUsage(args: {
   provider: string;
   model: string;

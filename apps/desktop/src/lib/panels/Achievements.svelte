@@ -15,7 +15,7 @@
     { id: 'task_master', title: 'TASK MASTER', desc: 'Complete 10 tasks', color: '#e06070', icon: '★★' },
   ];
 
-  const earnedIds = $derived(new Set((crystals as MemoryCrystal[]).map(c => c.label.toLowerCase().replace(/\s+/g, '_'))));
+  const earnedIds = $derived(new Set((crystals as MemoryCrystal[]).map((c) => c.title.toLowerCase().replace(/\s+/g, '_'))));
   const earnedCount = $derived(crystals.length);
   const progress = $derived(Math.min(100, (earnedCount / TOTAL_BADGES.length) * 100));
 </script>
@@ -36,7 +36,7 @@
 
   <div class="ach-grid">
     {#each TOTAL_BADGES as badge}
-       {@const isEarned = earnedIds.has(badge.id.replace(/_/g, ' ')) || crystals.some((c: MemoryCrystal) => c.label.toLowerCase().split(' ').join('_') === badge.id)}
+       {@const isEarned = earnedIds.has(badge.id.replace(/_/g, ' ')) || crystals.some((c: MemoryCrystal) => c.title.toLowerCase().split(' ').join('_') === badge.id)}
       <div class="badge" class:earned={isEarned} class:locked={!isEarned}>
         <div class="badge-icon" style="color:{badge.color}">{badge.icon}</div>
         <div class="badge-body">

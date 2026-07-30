@@ -2,7 +2,7 @@
 // mcp-server.mjs — stdio JSON-lines transport for 19 MCP tools.
 // Reads `{"id":..., "method":"tool.name","params":{...}}` lines from stdin,
 // writes `{"jsonrpc":"2.0","id":...,"ok":true,"data":{...}}` to stdout.
-import { handleTool, TOOLS } from './src/lib/mcp.ts';
+import { handleTool, TOOLS } from './lib/mcp.ts';
 
 const enc = new TextEncoder();
 const dec = new TextDecoder();

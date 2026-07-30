@@ -15,7 +15,9 @@
   const activeGoal = $derived(pickActiveGoal(goals));
 
   const stageIcon = $derived('stage_' + (state.stage || 'egg'));
-  const relationshipLabel = $derived((state.relationshipLevel || 'stranger').replace('_', ' ').toUpperCase());
+  const relationshipLabel = $derived(
+    String(state.relationshipLevel || 'stranger').replace('_', ' ').toUpperCase()
+  );
   function getPresence(ts: number): string {
     const idleMs = Date.now() - ts;
     return idleMs > 8 * 3600000 ? 'dormant' : idleMs > 2 * 3600000 ? 'idle' : 'awake';
@@ -64,10 +66,10 @@
     <span class="val">{state.activity.toUpperCase()}</span>
   </div>
 
-  <div class="stat-row">
-    <span class="label">BOND</span>
-    <span class="val">{state.relationshipLevel.replace('_', ' ').toUpperCase()}</span>
-  </div>
+    <div class="stat-row">
+      <span class="label">BOND</span>
+      <span class="val">{String(state.relationshipLevel || 'stranger').replace('_', ' ').toUpperCase()}</span>
+    </div>
 
   <div class="stat-row">
     <span class="label">PRESENCE</span>

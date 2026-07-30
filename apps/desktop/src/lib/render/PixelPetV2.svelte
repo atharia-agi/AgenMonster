@@ -20,7 +20,7 @@
   let speech = $state<string | null>(null);
   let speechTimer = 0;
   let lastTime = performance.now();
-  let zPhase = 0;       // Z animation when sleeping
+  let zPhase = 0;
   let lastExternalSpeech = '';
 
   function onCanvas(el: HTMLCanvasElement) {
@@ -39,20 +39,20 @@
 
   const animator = new SpriteAnimator();
 
-  // ===== GAME BOY 4-COLOR PALETTE =====
-  // 0=transparent, 1=darkest #0f380f, 2=dark #306230, 3=light #8bac0f, 4=lightest #9bbc0f
+  // ===== GBA 4-COLOR PALETTE =====
+  // 0=darkest, 1=dark, 2=light, 3=lightest - colorful GBA vibe
   const STAGE_COLORS: Record<string, [string, string, string, string]> = {
-    egg:      ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
-    hatchling:['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
-    baby:     ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
-    child:    ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
-    teen:     ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
-    adult:    ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
-    mega:     ['#0f380f', '#306230', '#8bac0f', '#9bbc0f'],
+    egg:      ['#604080', '#8060a0', '#c8a0d8', '#e0d0f0'],
+    hatchling:['#106040', '#208860', '#50b8a0', '#80e8d0'],
+    baby:     ['#106098', '#2878b8', '#60a8e8', '#a0d0ff'],
+    child:    ['#483880', '#6850b0', '#a080e0', '#c8a8ff'],
+    teen:     ['#881830', '#a83048', '#e8607c', '#ffa0b0'],
+    adult:    ['#302070', '#503088', '#8060c0', '#b8a0e8'],
+    mega:     ['#a06810', '#c08020', '#f0b040', '#ffe080'],
   };
 
-  // ===== NEO-POP PIXEL SPRITE =====
-  // Thick 3px outlines on every body part, vectorized shading.
+  // ===== GBA PIXEL SPRITE =====
+  // Soft thick outlines on every body part, colorful shading.
 
   function getColors() {
     return STAGE_COLORS[stage] || STAGE_COLORS.egg;
@@ -77,13 +77,12 @@
 
   function drawSideView(pose: SpritePose) {
     const px = Math.max(3, Math.floor(Math.min(width, height) / 20));
-    const spriteW = 16 * px;
-    const spriteH = 16 * px;
-    const cx = Math.round((width - spriteW) / 2) + (facing === 'right' ? spriteW : 0);
-    const cy = Math.round((height - spriteH) / 2);
+    const cx = Math.round(width / 2) + (facing === 'right' ? 2 * px : 0);
+    const cy = Math.round(height / 2);
 
     const colors = getColors();
     const [darkest, dark, light, lightest] = colors;
+    const outline = darken(light, 0.6);
 
     const p = (x: number, y: number) => facing === 'left' ? cx + x * px : cx - (x + 1) * px;
     const bodyBob = pose.bodyBob || 0;
@@ -94,103 +93,86 @@
 
     ctx.save();
 
-    // === TAIL (back layer) ===
-    if (stage !== 'egg') {
-      const tailY = cy + (10 + bodyBob) * px;
-      const tx = facing === 'left' ? cx + 11 * px : cx - 12 * px;
-      const TW = 3 * px, TH = px;
-      const THROW = TH + 4;
-      ctx.fillStyle = darkest;
-      ctx.fillRect(Math.round(tx - 2), Math.round(tailY - 2), TW + 4, THROW);
-      ctx.fillStyle = dark;
-      ctx.fillRect(Math.round(tx), Math.round(tailY), TW, px);
-      ctx.fillRect(Math.round(tx + px), Math.round(tailY - px), px, px);
-    }
-
-    // === LEGS ===
-    const flX = p(3 + legSpread, 0);
-    fillBordered(flX - 2, cy + (13 + bodyBob) * px - 2, 2 * px + 4, px + 4, dark, darkest);
-    ctx.fillStyle = darken(dark, 0.7);
-    ctx.fillRect(Math.round(flX), Math.round(cy + (14 + bodyBob) * px), 2 * px, 2 * px);
-    ctx.fillStyle = lightest;
-    ctx.fillRect(Math.round(flX - px), Math.round(cy + (16 + bodyBob) * px), 3 * px, px);
-
-    const blX = p(9 - legSpread, 0);
-    fillBordered(blX - 2, cy + (13 + bodyBob) * px - 2, 2 * px + 4, px + 4, dark, darkest);
-    ctx.fillStyle = darken(dark, 0.75);
-    ctx.fillRect(Math.round(blX), Math.round(cy + (14 + bodyBob) * px), 2 * px, 2 * px);
-    ctx.fillStyle = light;
-    ctx.fillRect(Math.round(blX - px), Math.round(cy + (16 + bodyBob) * px), 3 * px, px);
-
-    // === BODY ===
-    const by = cy + (6 + bodyBob) * px;
-    fillBordered(p(3, 6) - 2, by - 2, 7 * px + 4, 6 * px + 4, light, darkest);
-    ctx.fillStyle = light;
-    ctx.fillRect(Math.round(p(4, 8)), Math.round(by + 2 * px), 5 * px, 3 * px);
-    ctx.fillStyle = lightest;
-    ctx.fillRect(Math.round(p(4, 7)), Math.round(by), 3 * px, px);
-
-    // === HEAD ===
-    const hy = cy + headBob * px;
-    fillBordered(p(0, 1) - 2, hy - 2, 7 * px + 4, 6 * px + 4, light, darkest);
-    ctx.fillStyle = lightest;
-    ctx.fillRect(Math.round(p(1, 1)), Math.round(hy), 3 * px, px);
-    ctx.fillStyle = light;
-    ctx.fillRect(Math.round(p(1, 5)), Math.round(hy + 4 * px), 3 * px, px);
-
-    // === EYES ===
-    if (showEye) {
-      fillBordered(p(1, 2) - 2, hy + px - 2, 2 * px + 4, 2 * px + 4, lightest, darkest);
-      ctx.fillStyle = darkest;
-      const pupilOffset = pose.eyeLook || 0;
-      ctx.fillRect(Math.round(p(2 + pupilOffset, 2)), Math.round(hy + px + px), px, px);
+    if (stage === 'egg') {
+      ctx.fillStyle = outline;
+      ctx.fillRect(Math.round(cx - 5 * px), Math.round(cy - 6 * px), 10 * px, 12 * px);
       ctx.fillStyle = lightest;
-      ctx.fillRect(Math.round(p(2, 2)), Math.round(hy + px), px, px);
+      ctx.fillRect(Math.round(cx - 4 * px), Math.round(cy - 5 * px), 8 * px, 10 * px);
+      ctx.fillStyle = dark;
+      ctx.fillRect(Math.round(cx - 2 * px), Math.round(cy - 1 * px), 4 * px, 2 * px);
     } else {
-      ctx.fillStyle = darkest;
-      ctx.fillRect(Math.round(p(1, 3)), Math.round(hy + 2 * px), 2 * px, px);
-    }
+      const legY = cy + 4 * px + bodyBob * px;
+      const legW = 2 * px;
 
-    // === MOUTH ===
-    if (showMouth) {
-      if (pose.mouthType === 'happy') {
-        ctx.fillStyle = darkest;
-        ctx.fillRect(Math.round(p(1, 4)), Math.round(hy + 3 * px), 2 * px, px);
-      } else if (pose.mouthType === 'open') {
-        ctx.fillStyle = darkest;
-        ctx.fillRect(Math.round(p(1, 4)), Math.round(hy + 3 * px), px, px);
-        ctx.fillRect(Math.round(p(2, 4)), Math.round(hy + 3 * px), px, px);
+      ctx.fillStyle = outline;
+      ctx.fillRect(Math.round(p(2, 0) - 1), Math.round(legY - 1), legW + 2, 4 * px + 2);
+      ctx.fillRect(Math.round(p(8, 0) - 1), Math.round(legY - 1), legW + 2, 4 * px + 2);
+      ctx.fillStyle = dark;
+      ctx.fillRect(Math.round(p(2, 0)), Math.round(legY), legW, 4 * px);
+      ctx.fillRect(Math.round(p(8, 0)), Math.round(legY), legW, 4 * px);
+      ctx.fillStyle = lightest;
+      ctx.fillRect(Math.round(p(1, 3)), Math.round(legY + 3 * px), 3 * px, px);
+      ctx.fillRect(Math.round(p(8, 3)), Math.round(legY + 3 * px), 3 * px, px);
+
+      const bodyY = cy + bodyBob * px;
+      ctx.fillStyle = outline;
+      ctx.fillRect(Math.round(p(3, 2) - 1), Math.round(bodyY - 1), 6 * px + 2, 5 * px + 2);
+      ctx.fillStyle = light;
+      ctx.fillRect(Math.round(p(3, 2)), Math.round(bodyY), 6 * px, 5 * px);
+      ctx.fillStyle = lightest;
+      ctx.fillRect(Math.round(p(4, 2)), Math.round(bodyY), 3 * px, px);
+
+      ctx.fillStyle = outline;
+      ctx.fillRect(Math.round(p(1, -1) - 1), Math.round(bodyY - 2 * px - 1), 2 * px + 2, 2 * px + 2);
+      ctx.fillStyle = light;
+      ctx.fillRect(Math.round(p(1, -1)), Math.round(bodyY - 2 * px), 2 * px, 2 * px);
+
+      ctx.fillStyle = outline;
+      ctx.fillRect(Math.round(p(8, -1) - 1), Math.round(bodyY - 2 * px - 1), 2 * px + 2, 2 * px + 2);
+      ctx.fillStyle = light;
+      ctx.fillRect(Math.round(p(8, -1)), Math.round(bodyY - 2 * px), 2 * px, 2 * px);
+
+      const headY = cy - 4 * px + headBob * px;
+      ctx.fillStyle = outline;
+      ctx.fillRect(Math.round(p(2, -3) - 1), Math.round(headY - 1), 6 * px + 2, 5 * px + 2);
+      ctx.fillStyle = light;
+      ctx.fillRect(Math.round(p(2, -3)), Math.round(headY), 6 * px, 5 * px);
+      ctx.fillStyle = lightest;
+      ctx.fillRect(Math.round(p(3, -3)), Math.round(headY), 3 * px, px);
+
+      if (showEye) {
+        ctx.fillStyle = outline;
+        ctx.fillRect(Math.round(p(2, -2) - 1), Math.round(headY + px - 1), 2 * px + 2, 2 * px + 2);
         ctx.fillStyle = lightest;
-        ctx.fillRect(Math.round(p(2, 4)), Math.round(hy + 3 * px), px, px);
-      } else if (pose.mouthType === 'sad') {
+        ctx.fillRect(Math.round(p(2, -2)), Math.round(headY + px), 2 * px, 2 * px);
         ctx.fillStyle = darkest;
-        ctx.fillRect(Math.round(p(2, 5)), Math.round(hy + 4 * px), 2 * px, px);
+        const pupilOffset = pose.eyeLook || 0;
+        ctx.fillRect(Math.round(p(3, -2) + pupilOffset), Math.round(headY + px + px), px, px);
       } else {
+        ctx.fillStyle = outline;
+        ctx.fillRect(Math.round(p(2, -1)), Math.round(headY + 2 * px), 3 * px, px);
         ctx.fillStyle = darkest;
-        ctx.fillRect(Math.round(p(2, 4)), Math.round(hy + 3 * px), px, px);
+        ctx.fillRect(Math.round(p(2, -1) + 1), Math.round(headY + 2 * px + 1), 3 * px - 2, px - 2);
       }
-    }
 
-    // === EARS / HORNS ===
-    if (stage !== 'egg') {
-      const earX = p(0, 0);
-      const earY = hy;
-      ctx.fillStyle = darkest;
-      ctx.fillRect(Math.round(earX - 2), Math.round(earY - 2), 2 * px + 4, px + 4);
-      ctx.fillStyle = dark;
-      ctx.fillRect(Math.round(earX), Math.round(earY), 2 * px, px);
-      ctx.fillRect(Math.round(earX), Math.round(earY + px), px, px);
-    }
-
-    // === ARMS ===
-    if (stage !== 'egg') {
-      ctx.fillStyle = darkest;
-      ctx.fillRect(Math.round(p(-1, 7)) - 2, Math.round(cy + (7 + bodyBob) * px) - 2, px + 4, 2 * px + 4);
-      ctx.fillStyle = dark;
-      ctx.fillRect(Math.round(p(-1, 7)), Math.round(cy + (7 + bodyBob) * px), px, 2 * px);
-
-      ctx.fillRect(Math.round(p(11, 7)) - 2, Math.round(cy + (7 + bodyBob) * px) - 2, px + 4, px + 4);
-      ctx.fillRect(Math.round(p(11, 7)), Math.round(cy + (7 + bodyBob) * px), px, px);
+      if (showMouth) {
+        if (pose.mouthType === 'happy') {
+          ctx.fillStyle = darkest;
+          ctx.fillRect(Math.round(p(3, 0)), Math.round(headY + 3 * px), 2 * px, px);
+        } else if (pose.mouthType === 'open') {
+          ctx.fillStyle = darkest;
+          ctx.fillRect(Math.round(p(3, 0)), Math.round(headY + 3 * px), px, px);
+          ctx.fillRect(Math.round(p(4, 0)), Math.round(headY + 3 * px), px, px);
+          ctx.fillStyle = lightest;
+          ctx.fillRect(Math.round(p(3, 0) + 1), Math.round(headY + 3 * px + 1), px - 2, px - 2);
+        } else if (pose.mouthType === 'sad') {
+          ctx.fillStyle = darkest;
+          ctx.fillRect(Math.round(p(3, 1)), Math.round(headY + 4 * px), 2 * px, px);
+        } else {
+          ctx.fillStyle = darkest;
+          ctx.fillRect(Math.round(p(4, 0)), Math.round(headY + 3 * px), px, px);
+        }
+      }
     }
 
     ctx.restore();
@@ -249,12 +231,10 @@
 
     ctx.clearRect(0, 0, width, height);
 
-    // ENHANCED: Sleep Z-particles drift up from monster's head
     const isSleeping = stage !== 'egg' &&
       (mood === 'sleepy' || mood === 'tired');
     if (isSleeping) {
       zPhase = (zPhase + dt * 0.001) % 1;
-      // Spawn one Z every ~24 frames when sleeping
       if (frame % 24 === 0) {
         const colors = getColors();
         const zPoints = [
@@ -272,11 +252,10 @@
       }
     }
 
-    // Background particles
     if (stage === 'mega' && frame % 8 === 0) {
-      spawnParticle(20 + Math.random() * (width-40), 40 + Math.random() * (height-80), '#ffc860');
+      spawnParticle(20 + Math.random() * (width-40), 40 + Math.random() * (height-80), '#f0b040');
     } else if (stage === 'adult' && frame % 12 === 0) {
-      spawnParticle(20 + Math.random() * (width-40), height-40, '#8070c0');
+      spawnParticle(20 + Math.random() * (width-40), height-40, '#8060c0');
     }
 
     drawParticles();
@@ -284,7 +263,6 @@
     const pose = animator.update(16, mood, frame, isBlinking);
     drawSideView(pose);
 
-    // ENHANCED: draw floating speech bubble if speech is set
     if (speech) {
       drawSpeechBubble(speech);
     }
@@ -295,14 +273,12 @@
     ctx.font = `${size * 4}px monospace`;
     ctx.textBaseline = 'middle';
     ctx.textAlign = 'center';
-    // Draw with a thick outline for visibility
     const tx = x + size * 2;
     const ty = y + size * 2;
     ctx.fillText(text, tx + 1, ty);
     ctx.fillText(text, tx - 1, ty);
     ctx.fillText(text, tx, ty + 1);
     ctx.fillText(text, tx, ty - 1);
-    // Solid color on top — but flip to bg color if dark
     const colors = getColors();
     ctx.fillStyle = colors[3];
     ctx.fillText(text, tx, ty);
@@ -318,14 +294,12 @@
     const x = Math.round((width - bubbleW) / 2);
     const y = 2;
 
-    // Box with thick border
     const colors = getColors();
     ctx.fillStyle = colors[3];
     ctx.fillRect(x - 2, y - 2, bubbleW + 4, bubbleH + 4);
     ctx.fillStyle = colors[1];
     ctx.fillRect(x, y, bubbleW, bubbleH);
 
-    // Text
     ctx.fillStyle = colors[0];
     ctx.font = `${fontSize}px monospace`;
     ctx.textBaseline = 'middle';
@@ -345,7 +319,6 @@
     }
   }
 
-  // ENHANCED: speech timer countdown
   $effect(() => {
     if (!speech) return;
     const interval = setInterval(() => {
@@ -358,7 +331,6 @@
     return () => clearInterval(interval);
   });
 
-  // ENHANCED: react to external speech prop changes
   $effect(() => {
     if (externalSpeech && externalSpeech !== lastExternalSpeech) {
       say(externalSpeech, 6000);

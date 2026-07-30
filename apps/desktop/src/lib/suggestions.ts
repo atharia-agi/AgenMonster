@@ -33,7 +33,7 @@ export function getSuggestions(
 
   const suggestions: Suggestion[] = [];
 
-  const todayRoutines = routines.filter((r) => r.daysOfWeek.includes(new Date().getDay()));
+  const todayRoutines = routines.filter((r) => r.daysOfWeek.includes(new Date(now).getDay()));
   if (todayRoutines.length > 0) {
     suggestions.push({
       text: `Based on your routine, want to start with ${todayRoutines[0].task}?`,

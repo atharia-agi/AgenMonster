@@ -16,11 +16,13 @@
     const filled = Math.round(pct * 5);
     return Array.from({ length: 5 }, (_, i) => i < filled);
   });
+
+  const levelKey = $derived(String(level));
 </script>
 
 <div class="bond-panel">
   <div class="level-name" style="color:var(--gb-text)">
-    {levelLabels[level] || level.toUpperCase()}
+    {levelLabels[levelKey] || levelKey.toUpperCase()}
   </div>
   <div class="hearts-row">
     {#each hearts() as filled}

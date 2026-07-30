@@ -1,6 +1,7 @@
 <script lang="ts">
+  import type { Mission } from '$lib/gameState';
   let { missions = [], completed = 0, total = 0 } = $props<{
-    missions?: Array<{ id: string; title: string; description: string; progress: number; maxProgress: number; completed: boolean }>;
+    missions?: Mission[];
     completed?: number;
     total?: number;
   }>();

@@ -2,6 +2,7 @@
 import type { GameState } from "$lib/gameState";
 import { getEvolutionProgress, selectBestPrompt, evolve } from "$lib/evolution";
 import { getAdaptationReport } from "$lib/gameState";
+import { loadTheme, saveTheme, applyTheme, describeTheme, type ThemeName } from "$lib/theme.ts";
 
 let { state: petState, onClose, onOpenAbout }: { state: GameState; onClose: () => void; onOpenAbout: () => void } = $props();
 
@@ -14,6 +15,30 @@ let resetEvolutionClicked = $state(false);
 let resetEvolution = $state(false);
 
 let gameState = $derived(petState);
+
+let readabilityMode = $state(localStorage.getItem("agenmonster_readability") === "1");
+
+let currentTheme = $state<ThemeName>(loadTheme());
+
+function setTheme(t: ThemeName): void {
+  currentTheme = t;
+  saveTheme(t);
+  applyTheme(t);
+}
+
+function toggleReadability(): void {
+  readabilityMode = !readabilityMode;
+  localStorage.setItem("agenmonster_readability", readabilityMode ? "1" : "0");
+  applyReadability();
+}
+
+function applyReadability(): void {
+  document.documentElement.classList.toggle("readability-mode", readabilityMode);
+}
+
+$effect(() => {
+  if (readabilityMode) applyReadability();
+});
 
 const SECTIONS = [
   { id: "cosmetics", label: "COSMETICS", icon: "🎨" },
@@ -220,7 +245,11 @@ function getAdaptStats() {
         <div class="row">
           <span class="label">Theme</span>
           <div class="control">
-            <select><option>Cyber Dark</option><option>Dawn</option><option>Neon</option></select>
+            <select bind:value={currentTheme} onchange={() => setTheme(currentTheme)}>
+              <option value="gb">GB Default</option>
+              <option value="gb-night">GB Night</option>
+              <option value="gb-dawn">GB Dawn</option>
+            </select>
           </div>
         </div>
         <div class="row">
@@ -257,6 +286,17 @@ function getAdaptStats() {
       </section>
     {/if}
 
+    {#if activeSection === "interface"}
+      <section class="section">
+        <h3 class="section-title">🎛️ Interface</h3>
+        <div class="status-row">
+          <span class="label">Readability Mode</span>
+          <label class="toggle"><input type="checkbox" checked={readabilityMode} onclick={toggleReadability} /><span class="slider"></span></label>
+        </div>
+        <div class="hint" style="margin-top:6px">Larger text, same pixel-art aesthetic. Saved per browser.</div>
+      </section>
+    {/if}
+
     {#if activeSection === "about"}
       <section class="section">
         <h3 class="section-title">ℹ️ About</h3>
@@ -270,221 +310,250 @@ function getAdaptStats() {
 </div>
 
 <style>
-  .panel {
-    background: rgba(15, 23, 42, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 16px;
-    padding: 14px;
+  :global(.settings-panel), .panel {
+    background: var(--gb-panel);
+    border: var(--gb-stroke) solid var(--gb-border);
+    padding: 8px;
     max-width: 860px;
     width: 100%;
-    color: #e2e8f0;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-    backdrop-filter: blur(8px);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    color: var(--gb-text);
+    font-family: var(--font-body);
+    font-size: 10px;
+    image-rendering: pixelated;
   }
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: var(--gb-stroke) solid var(--gb-border);
   }
   .panel-title {
-    font-size: 0.9rem;
+    font-size: 10px;
     margin: 0;
-    color: #e2e8f0;
+    color: var(--gb-text);
+    font-weight: bold;
+    letter-spacing: 0.5px;
   }
   .close {
-    width: 32px;
-    height: 32px;
-    border-radius: 8px;
-    background: rgba(15, 23, 42, 0.95);
-    color: #94a3b8;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    width: 24px;
+    height: 24px;
+    background: var(--gb-bg);
+    color: var(--gb-dark);
+    border: var(--gb-stroke) solid var(--gb-border);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 9px;
   }
+  .close:hover { background: var(--gb-border); color: var(--gb-bg); }
   .tabs {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 6px;
-    margin-bottom: 10px;
+    gap: 3px;
+    margin-bottom: 6px;
   }
   .tab {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 8px 4px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    color: #94a3b8;
+    gap: 1px;
+    padding: 4px 2px;
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-border);
+    color: var(--gb-dark);
     cursor: pointer;
-    font-size: 0.65rem;
-    transition: all 200ms ease;
+    font-size: 6px;
+    font-family: var(--font-body);
+    image-rendering: pixelated;
   }
   .tab.active {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.03));
-    border-color: rgba(56, 189, 248, 0.4);
-    color: #e2e8f0;
+    background: var(--gb-text);
+    color: var(--gb-bg);
+    border-color: var(--gb-text);
   }
-  .tab-icon { font-size: 1rem; line-height: 1; }
-  .tab-label { letter-spacing: 0.05em; }
+  .tab:hover:not(.active) { background: var(--gb-dark); color: var(--gb-bg); }
+  .tab-icon { font-size: 8px; line-height: 1; }
+  .tab-label { letter-spacing: 0.3px; }
   .body {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 12px;
-    padding: 10px;
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-border);
+    padding: 6px;
   }
   .section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
   .section-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #e2e8f0;
+    font-size: 8px;
+    font-weight: bold;
+    color: var(--gb-text);
     margin: 0;
+    padding-bottom: 3px;
+    border-bottom: 2px solid var(--gb-border);
   }
   .row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 10px;
-  }
-  .label { color: #e2e8f0; font-size: 0.72rem; }
-  .hint { font-size: 0.65rem; color: #94a3b8; }
-  .mono {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    color: #38bdf8;
-    font-size: 0.75rem;
-  }
-  .muted { color: #64748b; font-size: 0.75rem; }
-  .control { display: flex; align-items: center; gap: 8px; }
-  input[type="range"] { width: 140px; accent-color: #38bdf8; }
-  .info-block {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 10px;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
     gap: 6px;
   }
-  .about-row {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.72rem;
-    color: #64748b;
-    padding: 2px 6px;
-    border-radius: 4px;
+  .label { color: var(--gb-text); font-size: 8px; font-weight: bold; }
+  .hint { font-size: 7px; color: var(--gb-dark); }
+  .mono {
+    font-family: var(--font-body);
+    color: var(--gb-text);
+    font-size: 8px;
+    font-weight: bold;
   }
-  .about-row.accent { color: #38bdf8; font-weight: 700; }
+  .muted { color: var(--gb-dark); font-size: 8px; }
+  .control { display: flex; align-items: center; gap: 6px; }
+  input[type="range"] { width: 120px; accent-color: var(--gb-text); image-rendering: pixelated; }
+  select {
+    background: var(--gb-bg);
+    color: var(--gb-text);
+    border: var(--gb-stroke) solid var(--gb-border);
+    padding: 3px 6px;
+    font-family: var(--font-body);
+    font-size: 8px;
+    cursor: pointer;
+    image-rendering: pixelated;
+  }
+  .info-block {
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-border);
+    padding: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .about-row {
+    font-family: var(--font-body);
+    font-size: 8px;
+    color: var(--gb-dark);
+    padding: 2px 4px;
+    border-bottom: 1px dashed var(--gb-border);
+  }
+  .about-row.accent { color: var(--gb-text); font-weight: bold; }
   .pill {
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 0.7rem;
-    background: linear-gradient(180deg, #38bdf8, #2563eb);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 999px;
-    font-weight: 700;
+    font-family: var(--font-body);
+    font-size: 7px;
+    background: var(--gb-text);
+    color: var(--gb-bg);
+    padding: 2px 6px;
+    font-weight: bold;
+    image-rendering: pixelated;
   }
   .toggle {
     position: relative;
     display: inline-block;
-    width: 40px;
-    height: 22px;
+    width: 32px;
+    height: 16px;
+    flex-shrink: 0;
   }
   .toggle input { opacity: 0; }
   .slider {
     position: absolute;
     cursor: pointer;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: #334155;
-    border-radius: 999px;
-    transition: 300ms;
+    background: var(--gb-dark);
+    border: 2px solid var(--gb-border);
+    image-rendering: pixelated;
   }
   .slider:before {
     position: absolute;
     content: "";
-    height: 16px;
-    width: 16px;
-    left: 3px;
-    bottom: 3px;
-    background: white;
-    border-radius: 50%;
-    transition: 300ms;
+    height: 10px;
+    width: 10px;
+    left: 2px;
+    bottom: 2px;
+    background: var(--gb-bg);
+    border: 1px solid var(--gb-border);
+    image-rendering: pixelated;
   }
-  input:checked + .slider { background: linear-gradient(180deg, #38bdf8, #2563eb); }
-  input:checked + .slider:before { transform: translateX(18px); }
+  input:checked + .slider { background: var(--gb-text); }
+  input:checked + .slider:before { transform: translateX(14px); }
   .status-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 6px 0;
+    padding: 4px 0;
+    border-bottom: 1px dashed var(--gb-border);
   }
   .button-primary {
     width: 100%;
-    padding: 10px;
-    border-radius: 10px;
-    background: linear-gradient(180deg, #38bdf8, #2563eb);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    font-size: 0.78rem;
+    padding: 6px;
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-text);
+    color: var(--gb-text);
+    font-size: 8px;
+    font-weight: bold;
+    font-family: var(--font-body);
     cursor: pointer;
+    image-rendering: pixelated;
   }
+  .button-primary:hover { background: var(--gb-text); color: var(--gb-bg); }
   .button-secondary {
     width: 100%;
-    padding: 10px;
-    border-radius: 10px;
-    background: linear-gradient(180deg, #a78bfa, #7c3aed);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    font-size: 0.78rem;
-    margin-top: 8px;
+    padding: 6px;
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-border);
+    color: var(--gb-text);
+    font-size: 8px;
+    font-weight: bold;
+    font-family: var(--font-body);
     cursor: pointer;
+    image-rendering: pixelated;
   }
+  .button-secondary:hover { background: var(--gb-border); color: var(--gb-bg); }
   .button-danger {
     width: 100%;
-    padding: 10px;
-    border-radius: 10px;
-    background: linear-gradient(180deg, #ef4444, #b91c1c);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    font-size: 0.78rem;
+    padding: 6px;
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-dark);
+    color: var(--gb-dark);
+    font-size: 8px;
+    font-weight: bold;
+    font-family: var(--font-body);
     cursor: pointer;
+    image-rendering: pixelated;
   }
+  .button-danger:hover { background: var(--gb-dark); color: var(--gb-bg); }
   .button-ghost {
-    padding: 8px 12px;
-    border-radius: 10px;
-    background: transparent;
-    color: #94a3b8;
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 4px 8px;
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-border);
+    color: var(--gb-dark);
+    font-size: 8px;
+    font-family: var(--font-body);
     cursor: pointer;
+    image-rendering: pixelated;
   }
+  .button-ghost:hover { background: var(--gb-border); color: var(--gb-bg); }
   .confirm-box {
-    margin-top: 8px;
-    padding: 10px;
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 10px;
+    margin-top: 6px;
+    padding: 6px;
+    border: var(--gb-stroke) solid var(--gb-dark);
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
   }
   .input {
-    padding: 8px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: #e2e8f0;
-    font-size: 0.75rem;
-    font-family: inherit;
+    padding: 4px;
+    background: var(--gb-bg);
+    border: var(--gb-stroke) solid var(--gb-border);
+    color: var(--gb-text);
+    font-size: 8px;
+    font-family: var(--font-body);
+    image-rendering: pixelated;
   }
   .row-buttons {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: flex-end;
   }
 </style>

@@ -1,5 +1,7 @@
 [build]
 target = "x86_64-pc-windows-gnu"
+target-dir = "E:/AgenMonster-target"
+incremental = false
 
 [target.x86_64-pc-windows-gnu]
 linker = "C:\\mingw64\\mingw64\\bin\\x86_64-w64-mingw32-g++.exe"

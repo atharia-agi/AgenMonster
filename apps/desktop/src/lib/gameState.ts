@@ -2,6 +2,7 @@ import type { AdaptationWeights, BanditArm, FeedbackEntry, InteractionSignal } f
 import { createAdaptationState, recordInteraction, computeReward, adaptWeights, selectPromptVariant, updateBandit } from "./selfAdapt.ts";
 import { createEvolutionState, evolve, selectBestPrompt, selectBestRoutine, type EvolutionState, type RoutineGene, type PromptVariant } from "./evolution.ts";
 import { loadStateNative, saveStateNative, loadMemoryNative, saveMemoryNative, loadGoalsNative, saveGoalsNative } from "./tauri.ts";
+import type { Goal } from "./goals.ts";
 
 export const SCHEMA_VERSION = 2;
 
@@ -11,8 +12,12 @@ export type RelationshipLevel = 'stranger' | 'friend' | 'buddy' | 'best_friend' 
 export type Needs = { hunger: number; affection: number; energy: number; focus: number; mood: number; motivation: number; knowledge: number };
 export type Activity = 'idle' | 'chatting' | 'exploring' | 'eating' | 'sleeping' | 'evolving' | 'learning' | 'playing' | 'coding' | 'researching' | 'browsing' | 'dreaming';
 export interface Skill { id: string; name: string; category: string; level: number; unlocked: boolean; icon?: string; xp: number; xpToNext: number }
-export interface MemoryCrystal { id: string; label: string; content: string; createdAt: number; unlocked: boolean }
-export interface ActiveTask { id: string; title: string; status: 'pending' | 'active' | 'done'; createdAt: number }
+export interface MemoryCrystal { id: string; title: string; description: string; color: string; earnedAt: number }
+export interface ActiveTask { id: string; title: string; status: 'pending' | 'active' | 'done' | 'running' | 'queued'; createdAt: number }
+export interface Mission { id: string; title: string; description: string; progress: number; maxProgress: number; completed: boolean; status?: string; createdAt?: number }
+export interface ChatMessage { id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp: number; xpEarned?: number; tokens?: number }
+export interface ToolInfo { id: string; name: string; available: boolean; icon?: string }
+export interface MemoryItem { id: string; content: string; createdAt?: number }
 
 export interface GameState {
   version: number;
@@ -24,7 +29,7 @@ export interface GameState {
   xp: number;
   xpToNext: number;
   needs: Needs;
-  missions: any[];
+  missions: Mission[];
   completedMissions: number;
   name: string;
   activity: string;
@@ -34,20 +39,20 @@ export interface GameState {
   relationshipXp: number;
   relationshipXpToNext: number;
   currentStage: string;
-  goals: any[];
+  goals: Goal[];
   activeGoalId: string | null;
   routineType: string;
   routineStep: number;
-  shortMemory: any[];
-  longMemory: any[];
+  shortMemory: MemoryItem[];
+  longMemory: MemoryItem[];
   memoryIndex: Record<string, number[]>;
   lastActivityTs: number;
-  skills: any[];
-  crystals: any[];
+  skills: Skill[];
+  crystals: MemoryCrystal[];
   maxCrystals: number;
-  activeTasks: any[];
-  tools: any[];
-  chatMessages: any[];
+  activeTasks: ActiveTask[];
+  tools: ToolInfo[];
+  chatMessages: ChatMessage[];
   _accumulatedXP: number;
   _totalMessages: number;
   _tutorialCompleted: boolean;
@@ -110,7 +115,14 @@ export function resetGameState(): GameState {
 
 export function saveState(state: GameState): void {
   _state = state;
-  lsSet('state', state);
+  scheduleLsSet('state', state);
+}
+
+let _stateTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleLsSet(key: string, value: any): void {
+  try {
+    localStorage.setItem(`agenmonster_${key}`, JSON.stringify(value));
+  } catch {}
 }
 
 export async function persistStateNative(state: GameState): Promise<void> {
@@ -133,23 +145,23 @@ export function importState(json: string): GameState {
   return _state;
 }
 
-function buildWelcomeMessages(): any[] {
+function buildWelcomeMessages(): ChatMessage[] {
   return [
     { id: 'welcome-1', role: 'assistant', content: 'Halo! Aku AgenMonster, teman harianmu. Ketik sesuatu untuk mulai!', timestamp: Date.now() },
     { id: 'welcome-2', role: 'assistant', content: 'Coba slash command: /help untuk melihat yang bisa aku lakukan.', timestamp: Date.now() + 1 },
   ];
 }
 
-const DEFAULT_TOOLS = [
-  { id: 't1', name: 'LLM Chat', icon: '🤖' },
-  { id: 't2', name: 'Memory Recall', icon: '🔍' },
-  { id: 't3', name: 'Goal Tracker', icon: '📋' },
+const DEFAULT_TOOLS: ToolInfo[] = [
+  { id: 't1', name: 'LLM Chat', available: true, icon: '🤖' },
+  { id: 't2', name: 'Memory Recall', available: true, icon: '🔍' },
+  { id: 't3', name: 'Goal Tracker', available: true, icon: '📋' },
 ];
 
-const DEFAULT_SKILLS = [
-  { id: 's1', name: 'Chat', icon: '💬', unlocked: true },
-  { id: 's2', name: 'Memory', icon: '🧠', unlocked: true },
-  { id: 's3', name: 'Goals', icon: '🎯', unlocked: false },
+const DEFAULT_SKILLS: Skill[] = [
+  { id: 's1', name: 'Chat', category: 'social', level: 1, unlocked: true, icon: '💬', xp: 0, xpToNext: 50 },
+  { id: 's2', name: 'Memory', category: 'intellect', level: 1, unlocked: true, icon: '🧠', xp: 0, xpToNext: 50 },
+  { id: 's3', name: 'Goals', category: 'planning', level: 0, unlocked: false, icon: '🎯', xp: 0, xpToNext: 50 },
 ];
 
 export function createInitialState(): GameState {
@@ -315,7 +327,7 @@ export function dispatchEvent(event: { type?: string; data?: any }): GameState {
       const text = typeof event.data === 'string' ? event.data : event.data?.text || '';
       const xpGain = 5;
       const updated = addXP(current, xpGain);
-      const newMessages = [
+      const newMessages: ChatMessage[] = [
         ...updated.chatMessages,
         { id: crypto.randomUUID(), role: 'user', content: text, timestamp: Date.now() },
         { id: crypto.randomUUID(), role: 'assistant', content: '', timestamp: Date.now() },
@@ -389,7 +401,7 @@ export function handleChat(state: GameState, userMessage: string, assistantReply
     feedbackLog: [...state.feedbackLog, { timestamp: Date.now(), signal, score: reward }],
   });
   const evolved = addXP(updated, 5);
-  const newMessages = [...evolved.chatMessages, { id: crypto.randomUUID(), role: 'user', content: userMessage, timestamp: Date.now() }];
+  const newMessages: ChatMessage[] = [...evolved.chatMessages, { id: crypto.randomUUID(), role: 'user', content: userMessage, timestamp: Date.now() }];
   if (newMessages.length > 200) newMessages.splice(0, 100);
   saveState({ ...evolved, chatMessages: newMessages, _totalMessages: state._totalMessages + 1, lastActivityTs: Date.now() });
   return getGameState();
@@ -433,11 +445,12 @@ export function handleTaskComplete(state: GameState, taskId: string, success: bo
 }
 
 export function addAssistantMessage(state: GameState, content: string): GameState {
+  const msg: ChatMessage = { id: crypto.randomUUID(), role: 'assistant', content, timestamp: Date.now() };
   const s = {
     ...state,
     chatMessages: [
       ...state.chatMessages,
-      { id: crypto.randomUUID(), role: 'assistant', content, timestamp: Date.now() },
+      msg,
     ],
   };
   saveState(s);

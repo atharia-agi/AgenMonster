@@ -1,7 +1,8 @@
 <script lang="ts">
+  import type { ActiveTask, ToolInfo } from '$lib/gameState';
   let { tasks = [], tools = [], mood = 'idle', stage = 'egg', level = 1, consoleLog = [], streaming = false, streamRoute = '' } = $props<{
-    tasks?: { id: string; title: string; status: string }[];
-    tools?: { name: string; available: boolean }[];
+    tasks?: ActiveTask[];
+    tools?: ToolInfo[];
     mood?: string;
     stage?: string;
     level?: number;

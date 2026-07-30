@@ -1,5 +1,6 @@
 <script lang="ts">
-  let { crystals = [], max = 50 } = $props<{ crystals?: Array<{ id: string; title: string; description: string; color: string; earnedAt: number }>; max?: number }>();
+  import type { MemoryCrystal } from '$lib/gameState';
+  let { crystals = [], max = 50 } = $props<{ crystals?: MemoryCrystal[]; max?: number }>();
 
   const displaySlots = $derived(Math.min(max, Math.max(crystals.length + 3, 8)));
 </script>

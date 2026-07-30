@@ -1,7 +1,6 @@
 <script lang="ts">
   // DiagnosticsPanel — reads from the shared chatStats store and renders the
   // per-route outcome table plus totals. Pure presentation: no mutations here.
-  import { onMount, onDestroy } from 'svelte';
   import { subscribeChatStats, resetChatStats, msLabel, type ChatStatsState } from '$lib/chatStatsStore.svelte';
   import { getTokenState, resetTokenState, formatCost, formatTokens, type TokenState, hydrateTokenState, getDailySpend } from '$lib/tokenTracker';
   import { loadCaps, type BudgetCaps } from '$lib/costGuard';
@@ -19,16 +18,15 @@
   let tokens = $state<TokenState>(getTokenState());
   let caps = $state<BudgetCaps>(loadCaps());
   let daily = $state(getDailySpend());
-  let unsubscribe: (() => void) | null = null;
 
-  onMount(() => {
+  $effect(() => {
     hydrateTokenState();
     tokens = getTokenState();
     daily = getDailySpend();
-    unsubscribe = subscribeChatStats((s) => { stats = s; });
-  });
-  onDestroy(() => {
-    if (unsubscribe) unsubscribe();
+    const unsub = subscribeChatStats((s) => { stats = s; });
+    return () => {
+      try { unsub(); } catch {}
+    };
   });
 
   function pct(n: number, d: number): string {

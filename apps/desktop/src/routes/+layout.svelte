@@ -1,11 +1,13 @@
 <script lang="ts">
   import '../app.css';
   import { APP_VERSION } from '$lib/version';
+  import { loadTheme, applyTheme } from '$lib/theme.ts';
   let { children } = $props();
   let error = $state<string | null>(null);
   let loading = $state(true);
 
   $effect(() => {
+    applyTheme(loadTheme());
     function handleError(e: ErrorEvent) {
       console.error('[AgenMonster Error]', e.error);
       const msg = e.error?.message || 'Unknown error';
