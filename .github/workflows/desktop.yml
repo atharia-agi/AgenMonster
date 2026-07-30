@@ -55,7 +55,7 @@ jobs:
         run: echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-g++" >> "$GITHUB_ENV"
 
       - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends mingw-w64
-      - run: cd apps/desktop && CI=1 npm ci
+      - run: cd apps/desktop && CI=1 npm ci --legacy-peer-deps
       - run: cd apps/desktop && CI=1 npm run lint
       - run: cd apps/desktop && CI=1 npm test
       - run: cd apps/desktop && npx tauri build --target x86_64-pc-windows-gnu

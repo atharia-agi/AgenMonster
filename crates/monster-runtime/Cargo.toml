@@ -28,7 +28,7 @@ monster-memory  = { path = "../monster-memory" }
 monster-evolve  = { path = "../monster-evolve" }
 monster-scheduler = { path = "../monster-scheduler" }
 monster-telemetry = { path = "../monster-telemetry" }
-monster-render  = { path = "../monster-render" }
+monster-render  = { path = "../monster-render", default-features = false }
 monster-asset   = { path = "../monster-asset" }
 
 [dev-dependencies]
