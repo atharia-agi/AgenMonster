@@ -18,6 +18,10 @@ build/
 test-output.txt
 svelte-check.out
 
+# Test artifacts
+test-results/
+playwright-report/
+
 # Archives / installers (too large for git)
 *.zip
 *.7z

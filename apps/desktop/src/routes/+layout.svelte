@@ -2,6 +2,7 @@
   import '../app.css';
   import { APP_VERSION } from '$lib/version';
   import { loadTheme, applyTheme } from '$lib/theme.ts';
+  import { flushMemoryNow } from '$lib/memory.ts';
   let { children } = $props();
   let error = $state<string | null>(null);
   let loading = $state(true);
@@ -17,8 +18,12 @@
     function handleRejection(e: PromiseRejectionEvent) {
       console.error('[AgenMonster Unhandled]', e.reason);
     }
+    function flush() { try { flushMemoryNow(); } catch {} }
+    function onHide() { if (document.visibilityState === 'hidden') flush(); }
     window.addEventListener('error', handleError);
     window.addEventListener('unhandledrejection', handleRejection);
+    window.addEventListener('beforeunload', flush);
+    document.addEventListener('visibilitychange', onHide);
 
     // Simulate loading delay for splash screen
     const t = setTimeout(() => { loading = false; }, 1800);
@@ -26,6 +31,8 @@
     return () => {
       window.removeEventListener('error', handleError);
       window.removeEventListener('unhandledrejection', handleRejection);
+      window.removeEventListener('beforeunload', flush);
+      document.removeEventListener('visibilitychange', onHide);
       clearTimeout(t);
     };
   });

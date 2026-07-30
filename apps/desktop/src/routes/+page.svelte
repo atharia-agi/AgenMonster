@@ -349,8 +349,8 @@
       <button class="sidebar-toggle-btn" aria-label="Toggle left sidebar" onclick={() => leftOpen = !leftOpen}>
         <svg width="10" height="10" viewBox="0 0 10 10" class:flipped={!leftOpen}><path d="M3 1l4 4-4 4" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-  {#if leftOpen}
-    <div class="sidebar-scroll">
+    {#if leftOpen}
+      <div class="sidebar-scroll">
       <SidebarPanel title="Status" icon="⬡" open={true}>
         <MonsterStatus
           state={gs}
@@ -498,7 +498,6 @@
     display: flex;
     flex-direction: column;
     position: relative;
-    overflow: hidden;
     min-width: 0;
     background: var(--gb-panel);
     transition: width 0.15s steps(3);
@@ -516,7 +515,12 @@
     border: none;
   }
   .sidebar.collapsed .sidebar-toggle-btn {
-    display: none;
+    position: absolute;
+    left: 100%;
+    top: 0;
+    width: 16px;
+    height: auto;
+    min-height: 24px;
   }
 
   .sidebar-toggle-btn {
@@ -527,11 +531,13 @@
     padding: 4px 0;
     background: var(--gb-bg);
     border: none;
-    border-bottom: var(--gb-stroke) solid var(--gb-border);
+    border-bottom: 3px solid var(--gb-border);
     color: var(--gb-dark);
     cursor: pointer;
     flex-shrink: 0;
     image-rendering: pixelated;
+    z-index: 10;
+    position: relative;
   }
   .sidebar-toggle-btn:hover { background: var(--gb-border); color: var(--gb-bg); }
   .sidebar-toggle-btn svg {

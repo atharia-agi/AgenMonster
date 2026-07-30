@@ -9,10 +9,10 @@ const devServer = process.env.E2E_URL ? undefined : {
 
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: !process.env.CI,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  workers: process.env.CI ? 1 : 2,
   reporter: 'list',
   use: {
     baseURL: process.env.E2E_URL || 'http://localhost:1420',

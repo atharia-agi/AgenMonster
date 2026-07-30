@@ -105,6 +105,22 @@ function scheduleNotify(): void {
   }, 0);
 }
 
+// Flush any scheduled persist immediately. Call on beforeunload / visibilitychange
+// so deferred writes are never lost when the tab closes or reloads.
+export function flushMemoryNow(): void {
+  if (_persistTimer) {
+    clearTimeout(_persistTimer);
+    _persistTimer = null;
+    persist();
+  }
+  if (_notifyTimer) {
+    clearTimeout(_notifyTimer);
+    _notifyTimer = null;
+    const snapshot = _state;
+    for (const fn of _listeners) fn(snapshot);
+  }
+}
+
 // ---------- public API ----------
 
 export function getMemoryState(): MemoryState {

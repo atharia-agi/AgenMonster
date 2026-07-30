@@ -71,8 +71,13 @@ function applyInline(line: string): Segment[] {
     }
     let j = i;
     while (j < line.length && line[j] !== '`' && line[j] !== '*' && line[j] !== '_') j++;
-    out.push({ type: 'text', value: line.slice(i, j) });
-    i = j;
+    if (j === i) {
+      out.push({ type: 'text', value: line[i] });
+      i++;
+    } else {
+      out.push({ type: 'text', value: line.slice(i, j) });
+      i = j;
+    }
   }
   return out;
 }
