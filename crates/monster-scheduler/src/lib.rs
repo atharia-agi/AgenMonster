@@ -16,6 +16,12 @@ pub struct Scheduler {
     jobs: RwLock<Vec<ScheduledJob>>,
 }
 
+impl Default for Scheduler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Scheduler {
     pub fn new() -> Self {
         Self {

@@ -34,6 +34,12 @@ pub struct RenderSubsystem {
     state: tokio::sync::RwLock<RenderState>,
 }
 
+impl Default for RenderSubsystem {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl RenderSubsystem {
     pub fn new() -> Self {
         Self {

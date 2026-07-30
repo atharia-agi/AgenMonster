@@ -178,7 +178,7 @@ impl GroqClient {
         }
 
         // Estimate tokens from text (rough: 1 token ≈ 4 chars)
-        let output_tokens = (full_text.len() as u32 + 3) / 4;
+        let output_tokens = (full_text.len() as u32).div_ceil(4);
         let input_tokens = output_tokens / 3; // rough estimate
         Ok(GroqStreamResult {
             text: full_text,

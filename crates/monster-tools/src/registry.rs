@@ -1071,7 +1071,7 @@ Write-Output "Typed: $keys"
                         }
                         if !stderr.is_empty() {
                             if !content.is_empty() {
-                                content.push_str("\n");
+                                content.push('\n');
                             }
                             content.push_str(&format!("[stderr] {stderr}"));
                         }
@@ -1188,7 +1188,7 @@ Write-Output "Typed: $keys"
                             let status = resp.status().as_u16();
                             let text = resp.text().await.unwrap_or_default();
                             Ok(ToolOutput {
-                                success: status >= 200 && status < 300,
+                                success: (200..300).contains(&status),
                                 content: format!("[{status}] {text}"),
                                 artifacts: vec![],
                             })
@@ -1995,7 +1995,7 @@ mod tests {
         });
         assert_eq!(reg.count(), 1);
         assert!(reg.get("web_search").is_some());
-        assert!(reg.search("web").len() > 0);
+        assert!(!reg.search("web").is_empty());
     }
 
     #[test]
@@ -2079,7 +2079,7 @@ mod tests {
     fn test_random_string_tool() {
         let reg = ToolRegistry::bootstrap_global();
         assert!(reg.get("random_string").is_some());
-        let mut args = std::collections::HashMap::new();
+        let args = std::collections::HashMap::new();
         let input = ToolInput {
             name: "random_string".into(),
             args,

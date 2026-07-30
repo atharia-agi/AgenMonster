@@ -193,7 +193,7 @@ impl SkillRegistry {
                     score += 0.5;
                 }
             }
-            if score > 0.0 && best.as_ref().map_or(true, |(_, bs)| score > *bs) {
+            if score > 0.0 && best.as_ref().is_none_or(|(_, bs)| score > *bs) {
                 best = Some((skill, score));
             }
         }

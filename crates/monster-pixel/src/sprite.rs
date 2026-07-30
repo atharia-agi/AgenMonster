@@ -54,6 +54,12 @@ pub struct SpriteRegistry {
     sheets: HashMap<String, SpriteSheet>,
 }
 
+impl Default for SpriteRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SpriteRegistry {
     pub fn new() -> Self {
         Self {

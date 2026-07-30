@@ -13,11 +13,11 @@ pub mod recall;
 use block::{MemoryBlock, MemoryTier};
 use embedding::EmbeddingEngine;
 use rusqlite::Connection;
-use std::sync::Arc;
+use std::sync::Mutex;
 use tokio::sync::RwLock;
 
 pub struct MemorySubsystem {
-    db: Arc<Connection>,
+    db: Mutex<Connection>,
     block_cache: RwLock<Vec<MemoryBlock>>,
     embedder: EmbeddingEngine,
 }
@@ -52,7 +52,7 @@ impl MemorySubsystem {
             tracing::warn!("FTS5 not available, using LIKE search fallback");
         }
         Ok(Self {
-            db: Arc::new(db),
+            db: Mutex::new(db),
             block_cache: RwLock::new(Vec::new()),
             embedder: EmbeddingEngine::new(),
         })
@@ -61,7 +61,7 @@ impl MemorySubsystem {
     pub async fn ingest(&self, block: MemoryBlock) -> anyhow::Result<()> {
         let tier_str = format!("{:?}", block.tier);
         let embedding_bytes = embedding::vec_to_bytes(&block.embedding);
-        self.db.execute(
+        self.db.lock().unwrap().execute(
             "INSERT OR REPLACE INTO memories (id, tier, content, embedding, access_count, created_at, last_accessed, decay_score)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             rusqlite::params![
@@ -70,7 +70,7 @@ impl MemorySubsystem {
             ],
         )?;
         // Sync with FTS5 (ignore errors if FTS5 not available)
-        let _ = self.db.execute(
+        let _ = self.db.lock().unwrap().execute(
             "INSERT OR REPLACE INTO memories_fts(rowid, content, tier, tags) VALUES (?1, ?2, ?3, '')",
             rusqlite::params![block.id, block.content, tier_str],
         );
@@ -118,7 +118,8 @@ impl MemorySubsystem {
 
         // Fallback to LIKE search
         let pattern = format!("%{query}%");
-        let mut stmt = self.db.prepare(
+        let guard = self.db.lock().unwrap();
+        let mut stmt = guard.prepare(
             "SELECT id, tier, content, access_count, created_at, last_accessed, decay_score
              FROM memories WHERE content LIKE ?1 ORDER BY decay_score DESC LIMIT ?2",
         )?;
@@ -147,17 +148,14 @@ impl MemorySubsystem {
     /// Full-text search using FTS5 (falls back to LIKE if FTS5 unavailable).
     pub async fn fts_search(&self, query: &str, limit: usize) -> anyhow::Result<Vec<MemoryBlock>> {
         // Try FTS5 first
-        let fts_result = self.db.prepare(
+        if let Ok(mut stmt) = self.db.lock().unwrap().prepare(
             "SELECT m.id, m.tier, m.content, m.access_count, m.created_at, m.last_accessed, m.decay_score
              FROM memories_fts f
              JOIN memories m ON m.id = f.rowid
              WHERE memories_fts MATCH ?1
              ORDER BY rank
              LIMIT ?2"
-        );
-
-        match fts_result {
-            Ok(mut stmt) => {
+        ) {
                 let rows = stmt.query_map(rusqlite::params![query, limit as i64], |row| {
                     let tier_str: String = row.get(1)?;
                     let tier = match tier_str.as_str() {
@@ -181,9 +179,7 @@ impl MemorySubsystem {
                 if !results.is_empty() {
                     return Ok(results);
                 }
-            }
-            Err(_) => {} // FTS5 not available, fall through
-        }
+                }
 
         // Fallback to LIKE
         self.recall(query, limit).await
@@ -193,17 +189,17 @@ impl MemorySubsystem {
     pub async fn consolidate(&self) -> anyhow::Result<u64> {
         let mut changed: u64 = 0;
         // Demote hot memories with low access to warm
-        changed += self.db.execute(
+        changed += self.db.lock().unwrap().execute(
             "UPDATE memories SET tier = 'Warm' WHERE tier = 'Hot' AND access_count < 3 AND decay_score < 0.5",
             [],
         )? as u64;
         // Demote warm memories with very low access to cold
-        changed += self.db.execute(
+        changed += self.db.lock().unwrap().execute(
             "UPDATE memories SET tier = 'Cold' WHERE tier = 'Warm' AND access_count < 2 AND decay_score < 0.3",
             [],
         )? as u64;
         // Archive cold memories with zero decay
-        changed += self.db.execute(
+        changed += self.db.lock().unwrap().execute(
             "UPDATE memories SET tier = 'Archived' WHERE tier = 'Cold' AND decay_score <= 0.0",
             [],
         )? as u64;
@@ -211,7 +207,7 @@ impl MemorySubsystem {
     }
 
     pub async fn decay_tick(&self) -> anyhow::Result<u64> {
-        let changed = self.db.execute(
+        let changed = self.db.lock().unwrap().execute(
             "UPDATE memories SET decay_score = MAX(0.0, decay_score - 0.01)
              WHERE decay_score > 0.0",
             [],
@@ -221,7 +217,8 @@ impl MemorySubsystem {
 
     /// Get all memories from the database.
     async fn get_all_memories(&self) -> anyhow::Result<Vec<MemoryBlock>> {
-        let mut stmt = self.db.prepare(
+        let guard = self.db.lock().unwrap();
+        let mut stmt = guard.prepare(
             "SELECT id, tier, content, access_count, created_at, last_accessed, decay_score
              FROM memories ORDER BY decay_score DESC",
         )?;
@@ -250,9 +247,11 @@ impl MemorySubsystem {
     /// Get memory count by tier.
     pub async fn tier_counts(&self) -> anyhow::Result<TierCounts> {
         let mut counts = TierCounts::default();
-        let mut stmt = self
+        let guard = self
             .db
-            .prepare("SELECT tier, COUNT(*) FROM memories GROUP BY tier")?;
+            .lock()
+            .unwrap();
+        let mut stmt = guard.prepare("SELECT tier, COUNT(*) FROM memories GROUP BY tier")?;
         let rows = stmt.query_map([], |row| {
             let tier: String = row.get(0)?;
             let count: i64 = row.get(1)?;
@@ -272,6 +271,8 @@ impl MemorySubsystem {
     pub fn stats(&self) -> MemoryStats {
         let count: i64 = self
             .db
+            .lock()
+            .unwrap()
             .query_row("SELECT COUNT(*) FROM memories", [], |row| row.get(0))
             .unwrap_or(0);
         MemoryStats {

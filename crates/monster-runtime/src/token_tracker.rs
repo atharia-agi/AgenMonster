@@ -266,7 +266,7 @@ pub struct TokenSummary {
 
 /// Estimate token count from text (rough: 1 token ≈ 4 chars)
 pub fn estimate_tokens(text: &str) -> u32 {
-    (text.len() as u32 + 3) / 4
+    (text.len() as u32).div_ceil(4)
 }
 
 /// Estimate cost for a provider (rough estimates per 1M tokens)

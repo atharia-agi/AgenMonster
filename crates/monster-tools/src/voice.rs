@@ -113,7 +113,6 @@ pub fn stt_listen(timeout_secs: u32) -> anyhow::Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn test_tts_speak_dry_run() {

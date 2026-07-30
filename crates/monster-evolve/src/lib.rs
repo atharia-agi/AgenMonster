@@ -55,6 +55,12 @@ impl StageManager {
     }
 }
 
+impl Default for StageManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SkillProposal {
     pub id: String,

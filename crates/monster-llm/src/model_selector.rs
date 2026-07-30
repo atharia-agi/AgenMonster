@@ -98,6 +98,7 @@ impl TaskType {
         }
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(s: &str) -> Self {
         match s {
             "code" => TaskType::Code,
@@ -673,7 +674,7 @@ mod tests {
     fn test_detect_with_groq_only() {
         let sel = ModelSelector::detect(
             &["key1".into(), "key2".into()],
-            &vec![],
+            &[],
             &None,
             &None,
             &None,
@@ -694,14 +695,14 @@ mod tests {
 
     #[test]
     fn test_select_chat() {
-        let sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
+        let sel = ModelSelector::detect(&["key1".into()], &[], &None, &None, &None);
         let result = sel.select(TaskType::Chat).unwrap();
         assert_eq!(result.provider, Provider::Groq);
     }
 
     #[test]
     fn test_select_fast_prefers_groq() {
-        let sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
+        let sel = ModelSelector::detect(&["key1".into()], &[], &None, &None, &None);
         let result = sel.select(TaskType::Fast).unwrap();
         assert_eq!(result.provider, Provider::Groq);
         assert!(result.model_info.speed_tier == SpeedTier::UltraFast);
@@ -709,7 +710,7 @@ mod tests {
 
     #[test]
     fn test_select_vision_requires_vision_model() {
-        let sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
+        let sel = ModelSelector::detect(&["key1".into()], &[], &None, &None, &None);
         // Groq doesn't have vision models
         assert!(sel.select(TaskType::Vision).is_none());
     }
@@ -729,7 +730,7 @@ mod tests {
 
     #[test]
     fn test_summary_no_keys() {
-        let sel = ModelSelector::detect(&vec![], &vec![], &None, &None, &None);
+        let sel = ModelSelector::detect(&[], &[], &None, &None, &None);
         let s = sel.summary();
         assert!(s.contains("No LLM providers"));
     }
@@ -749,7 +750,7 @@ mod tests {
 
     #[test]
     fn test_model_catalog_size() {
-        let _sel = ModelSelector::detect(&["key1".into()], &vec![], &None, &None, &None);
+        let _sel = ModelSelector::detect(&["key1".into()], &[], &None, &None, &None);
         // Total catalog should have all models regardless of availability
         let all = ModelSelector::build_model_catalog();
         assert!(all.len() >= 12);

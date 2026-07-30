@@ -71,7 +71,7 @@ impl HttpRequestTool {
 
         Ok(serde_json::json!({
             "status": status,
-            "ok": status >= 200 && status < 300,
+            "ok": (200..300).contains(&status),
             "body": body_display,
             "body_length": body_len,
         })

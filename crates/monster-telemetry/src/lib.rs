@@ -23,6 +23,12 @@ pub struct TelemetrySnapshot {
     pub started_at: String,
 }
 
+impl Default for Telemetry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Telemetry {
     pub fn new() -> Self {
         Self {

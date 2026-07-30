@@ -75,12 +75,7 @@
         "uninstallerIcon": "icons/icon.ico",
         "installerHeader": "icons/icon.bmp",
         "uninstallDisplayName": "AgenMonster Desktop",
-        "createDesktopShortcut": true,
-        "createStartMenuShortcut": true,
-        "shortcutName": "AgenMonster",
-        "runAfterFinish": true,
-        "allowElevation": true,
-        "allowPrerelease": false
+        "runAfterFinish": true
       }
     }
   },

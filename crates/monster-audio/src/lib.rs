@@ -52,12 +52,12 @@ impl Voice {
     /// Render this voice into interleaved [i16] PCM samples.
     pub fn render(&self) -> Vec<i16> {
         let total_ms = self.duration_ms;
-        let total_samples = ((SAMPLE_RATE as u32 * total_ms) / 1000) as usize;
+        let total_samples = ((SAMPLE_RATE * total_ms) / 1000) as usize;
         let mut out = Vec::with_capacity(total_samples);
         let release_start = total_samples
-            .saturating_sub((SAMPLE_RATE as u32 * self.envelope.release_ms / 1000) as usize);
-        let attack = (SAMPLE_RATE as u32 * self.envelope.attack_ms.max(1) / 1000) as f32;
-        let decay = (SAMPLE_RATE as u32 * self.envelope.decay_ms.max(1) / 1000) as f32;
+            .saturating_sub((SAMPLE_RATE * self.envelope.release_ms / 1000) as usize);
+        let attack = (SAMPLE_RATE * self.envelope.attack_ms.max(1) / 1000) as f32;
+        let decay = (SAMPLE_RATE * self.envelope.decay_ms.max(1) / 1000) as f32;
 
         let mut phase: u32 = 0;
         let phase_inc = (self.freq_hz / SAMPLE_RATE as f32 * u32::MAX as f32) as u32;

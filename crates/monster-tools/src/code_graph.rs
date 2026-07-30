@@ -326,14 +326,14 @@ fn analyze_metrics(code: &str) -> serde_json::Value {
         "comment_lines": comment_lines,
         "characters": chars,
         "estimated_complexity": complexity,
-        "maintainability_index": if code_lines > 0 { (100 - complexity * 2).max(0) } else { 100 },
+        "maintainability_index": if code_lines > 0 { 100 - complexity * 2 } else { 100 },
     })
 }
 
 fn extract_name(line: &str, keyword: &str) -> Option<String> {
     let after_keyword = line.split(keyword).nth(1)?;
     let name = after_keyword
-        .split(|c: char| c == '(' || c == '{' || c == ':' || c == '<' || c == ' ')
+        .split(|c: char| ['(', '{', ':', '<', ' '].contains(&c))
         .next()?
         .trim()
         .trim_start_matches("pub ")

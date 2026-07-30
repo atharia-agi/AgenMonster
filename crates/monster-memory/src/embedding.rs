@@ -99,7 +99,7 @@ impl EmbeddingEngine {
             let bytes = token.as_bytes();
             for (i, &byte) in bytes.iter().enumerate() {
                 let idx = (byte as usize + i * 37) % EMBEDDING_DIM;
-                let sign = if (byte + i as u8) % 2 == 0 { 1.0 } else { -1.0 };
+                let sign = if (byte + i as u8).is_multiple_of(2) { 1.0 } else { -1.0 };
                 embedding[idx] += weight * sign;
             }
         }
@@ -155,9 +155,9 @@ pub fn vec_to_bytes(vec: &[f32]) -> Vec<u8> {
 pub fn bytes_to_vec(bytes: &[u8]) -> Vec<f32> {
     bytes
         .chunks_exact(4)
-        .filter_map(|chunk| {
+        .map(|chunk| {
             let arr: [u8; 4] = [chunk[0], chunk[1], chunk[2], chunk[3]];
-            Some(f32::from_le_bytes(arr))
+            f32::from_le_bytes(arr)
         })
         .collect()
 }

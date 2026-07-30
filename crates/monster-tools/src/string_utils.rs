@@ -67,7 +67,7 @@ impl StringUtilsTool {
             }
             "camel_case" => {
                 let words: Vec<&str> = input
-                    .split(|c: char| c == ' ' || c == '_' || c == '-')
+                    .split(|c: char| [' ', '_', '-'].contains(&c))
                     .collect();
                 let camel: String = words
                     .iter()

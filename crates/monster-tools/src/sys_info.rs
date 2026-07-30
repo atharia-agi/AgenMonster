@@ -106,7 +106,7 @@ impl SysInfoTool {
                     if let Ok(bytes) = val.trim().parse::<u64>() {
                         current.insert(
                             "free_gb".into(),
-                            serde_json::json!((bytes as f64 / 1_073_741_824.0) as f64),
+                            serde_json::json!(bytes as f64 / 1_073_741_824.0),
                         );
                     }
                 }
@@ -114,7 +114,7 @@ impl SysInfoTool {
                     if let Ok(bytes) = val.trim().parse::<u64>() {
                         current.insert(
                             "total_gb".into(),
-                            serde_json::json!((bytes as f64 / 1_073_741_824.0) as f64),
+                            serde_json::json!(bytes as f64 / 1_073_741_824.0),
                         );
                     }
                 }

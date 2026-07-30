@@ -175,7 +175,7 @@ impl MistralClient {
         }
 
         // Estimate tokens from text (rough: 1 token ≈ 4 chars)
-        let output_tokens = (full_text.len() as u32 + 3) / 4;
+        let output_tokens = (full_text.len() as u32).div_ceil(4);
         let input_tokens = output_tokens / 3;
         Ok(MistralStreamResult {
             text: full_text,

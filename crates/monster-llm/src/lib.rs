@@ -308,6 +308,7 @@ impl Router {
     }
 
     /// Route with streaming callback. Returns LlmResponse with token usage.
+    #[allow(clippy::redundant_closure, unused_mut)]
     pub async fn route_stream(
         &self,
         prompt: &str,
