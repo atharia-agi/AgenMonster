@@ -1,9 +1,0 @@
-{
-  "stage": "teen",
-  "personality": {
-    "preferred_mood": "proud",
-    "default_speech": "Ready for anything",
-    "max_idle_bob_px": 2,
-    "default_scale": 1.10
-  }
-}

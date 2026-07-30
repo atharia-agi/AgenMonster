@@ -1,9 +1,0 @@
-{
-  "stage": "egg",
-  "personality": {
-    "preferred_mood": "happy",
-    "default_speech": "I just hatched 🟡",
-    "max_idle_bob_px": 1,
-    "default_scale": 1.0
-  }
-}

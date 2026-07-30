@@ -1,9 +1,0 @@
-{
-  "stage": "mega",
-  "personality": {
-    "preferred_mood": "proud",
-    "default_speech": "Everything is within reach.",
-    "max_idle_bob_px": 3,
-    "default_scale": 1.20
-  }
-}

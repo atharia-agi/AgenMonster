@@ -1,9 +1,0 @@
-{
-  "stage": "adult",
-  "personality": {
-    "preferred_mood": "focused",
-    "default_speech": "On it.",
-    "max_idle_bob_px": 3,
-    "default_scale": 1.15
-  }
-}
