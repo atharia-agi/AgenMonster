@@ -161,3 +161,18 @@ export const TOOLS = [
   'memory.topic.record', 'memory.episode.record', 'memory.export',
   'goal.list', 'goal.create', 'goal.markdone', 'goal.complete',
 ] as const;
+
+export const SECOND_BRAIN_TOOLS = [
+  'secondbrain.recall',
+  'secondbrain.search',
+  'secondbrain.remember',
+  'secondbrain.file_knowledge',
+  'secondbrain.inbox',
+  'secondbrain.timeline',
+  'secondbrain.next_moves',
+  'secondbrain.read',
+  'secondbrain.list',
+  'secondbrain.recent',
+] as const;
+
+export const ALL_TOOLS = [...TOOLS, ...SECOND_BRAIN_TOOLS] as const;

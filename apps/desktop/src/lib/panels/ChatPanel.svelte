@@ -17,7 +17,7 @@
   import { pickActiveGoal, buildGoalFromText, isGoalActive, detectCompletionFromReply, type Goal } from '$lib/goals';
   import { handleSlashCommand } from '$lib/commands/slashCommands.ts';
   import { onMount } from 'svelte';
-  import { TOOLS } from '$lib/mcp';
+  import { ALL_TOOLS } from '$lib/mcp';
   import { buildSystemPrompt, toPetMood, type SystemPromptContext } from '$lib/systemPrompt';
   import type { GameState, Mood, RelationshipLevel, Stage } from '$lib/gameState';
 
@@ -69,7 +69,7 @@ Speaking style:
 Tool use:
 - When you need live data (memory, stats, budget, goals), emit a tool call at the END of your reply on its own line:
   __AGENT_MCP__:tool.name|{"param":"value"}
-- Available tools: ${TOOLS.join(', ')}
+- Available tools: ${ALL_TOOLS.join(', ')}
 - After the system runs the tool, the result is shown to you and the user. Never invent tool output.
 
 You are genuinely a dynamic digital creature — your traits come through in every reply, not via quotes or stage directions.`;
@@ -354,7 +354,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       const reflection = recalled.length && recalled[0].length > 30
         ? `💭 I remember: ${recalled[0]}\n\n`
         : '';
-      const { stripped, toolNote } = dispatchAgentTool(reply);
+      const { stripped, toolNote } = await dispatchAgentTool(reply);
       const finalReply = reflection + stripped + toolNote;
       const tokensApprox = Math.round((text.length + finalReply.length) / 4);
       messages = messages.map((m) =>

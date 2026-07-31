@@ -40,23 +40,23 @@ test('isTransientError: case-insensitive matching', () => {
 });
 
 // ---------- dispatchAgentTool ----------
-test('dispatchAgentTool: plain text returns unchanged, no call', () => {
-  const r = dispatchAgentTool('Just a normal reply with no marker.');
+test('dispatchAgentTool: plain text returns unchanged, no call', async () => {
+  const r = await dispatchAgentTool('Just a normal reply with no marker.');
   assert.equal(r.called, false);
   assert.equal(r.stripped, 'Just a normal reply with no marker.');
   assert.equal(r.toolNote, '');
 });
-test('dispatchAgentTool: strips marker and produces tool note on success', () => {
+test('dispatchAgentTool: strips marker and produces tool note on success', async () => {
   const reply = 'Let me check that.\n__AGENT_MCP__:memory.facts|{}';
-  const r = dispatchAgentTool(reply);
+  const r = await dispatchAgentTool(reply);
   assert.equal(r.called, true);
   assert.equal(r.stripped.includes('__AGENT_MCP__'), false);
   assert.ok(r.stripped.includes('Let me check that.'));
   assert.ok(r.toolNote.includes('memory.facts'));
 });
-test('dispatchAgentTool: unknown tool yields error note, still called', () => {
+test('dispatchAgentTool: unknown tool yields error note, still called', async () => {
   const reply = 'Trying something.\n__AGENT_MCP__:not.a.real.tool|{}';
-  const r = dispatchAgentTool(reply);
+  const r = await dispatchAgentTool(reply);
   assert.equal(r.called, true);
   assert.ok(r.toolNote.includes('tool error') || r.toolNote.includes('⚠'));
 });

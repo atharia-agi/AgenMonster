@@ -79,14 +79,33 @@ export interface ToolDispatchResult {
  * via the MCP dispatcher, and produce the display note for the chat bubble.
  * Logs a memory episode for successful tool calls (same as pre-refactor).
  */
-export function dispatchAgentTool(reply: string): ToolDispatchResult {
+export async function dispatchAgentTool(reply: string): Promise<ToolDispatchResult> {
   const toolCall = parseAgentToolCall(reply);
   if (!toolCall) return { stripped: reply, toolNote: '', called: false };
 
   const stripped = reply.replace(toolCall.raw, '').trim();
   let toolNote: string;
   try {
-    const r = handleTool(toolCall.name, toolCall.params);
+    const isSecondBrain = toolCall.name.startsWith('secondbrain.');
+    let r: { ok: boolean; data?: unknown; error?: string };
+
+    if (isSecondBrain) {
+      r = { ok: false, error: 'not-implemented' };
+      try {
+        const res = await fetch('/api/mcp', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ name: toolCall.name, params: toolCall.params }),
+        });
+        const data = await res.json();
+        r = data;
+      } catch (e: any) {
+        r = { ok: false, error: e?.message || 'unknown' };
+      }
+    } else {
+      r = handleTool(toolCall.name, toolCall.params);
+    }
+
     if (r.ok) {
       rememberEvent({
         kind: 'success',
