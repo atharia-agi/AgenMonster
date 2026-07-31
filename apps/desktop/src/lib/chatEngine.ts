@@ -29,7 +29,7 @@ export function evaluateCostGuard(
   const dailySpend = getDailySpend();
   const state = getTokenState();
   const totalProvSpend = Object.entries(state.byRoute).reduce(
-    (acc, [k, r]) => (k.startsWith(provider) ? acc + (r as any).cost : acc),
+    (acc, [k, r]) => (k.startsWith(provider) ? acc + r.cost : acc),
     0,
   );
   const estimatedCost = estimateCost(provider, model, promptText, estimatedCompletionChars);

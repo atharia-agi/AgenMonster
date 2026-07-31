@@ -3,6 +3,7 @@ import { createAdaptationState, recordInteraction, computeReward, adaptWeights, 
 import { createEvolutionState, evolve, selectBestPrompt, selectBestRoutine, type EvolutionState, type RoutineGene, type PromptVariant } from "./evolution.ts";
 import { loadStateNative, saveStateNative, loadMemoryNative, saveMemoryNative, loadGoalsNative, saveGoalsNative } from "./tauri.ts";
 import type { Goal } from "./goals.ts";
+import type { ChatThread } from "./threads.ts";
 
 export const SCHEMA_VERSION = 2;
 
@@ -72,6 +73,9 @@ export interface GameState {
   evolution: EvolutionState;
   bestPrompt: PromptVariant;
   activeRoutines: RoutineGene[];
+  chatThreads?: Record<string, ChatThread>;
+  chatActiveThreadId?: string;
+  chatThreadOrder?: string[];
   chatMode?: string;
 }
 

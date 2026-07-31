@@ -22,7 +22,7 @@ import { getTokenState, getDailySpend } from './tokenTracker.ts';
 import { loadCaps, saveCaps, decideCall, type SpendSnapshot } from './costGuard.ts';
 import { loadTheme, saveTheme, applyTheme, describeTheme, type ThemeName } from './theme.ts';
 import { getGameState, saveState } from './gameState.ts';
-import { type Goal, pickActiveGoal, buildGoal, buildGoalFromText, markStep, completeGoal, addStep, goalProgress, isGoalActive, isGoalComplete } from './goals.ts';
+import { type Goal, type GoalStep, pickActiveGoal, buildGoal, buildGoalFromText, markStep, completeGoal, addStep, goalProgress, isGoalActive, isGoalComplete } from './goals.ts';
 
 export interface ToolResult {
   ok: boolean;
@@ -106,7 +106,7 @@ export function handleTool(name: string, params: any = {}): ToolResult {
     }
     case 'goal.list': {
       const gs = getGameState();
-      const goals = ((gs as any).goals || []) as Goal[];
+      const goals = gs.goals ?? [];
       return ok({ goals: goals.map((g) => ({ ...g, progress: goalProgress(g) })) });
     }
     case 'goal.create': {
@@ -116,9 +116,9 @@ export function handleTool(name: string, params: any = {}): ToolResult {
       if (!title) return err('missing title');
       const goal = { ...buildGoal(title, stepTitles), source: 'tool' as const };
       const gs2 = getGameState();
-      if (!Array.isArray((gs2 as any).goals)) (gs2 as any).goals = [];
-      (gs2 as any).goals.unshift(goal);
-      if ((gs2 as any).goals.length > 30) (gs2 as any).goals.length = 30;
+      if (!Array.isArray(gs2.goals)) gs2.goals = [];
+      gs2.goals.unshift(goal);
+      if (gs2.goals.length > 30) gs2.goals.length = 30;
       saveState(gs2);
       return ok({ created: goal, progress: goalProgress(goal) });
     }
@@ -127,13 +127,13 @@ export function handleTool(name: string, params: any = {}): ToolResult {
       const stepTitle = String(params.stepTitle || '').trim().toLowerCase();
       if (!goalId) return err('missing goalId');
       const gs3 = getGameState();
-      const goals3 = (gs3 as any).goals || [];
+      const goals3 = gs3.goals ?? [];
       const idx = goals3.findIndex((g: Goal) => g.id === goalId);
       if (idx < 0) return err('goal not found');
-      const step = goals3[idx].steps.find((s: any) => s.title.toLowerCase().includes(stepTitle));
+      const step = goals3[idx].steps.find((s: GoalStep) => s.title.toLowerCase().includes(stepTitle));
       if (!step) return err('step not found');
       const updated = markStep(goals3[idx], step.id);
-      (gs3 as any).goals[idx] = updated;
+      gs3.goals[idx] = updated;
       saveState(gs3);
       return ok({ goal: updated, progress: goalProgress(updated) });
     }
@@ -141,11 +141,11 @@ export function handleTool(name: string, params: any = {}): ToolResult {
       const goalId2 = String(params.goalId || '');
       if (!goalId2) return err('missing goalId');
       const gs4 = getGameState();
-      const goals4 = (gs4 as any).goals || [];
+      const goals4 = gs4.goals ?? [];
       const idx4 = goals4.findIndex((g: Goal) => g.id === goalId2);
       if (idx4 < 0) return err('goal not found');
       const done = completeGoal(goals4[idx4]);
-      (gs4 as any).goals[idx4] = done;
+      gs4.goals[idx4] = done;
       saveState(gs4);
       return ok({ goal: done, progress: goalProgress(done) });
     }

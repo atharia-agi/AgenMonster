@@ -12,10 +12,18 @@ export function persistGoals(goals: Goal[]): void {
   try {
     localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
   } catch {}
+  syncGoalsToState(goals);
 }
 
 export function loadGoals(): Goal[] {
   if (typeof localStorage === 'undefined') return [];
+  try {
+    const stateRaw = localStorage.getItem('agenmonster_state');
+    if (stateRaw) {
+      const parsed = JSON.parse(stateRaw);
+      if (Array.isArray(parsed?.goals)) return parsed.goals;
+    }
+  } catch {}
   try {
     const raw = localStorage.getItem(GOALS_KEY);
     if (!raw) return [];
@@ -25,6 +33,20 @@ export function loadGoals(): Goal[] {
   } catch {
     return [];
   }
+}
+
+function syncGoalsToState(goals: Goal[]): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const stateRaw = localStorage.getItem('agenmonster_state');
+    if (stateRaw) {
+      const parsed = JSON.parse(stateRaw);
+      if (typeof parsed === 'object' && parsed !== null) {
+        parsed.goals = goals;
+        localStorage.setItem('agenmonster_state', JSON.stringify(parsed));
+      }
+    }
+  } catch {}
 }
 
 export type GoalSource = 'chat' | 'manual' | 'tool';
@@ -184,11 +206,13 @@ export function completeGoal(goal: Goal): Goal {
 }
 
 export function isGoalActive(goal: Goal): boolean {
-  return !goal.doneAt;
+  return !isGoalComplete(goal);
 }
 
 export function isGoalComplete(g: Goal): boolean {
-  return !!g.doneAt;
+  if (!!g.doneAt) return true;
+  if (!g.steps.length) return false;
+  return g.steps.every((s) => s.done);
 }
 
 export function goalProgress(goal: Goal): { done: number; total: number; ratio: number } {
@@ -218,12 +242,11 @@ const COMPLETION_PHRASES = [
 
 export function detectCompletionFromReply(goal: Goal, reply: string): Goal {
   const lowered = reply.toLowerCase();
-  if (!goal.steps.length || goal.doneAt) return goal;
+  if (!goal.steps.length || isGoalComplete(goal)) return goal;
   let next: Goal | null = null;
   for (const step of goal.steps) {
     if (step.done) continue;
     const stepKey = step.title.toLowerCase().slice(0, 12);
-    // Match a completion phrase co-located with the step keyword.
     const completionHit = COMPLETION_PHRASES.some((p) => lowered.includes(p));
     const stepHit = stepKey && lowered.includes(stepKey);
     if (completionHit && stepHit) {

@@ -82,7 +82,7 @@ export function useDailyLife(_node: HTMLElement, options: DailyLifeOptions = {})
     try {
       const scheduleEntry = getCurrentActivity(hour);
       const mappedActivity = mapScheduleActivity(scheduleEntry.activity);
-      const moodFromActivity = getActivityMood(scheduleEntry.activity) as any;
+      const moodFromActivity = getActivityMood(scheduleEntry.activity);
 
       // Speech bubble only fires when activity transitions to a NEW value
       const speech = mappedActivity !== lastActivity

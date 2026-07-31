@@ -11,10 +11,6 @@ let { state: petState, onClose, onOpenAbout }: { state: GameState; onClose: () =
 let showResetConfirm = $state(false);
 let resetText = $state("");
 let resetCosmeticsClicked = $state(false);
-let resetAuth = $state(false);
-let resetMaster = $state(false);
-let resetEvolutionClicked = $state(false);
-let resetEvolution = $state(false);
 
 let gameState = $derived(petState);
 
@@ -22,8 +18,8 @@ let readabilityMode = $state(localStorage.getItem("agenmonster_readability") ===
 let currentTheme = $state<ThemeName>(loadTheme());
 let useAutoDetect = $state(true);
 let llmConfig = $state<LLMConfig>({ provider: 'groq', model: 'llama-3.3-70b-versatile', apiKey: '' });
-let customEndpoint = $state('');
 let savingLLM = $state(false);
+let llmSaveError = $state('');
 
 (function initLLMSettings(): void {
   const cfg = loadConfig();
@@ -39,6 +35,17 @@ let savingLLM = $state(false);
 })();
 
 function saveLLMSettings(): void {
+  llmSaveError = '';
+  if (!useAutoDetect) {
+    if (!llmConfig.apiKey.trim()) {
+      llmSaveError = 'API key is required when not using auto-detect.';
+      return;
+    }
+    if (!llmConfig.model.trim()) {
+      llmSaveError = 'Model name is required when not using auto-detect.';
+      return;
+    }
+  }
   const cfg = loadConfig();
   cfg.llmProvider = llmConfig.provider;
   cfg.model = llmConfig.model;
@@ -373,9 +380,9 @@ function getAdaptStats() {
             <div class="row"><span class="label">API Key</span>
               <input class="input" bind:value={llmConfig.apiKey} type="password" placeholder="Paste key here" style="flex:1;min-width:0" />
             </div>
-            <div class="row"><span class="label">Custom Endpoint</span>
-              <input class="input" bind:value={customEndpoint} placeholder="Leave empty for default proxy" style="flex:1;min-width:0" />
-            </div>
+            {#if llmSaveError}
+              <div class="muted" style="color:var(--gb-dark)">{llmSaveError}</div>
+            {/if}
             <button class="button-primary" onclick={saveLLMSettings}>
               {savingLLM ? '✓ Saved' : '💾 Save LLM Config'}
             </button>

@@ -76,14 +76,23 @@ function load(): void {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) _state = JSON.parse(raw) as MemoryState;
-  } catch {}
+  } catch (e: unknown) {
+    if ((e as Error)?.name === 'QuotaExceededError') {
+      console.warn('[memory] localStorage quota exceeded on load');
+    }
+  }
   _hydrated = true;
 }
 
 function persist(): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(_state));
-  } catch {}
+  } catch (e: unknown) {
+    if ((e as Error)?.name === 'QuotaExceededError') {
+      console.warn('[memory] localStorage quota exceeded on persist — data not saved');
+      _listeners.forEach((fn) => fn({ ..._state, totalMemories: _state.totalMemories }));
+    }
+  }
 }
 
 let _persistTimer: ReturnType<typeof setTimeout> | null = null;
@@ -239,24 +248,38 @@ export function importMemoryJSON(json: string): { ok: boolean; reason?: string }
   load();
   try {
     const parsed = JSON.parse(json);
-    if (parsed?.version !== 1) return { ok: false, reason: 'unsupported version' };
-    const incoming = parsed?.state;
+    if (typeof parsed !== 'object' || parsed === null) return { ok: false, reason: 'empty payload' };
+    if ((parsed as any).version !== 1) return { ok: false, reason: 'unsupported version' };
+    const incoming = (parsed as any).state;
     if (!incoming || typeof incoming !== 'object') return { ok: false, reason: 'no state bag' };
-    const episodes = Array.isArray(incoming.episodes) ? incoming.episodes : [];
-    const facts = (incoming.facts && typeof incoming.facts === 'object') ? incoming.facts : {};
-    const topics = Array.isArray(incoming.topics) ? incoming.topics : [];
+    const episodes = Array.isArray(incoming.episodes) ? incoming.episodes.filter(
+      (ep: any) => ep && typeof ep === 'object' && typeof ep.id === 'string' && typeof ep.ts === 'number'
+    ) : [];
+    const rawFacts = (incoming.facts && typeof incoming.facts === 'object') ? incoming.facts : {};
+    const facts: Record<string, { key: string; value: string; confidence: number; updatedAt: number }> = {};
+    for (const [k, v] of Object.entries(rawFacts)) {
+      if (v && typeof v === 'object' && typeof (v as any).value === 'string') {
+        facts[k] = {
+          key: (v as any).key || k,
+          value: (v as any).value,
+          confidence: typeof (v as any).confidence === 'number' ? Math.max(0, Math.min(1, (v as any).confidence)) : 0.5,
+          updatedAt: typeof (v as any).updatedAt === 'number' ? (v as any).updatedAt : Date.now(),
+        };
+      }
+    }
+    const topics = Array.isArray(incoming.topics) ? incoming.topics.filter(
+      (t: any) => t && typeof t === 'object' && typeof t.topic === 'string'
+    ) : [];
     const maxEpisodes = 200;
     const maxTopics = 40;
-    const maxFacts = 60;
     _state.episodes = episodes.slice(0, maxEpisodes);
     _state.facts = facts;
     _state.topics = topics.slice(0, maxTopics);
-  _state.lastIndexedAt = Date.now();
-  _state.totalMemories = _state.episodes.length + Object.keys(_state.facts).length;
-  void maxFacts;
-  schedulePersist();
-  scheduleNotify();
-  return { ok: true };
+    _state.lastIndexedAt = Date.now();
+    _state.totalMemories = _state.episodes.length + Object.keys(_state.facts).length;
+    schedulePersist();
+    scheduleNotify();
+    return { ok: true };
   } catch (e: any) {
     return { ok: false, reason: e?.message || 'parse error' };
   }

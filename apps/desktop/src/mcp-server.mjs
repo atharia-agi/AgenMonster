@@ -21,7 +21,7 @@ process.stdin.on('data', (chunk) => {
       const id = msg.id;
       const name = String(msg.method || msg.name || '');
       const params = msg.params || {};
-      if (!TOOLS.includes(name as any)) {
+      if (!TOOLS.includes(name)) {
         process.stdout.write(JSON.stringify({ jsonrpc: '2.0', id, ok: false, error: `Unknown tool: ${name}` }) + '\n');
         continue;
       }

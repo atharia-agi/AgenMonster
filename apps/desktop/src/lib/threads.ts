@@ -122,9 +122,11 @@ export function renameThread(thread: ThreadState, id: string, title: string): Th
   return { ...thread, threads: { ...thread.threads, [id]: updated } };
 }
 
+import type { GameState } from './gameState.ts';
+
 // --- gameState integration ---
 
-export function ensureThreadState(state: any): ThreadState {
+export function ensureThreadState(state: GameState): ThreadState {
   if (state.chatThreads && typeof state.chatThreads === 'object' && state.chatActiveThreadId) {
     return {
       threads: state.chatThreads,
@@ -151,6 +153,5 @@ export function ensureThreadState(state: any): ThreadState {
 }
 
 export function getThreadState(): ThreadState {
-  const gs = getGameState() as any;
-  return ensureThreadState(gs);
+  return ensureThreadState(getGameState());
 }

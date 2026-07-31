@@ -1,6 +1,6 @@
 // Tauri IPC bridge — uses native commands when available, localStorage fallback otherwise.
 
-const Tauri = (typeof window !== 'undefined' && (window as any).__TAURI__) ? (window as any).__TAURI__ : null;
+const Tauri = (typeof window !== 'undefined' && window.__TAURI__) ? window.__TAURI__ : null;
 const invoke = Tauri?.invoke?.bind(Tauri) || null;
 
 function lsGet(key: string): any {

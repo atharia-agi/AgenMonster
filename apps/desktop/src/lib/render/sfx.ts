@@ -2,7 +2,7 @@
 // Authentic 8-bit: square, triangle, sawtooth waves + noise.
 // NES-style duty cycles, arpeggios, vibrato.
 
-const audioCtx = typeof window !== 'undefined' ? new (window.AudioContext || (window as any).webkitAudioContext)() : null;
+const audioCtx = typeof window !== 'undefined' ? new (window.AudioContext || window.webkitAudioContext)() : null;
 
 /** Play a single note with specified waveform and duty cycle. */
 export function playNote(

@@ -55,7 +55,7 @@ export function resolveKey(env: Record<string, string>, provider: string): strin
   }
   variants.push(`VITE_${def.keyEnvPrefix}API_KEY`);
   for (const key of variants) {
-    if (env[key]) return env[key];
+    if (key in env && env[key] !== '') return env[key];
   }
   return '';
 }

@@ -8,7 +8,7 @@ import { downloadChatMarkdown } from '../persistence.ts';
 import { getChatStats, msLabel } from '../chatStatsStore.svelte.ts';
 import { loadCaps, describeCaps } from '../costGuard.ts';
 import { getDailySpend, getTokenState } from '../tokenTracker.ts';
-import { getGameState } from '../gameState.ts';
+import { getGameState, type GameState } from '../gameState.ts';
 import {
   getThreadState, switchThread, deleteThread, renameThread, createThread, ensureThreadState,
 } from '../threads.ts';
@@ -140,15 +140,15 @@ function cmdBudget(_args: string, append: AppendFn): void {
 
 // ---------- thread commands ----------
 
-function mutateThreads(mutate: (gs: any) => void): void {
-  const gs = getGameState() as any;
+function mutateThreads(mutate: (gs: GameState) => void): void {
+  const gs = getGameState();
   ensureThreadState(gs);
   mutate(gs);
   saveGameState();
 }
 
 function cmdThreads(_args: string, append: AppendFn): void {
-  const gs = getGameState() as any;
+  const gs = getGameState();
   const ts = ensureThreadState(gs);
   const lines = ts.order.map((id: string, i: number) => {
     const t = ts.threads[id];
@@ -163,7 +163,7 @@ function cmdNew(args: string, append: AppendFn): void {
   let freshTitle = '';
   mutateThreads((gs) => {
     const fresh = createThread(title || 'New thread');
-    gs.chatThreads[fresh.id] = fresh;
+    gs.chatThreads![fresh.id] = fresh;
     gs.chatActiveThreadId = fresh.id;
     gs.chatThreadOrder = [fresh.id, ...ensureThreadState(gs).order];
     freshTitle = fresh.title;
@@ -173,7 +173,7 @@ function cmdNew(args: string, append: AppendFn): void {
 
 function cmdSwitch(args: string, append: AppendFn): void {
   const idx = parseInt(args.trim(), 10);
-  const gs = getGameState() as any;
+  const gs = getGameState();
   const ts = ensureThreadState(gs);
   const target = ts.order[idx];
   if (!target) { append({ role: 'assistant', content: `No thread at index ${idx}` }); return; }
@@ -188,7 +188,7 @@ function cmdSwitch(args: string, append: AppendFn): void {
 
 function cmdDelete(args: string, append: AppendFn): void {
   const idx = parseInt(args.trim(), 10);
-  const gs = getGameState() as any;
+  const gs = getGameState();
   const ts = ensureThreadState(gs);
   const target = ts.order[idx];
   if (!target) { append({ role: 'assistant', content: `No thread at index ${idx}` }); return; }
@@ -231,7 +231,7 @@ function cmdGoal(args: string, append: AppendFn): void {
       source: 'manual' as const,
     };
   })();
-  const gs = getGameState() as any;
+  const gs = getGameState();
   if (!Array.isArray(gs.goals)) gs.goals = [];
   gs.goals.unshift(manual);
   if (gs.goals.length > 30) gs.goals.length = 30;
@@ -240,8 +240,8 @@ function cmdGoal(args: string, append: AppendFn): void {
 }
 
 function cmdGoals(_args: string, append: AppendFn): void {
-  const gs = getGameState() as any;
-  const goals = (gs.goals || []) as Goal[];
+  const gs = getGameState();
+  const goals = gs.goals ?? [];
   if (!goals.length) { append({ role: 'assistant', content: 'No goals yet.' }); return; }
   const lines = goals.slice(0, 8).map((g) => {
     const total = g.steps.length;
@@ -279,7 +279,7 @@ function cmdMode(args: string, append: AppendFn): void {
     append({ role: 'assistant', content: `Modes: ${supported.join(', ')}. Current: chat.` });
     return;
   }
-  const gs = getGameState() as any;
+  const gs = getGameState();
   gs.chatMode = mode as 'chat' | 'goal';
   saveGameState();
   append({ role: 'assistant', content: `Mode: ${mode}${mode === 'goal' ? ' — every message becomes a goal step.' : ''}` });
@@ -295,7 +295,7 @@ function cmdWrite(args: string, append: AppendFn, ctx: { getTranscript: () => st
 }
 
 function cmdMood(args: string, append: AppendFn): void {
-  const gs = getGameState() as any;
+  const gs = getGameState();
   const parts = args.trim().split(/\s+/);
   if (parts[0] === 'set' && parts[1]) {
     const valid = ['idle', 'happy', 'sleepy', 'proud', 'excited', 'focused', 'thinking', 'sad', 'angry', 'frustrated', 'tired'];
@@ -318,7 +318,7 @@ function cmdMood(args: string, append: AppendFn): void {
 }
 
 function cmdRecap(_args: string, append: AppendFn): void {
-  const gs = getGameState() as any;
+  const gs = getGameState();
   const recap = runDailyRecap(gs.chatMessages?.length ?? 0, 0);
   append({
     role: 'assistant',

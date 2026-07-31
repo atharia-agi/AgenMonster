@@ -42,7 +42,7 @@
     const evolved = getEvolvedPersonality(gs.stage, topics);
     const personality = evolved.shift ? PERSONALITY_PROFILES[evolved.shift] : evolved.base;
     const memoryLines = getMemoriesForPrompt(userText, 3);
-    const goals = ((gs as any).goals || []) as Goal[];
+    const goals = gs.goals ?? [];
     const activeGoal = pickActiveGoal(goals);
     const persona = getPersona();
     const personaBlock = persona
@@ -103,10 +103,10 @@ You are genuinely a dynamic digital creature — your traits come through in eve
   }
 
   function createNewThread() {
-    const gs = getGameState() as any;
+    const gs = getGameState();
     const ts = ensureThreadState(gs);
     const fresh = createThread('New thread');
-    gs.chatThreads[fresh.id] = fresh;
+    gs.chatThreads![fresh.id] = fresh;
     gs.chatActiveThreadId = fresh.id;
     gs.chatThreadOrder = [fresh.id, ...ts.order];
     syncThreadState();
@@ -114,7 +114,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
   }
 
   function switchToThread(id: string) {
-    const gs = getGameState() as any;
+    const gs = getGameState();
     const ts = ensureThreadState(gs);
     const after = switchThread(ts, id);
     gs.chatThreads = after.threads;
@@ -195,7 +195,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     try {
       const inferred = buildGoalFromText(text);
       if (inferred) {
-        const gsG = getGameState() as any;
+        const gsG = getGameState();
         if (!Array.isArray(gsG.goals)) gsG.goals = [];
         if (gsG.goals.length < 30) {
           gsG.goals.unshift(inferred);
@@ -232,9 +232,9 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     const gameStateBefore = getGameState();
     const systemPrompt = getSystemPrompt(text);
     const rawRoute = pinnedProvider
-      ? { provider: pinnedProvider.id, model: pinnedProvider.models[0], taskType: 'CHAT' as any, topicBias: undefined }
+      ? { provider: pinnedProvider.id, model: pinnedProvider.models[0], taskType: 'chat' as const, topicBias: undefined }
       : routeMessage(text, providers);
-    const routeForStats = rawRoute as any;
+    const routeForStats = rawRoute;
     const topicBias = routeForStats?.topicBias;
     const historyForLLM: Array<{ role: string; content: string }> = [
       { role: 'system', content: systemPrompt },
@@ -368,8 +368,8 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       // step done in the active goal. Persists immediately so the next
       // system-prompt pick shows the updated progress.
       try {
-        const gsG3 = getGameState() as any;
-        const goalsArr = (gsG3.goals || []) as Goal[];
+        const gsG3 = getGameState();
+        const goalsArr = gsG3.goals ?? [];
         const active = pickActiveGoal(goalsArr);
         if (active && !active.doneAt) {
           const updated = detectCompletionFromReply(active, reply);
@@ -437,7 +437,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
                 rememberEvent({ kind: 'lesson', title: 'AUTO-RETRY success', detail: `via ${fallback.provider}/${fallback.model}`, tags: ['self-correct', 'retry-ok'], confidence: 0.85 });
               }
             } catch (retryErr) {
-              rememberEvent({ kind: 'lesson', title: 'AUTO-RETRY failed', detail: String((retryErr as any)?.message || retryErr), tags: ['self-correct', 'retry-fail'], confidence: 0.7 });
+              rememberEvent({ kind: 'lesson', title: 'AUTO-RETRY failed', detail: String(retryErr), tags: ['self-correct', 'retry-fail'], confidence: 0.7 });
             } finally {
               inFlightAbort = null;
             }
@@ -449,7 +449,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       return;
     }
 
-    rememberEvent({ kind: 'error', title: 'LLM error', detail: (error as any)?.message || 'stream failed', tags: [taskType.toLowerCase(), 'error'], confidence: 0.7 });
+    rememberEvent({ kind: 'error', title: 'LLM error', detail: String(error) || 'stream failed', tags: [taskType.toLowerCase(), 'error'], confidence: 0.7 });
   }
 
   function onKeydown(e: KeyboardEvent) {
@@ -497,9 +497,9 @@ You are genuinely a dynamic digital creature — your traits come through in eve
 
   function resolveConfigForText(text: string): LLMConfig {
     const raw = pinnedProvider
-      ? { provider: pinnedProvider.id, model: pinnedProvider.models[0], taskType: 'CHAT' as any, topicBias: undefined }
+      ? { provider: pinnedProvider.id, model: pinnedProvider.models[0], taskType: 'chat' as const, topicBias: undefined }
       : routeMessage(text, providers);
-    const route = raw as any;
+    const route = raw;
     const activeConfig: LLMConfig = route
       ? { provider: route.provider as LLMConfig['provider'], model: route.model, apiKey: '' }
       : llmConfig;
