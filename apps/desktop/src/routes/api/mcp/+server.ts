@@ -15,10 +15,15 @@ function callSecondBrain(
       env: { ...process.env, OBSIDIAN_VAULT: 'K:\\SecondBrain\\Monster_Brain' },
     });
     let collected = '';
-    const id = Date.now();
+    let msgId: number;
+    try {
+      msgId = Date.now();
+    } catch {
+      msgId = 1;
+    }
     const msg = JSON.stringify({
       jsonrpc: '2.0',
-      id,
+      id: msgId,
       method: 'tools/call',
       params: { name, arguments: params },
     });
@@ -37,7 +42,7 @@ function callSecondBrain(
         if (!line.startsWith('{"jsonrpc"')) continue;
         try {
           const resp = JSON.parse(line);
-          if (resp.id === id) {
+          if (resp.id === msgId) {
             clearTimeout(timer);
             try { child.kill(); } catch {}
             resolve(resp.result);
@@ -53,7 +58,12 @@ function callSecondBrain(
       reject(e);
     });
 
-    child.stdin.write(msg + '\n');
+    try {
+      child.stdin.write(msg + '\n');
+    } catch (e) {
+      clearTimeout(timer);
+      reject(new Error('secondbrain write failed: ' + (e instanceof Error ? e.message : String(e))));
+    }
   });
 }
 
