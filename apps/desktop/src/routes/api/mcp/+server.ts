@@ -1,11 +1,38 @@
-import { handleTool, TOOLS, SECOND_BRAIN_TOOLS, type ToolResult } from '$lib/mcp.ts';
+import { handleTool, TOOLS, SECOND_BRAIN_TOOLS, BROWSEROS_TOOLS, type ToolResult } from '$lib/mcp.ts';
 import { spawn } from 'child_process';
 
 const OM_MCP = 'K:\\SecondBrain\\.claude\\scripts\\om-mcp.mjs';
 const OM_CWD = 'K:\\SecondBrain\\.mcp';
 const OM_TIMEOUT = 15000;
+const BROWSEROS_URL = 'http://127.0.0.1:9001/mcp';
+const BROWSEROS_TIMEOUT = 30000;
 
-function callSecondBrain(
+async function callBrowserOS(
+  name: string,
+  params: Record<string, unknown> = {},
+): Promise<{ content?: Array<{ type: string; text: string }> }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), BROWSEROS_TIMEOUT);
+  try {
+    const resp = await fetch(BROWSEROS_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name, arguments: params },
+      }),
+      signal: controller.signal,
+    });
+    const data = (await resp.json()) as { result?: { content?: Array<{ type: string; text: string }> } };
+    return { content: data.result?.content ?? [] };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function callSecondBrain(
   name: string,
   params: Record<string, unknown> = {},
 ): Promise<{ content: Array<{ type: string; text: string }> }> {
@@ -110,6 +137,28 @@ export const POST = async ({ request }: { request: Request }) => {
       }
     }
 
+    if (name.startsWith('browseros.')) {
+      const boName = name.slice('browseros.'.length);
+      try {
+        const result = await callBrowserOS(boName, params ?? {});
+        const text = result.content?.[0]?.text ?? '';
+        let data: unknown;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          data = { text };
+        }
+        return new Response(JSON.stringify({ ok: true, data } satisfies ToolResult), {
+          headers: { 'content-type': 'application/json' },
+        });
+      } catch (e: unknown) {
+        return new Response(
+          JSON.stringify({ ok: false, error: e instanceof Error ? e.message : String(e) } as ToolResult),
+          { status: 502, headers: { 'content-type': 'application/json' } },
+        );
+      }
+    }
+
     return new Response(JSON.stringify({ ok: false, error: `Unknown tool: ${name}` } as ToolResult), {
       status: 404,
       headers: { 'content-type': 'application/json' },
@@ -127,7 +176,8 @@ export const GET = async () => {
     JSON.stringify({
       local: TOOLS,
       secondbrain: SECOND_BRAIN_TOOLS,
-      all: [...TOOLS, ...SECOND_BRAIN_TOOLS],
+      browseros: BROWSEROS_TOOLS,
+      all: [...TOOLS, ...SECOND_BRAIN_TOOLS, ...BROWSEROS_TOOLS],
     }),
     { headers: { 'content-type': 'application/json' } },
   );

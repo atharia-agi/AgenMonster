@@ -135,6 +135,8 @@ const aboutRows = [
   { label: "Arch: Tauri 2 + Svelte 5 + Rust Core", accent: false },
   { label: "Tests: 428 passing", accent: false },
   { label: "MCP: 42 tools (19 local + 23 secondbrain)", accent: false },
+  { label: "BrowserOS: 64 browser tools", accent: false },
+  { label: "Total tools: 106", accent: false },
   { label: "SecondBrain: Monster_Brain vault", accent: false },
   { label: "Transport: stdio JSON", accent: false },
   { label: "DAILY COMPANION: 5 levels", accent: false },
