@@ -1283,7 +1283,6 @@
   // ===== RENDER LOOP =====
    let currentPal: ReturnType<typeof getColors> | null = null;
    let lastMood = '';
-   let lastStageFilter = '';
    function render() {
      if (!ctx) return;
      const now = performance.now();
@@ -1293,6 +1292,9 @@
 
      const cx = Math.round(width / 2);
      const cy = Math.round(height / 2);
+
+     const stageFilter = getStageFilter();
+     ctx.filter = stageFilter;
 
      updateBlink(dt);
      updateParticles();
@@ -1438,15 +1440,8 @@
     drawVignette();
     drawMoodOverlay();
 
-    const stageFilter = getStageFilter();
-    if (stageFilter !== 'none' && stageFilter !== lastStageFilter) {
-      ctx.filter = stageFilter;
-      lastStageFilter = stageFilter;
-    } else if (stageFilter === 'none') {
-      ctx.filter = 'none';
-      lastStageFilter = '';
+    ctx.filter = 'none';
     }
-  }
 
   function drawSpeechBubble(text: string, pal: ReturnType<typeof getColors> = getColors()) {
     const padX = 7, padY = 5;
