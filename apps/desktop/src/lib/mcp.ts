@@ -163,16 +163,29 @@ export const TOOLS = [
 ] as const;
 
 export const SECOND_BRAIN_TOOLS = [
-  'secondbrain.recall',
   'secondbrain.search',
-  'secondbrain.remember',
-  'secondbrain.file_knowledge',
-  'secondbrain.inbox',
-  'secondbrain.timeline',
-  'secondbrain.next_moves',
-  'secondbrain.read',
   'secondbrain.list',
+  'secondbrain.read',
   'secondbrain.recent',
+  'secondbrain.health',
+  'secondbrain.graph_stats',
+  'secondbrain.append_note',
+  'secondbrain.create_note',
+  'secondbrain.file_knowledge',
+  'secondbrain.log_session',
+  'secondbrain.run_sync',
+  'secondbrain.recall',
+  'secondbrain.expand',
+  'secondbrain.remember',
+  'secondbrain.timeline',
+  'secondbrain.audit',
+  'secondbrain.inbox',
+  'secondbrain.graduate',
+  'secondbrain.promote',
+  'secondbrain.next_moves',
+  'secondbrain.commitments',
+  'secondbrain.synthesize',
+  'secondbrain.remote_sync',
 ] as const;
 
 export const ALL_TOOLS = [...TOOLS, ...SECOND_BRAIN_TOOLS] as const;

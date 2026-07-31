@@ -134,7 +134,7 @@ const aboutRows = [
   { label: "Version: __desktop", accent: false },
   { label: "Arch: Tauri 2 + Svelte 5 + Rust Core", accent: false },
   { label: "Tests: 428 passing", accent: false },
-  { label: "MCP: 29 tools (19 local + 10 secondbrain)", accent: false },
+  { label: "MCP: 42 tools (19 local + 23 secondbrain)", accent: false },
   { label: "SecondBrain: Monster_Brain vault", accent: false },
   { label: "Transport: stdio JSON", accent: false },
   { label: "DAILY COMPANION: 5 levels", accent: false },
