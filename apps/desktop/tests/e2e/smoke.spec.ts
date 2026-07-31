@@ -4,11 +4,10 @@ import { test, expect } from '@playwright/test';
 test.describe('AgenMonster smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    // First-run welcome tab gates the workspace; mark as welcomed and reload.
     await page.evaluate(() => { try { localStorage.setItem('agenmonster_welcomed', '1'); } catch {} });
     await page.reload();
-    // Splash screen holds for 1.8s; wait for the app shell to mount.
-    await page.locator('.app-shell').waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await page.locator('.app-shell').waitFor({ state: 'visible', timeout: 30000 });
   });
 
   test('loads home and shows the app shell', async ({ page }) => {

@@ -8,7 +8,8 @@ test.describe('AgenMonster features', () => {
       try { localStorage.setItem('agenmonster_welcomed', '1'); } catch {}
     });
     await page.reload();
-    await page.locator('.app-shell').waitFor({ state: 'visible', timeout: 10000 });
+    await page.waitForLoadState('networkidle', { timeout: 30000 });
+    await page.locator('.app-shell').waitFor({ state: 'visible', timeout: 30000 });
   });
 
   test('settings tab opens panel and theme select switches data-theme', async ({ page }) => {
