@@ -4,12 +4,13 @@
 // If the proxy is unavailable (e.g. static hosting without it), calls fail loudly
 // instead of leaking a key.
 
-export type LLMProvider = 'groq' | 'mistral' | 'openai' | 'openrouter';
+export type LLMProvider = 'groq' | 'mistral' | 'openai' | 'openrouter' | 'nousresearch' | 'custom';
 
 export interface LLMConfig {
   provider: LLMProvider;
   model: string;
   apiKey: string; // unused client-side; kept for shape compatibility
+  customEndpoint?: string;
 }
 
 export interface ProviderInfo {
@@ -39,15 +40,20 @@ export async function loadLLMConfig(): Promise<LLMConfig> {
   const providers = await getAvailableProviders();
   if (providers.length) {
     const p = providers[0];
-    return { provider: p.id, model: p.models[0], apiKey: '' };
+    return { provider: p.id, model: p.models[0], apiKey: '', customEndpoint: '' };
   }
-  return { provider: 'groq', model: 'llama-3.3-70b-versatile', apiKey: '' };
+  return { provider: 'nousresearch', model: 'stepfun/step-3.7-flash:free', apiKey: '', customEndpoint: '' };
 }
 
 export function saveLLMConfig(config: LLMConfig): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem('agenmonster_llm_choice', JSON.stringify(config));
+    localStorage.setItem('agenmonster_llm_choice', JSON.stringify({
+      provider: config.provider,
+      model: config.model,
+      apiKey: config.apiKey,
+      customEndpoint: config.customEndpoint || '',
+    }));
   } catch {}
 }
 
@@ -65,14 +71,19 @@ export async function sendLLM(
   messages: Array<{ role: string; content: string }>,
   config: LLMConfig
 ): Promise<string> {
+  const body: Record<string, unknown> = {
+    provider: config.provider,
+    model: config.model,
+    messages: messages.map((m) => ({ role: m.role, content: m.content })),
+  };
+  if (config.provider === 'custom') {
+    body.customEndpoint = config.customEndpoint;
+    body.customApiKey = config.apiKey;
+  }
   const res = await fetch('/api/llm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      provider: config.provider,
-      model: config.model,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    }),
+    body: JSON.stringify(body),
   });
 
   const text = await res.text();
@@ -149,6 +160,7 @@ export async function sendLLMStream(
       model: config.model,
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
       stream: true,
+      ...(config.provider === 'custom' ? { customEndpoint: config.customEndpoint, customApiKey: config.apiKey } : {}),
     }),
     signal: merged,
   });

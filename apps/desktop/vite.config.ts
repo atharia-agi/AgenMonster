@@ -16,7 +16,7 @@ function llmProxy() {
   const getEnv = () => {
     if (!envCache) {
       envCache = loadEnv(process.env.NODE_ENV || 'development', '../../', [
-        'VITE_', 'GROQ_', 'MISTRAL_', 'TAVILY_', 'BRAVE_', 'OPENAI_', 'OPENROUTER_',
+        'VITE_', 'GROQ_', 'MISTRAL_', 'TAVILY_', 'BRAVE_', 'OPENAI_', 'OPENROUTER_', 'NOUS_',
       ]);
     }
     return envCache;

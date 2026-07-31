@@ -37,6 +37,12 @@ export const PROVIDERS: Record<string, ProviderDefinition> = {
     api: 'https://openrouter.ai/api/v1/chat/completions',
     def: 'openrouter/auto',
   },
+  nousresearch: {
+    keyEnv: 'NOUS_API_KEY',
+    keyEnvPrefix: 'NOUS_',
+    api: 'https://inference-api.nousresearch.com/v1',
+    def: 'stepfun/step-3.7-flash:free',
+  },
 };
 
 interface UpstreamPayload {
@@ -73,17 +79,19 @@ export function availableProviders(env: Record<string, string>): ProviderInfo[] 
 
 export function prepareUpstreamRequest(
   env: Record<string, string>,
-  body: { provider?: string; model?: string; messages?: Array<{ role: string; content: string }>; stream?: boolean },
+  body: { provider?: string; model?: string; messages?: Array<{ role: string; content: string }>; stream?: boolean; customEndpoint?: string; customApiKey?: string },
   stream = false,
 ): { url: string; headers: Record<string, string>; payload: UpstreamPayload } {
   const provider = body.provider || 'groq';
   const def = PROVIDERS[provider];
-  if (!def) throw new Error('unknown provider');
-  const key = resolveKey(env, provider);
+  if (!def && provider !== 'custom') throw new Error('unknown provider');
+  const key = provider === 'custom'
+    ? (body.customApiKey || '')
+    : resolveKey(env, provider);
   if (!key) throw new Error(`No API key for ${provider}`);
-  const model = body.model || def.def;
+  const model = body.model || (provider === 'custom' ? 'default' : def.def);
   return {
-    url: def.api,
+    url: provider === 'custom' ? (body.customEndpoint || '') : def.api,
     headers: {
       Authorization: `Bearer ${key}`,
       'Content-Type': 'application/json',

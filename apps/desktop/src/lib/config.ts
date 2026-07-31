@@ -9,6 +9,7 @@ export interface AppConfig {
   llmProvider: string;
   model: string;
   llmApiKey: string;
+  customEndpoint: string;
   volume: number;
   soundEnabled: boolean;
 }
@@ -19,9 +20,10 @@ const DEFAULT_CONFIG: AppConfig = {
   scale: 1.0,
   energyMax: 1000,
   regenPerHour: 25,
-  llmProvider: 'openrouter',
-  model: 'openrouter/auto',
+  llmProvider: 'nousresearch',
+  model: 'stepfun/step-3.7-flash:free',
   llmApiKey: '',
+  customEndpoint: '',
   volume: 0.8,
   soundEnabled: true,
 };
@@ -55,8 +57,9 @@ export function resetConfig(): AppConfig {
 
 export function toLLMConfig(config: AppConfig): import('./llm').LLMConfig {
   return {
-    provider: (config.llmProvider as import('./llm').LLMConfig['provider']) || 'openrouter',
-    model: config.model || 'openrouter/auto',
+    provider: (config.llmProvider as import('./llm').LLMConfig['provider']) || 'nousresearch',
+    model: config.model || 'stepfun/step-3.7-flash:free',
     apiKey: config.llmApiKey || '',
+    customEndpoint: config.customEndpoint || undefined,
   };
 }

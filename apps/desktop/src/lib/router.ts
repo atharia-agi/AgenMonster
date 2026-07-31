@@ -21,27 +21,33 @@ export type TaskType =
 // Preferred (provider, model) per task type, in priority order.
 const ROUTING: Record<TaskType, Array<{ provider: string; model: string }>> = {
   chat: [
+    { provider: 'nousresearch', model: 'stepfun/step-3.7-flash:free' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
     { provider: 'mistral', model: 'mistral-small-latest' },
   ],
   code: [
+    { provider: 'nousresearch', model: 'stepfun/step-3.7-flash:free' },
     { provider: 'mistral', model: 'codestral-latest' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
   ],
   creative: [
+    { provider: 'nousresearch', model: 'stepfun/step-3.7-flash:free' },
     { provider: 'openai', model: 'gpt-4o' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
   ],
   vision: [{ provider: 'openai', model: 'gpt-4o' }],
   fast: [
+    { provider: 'nousresearch', model: 'stepfun/step-3.7-flash:free' },
     { provider: 'groq', model: 'llama-3.1-8b-instant' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
   ],
   summarize: [
+    { provider: 'nousresearch', model: 'stepfun/step-3.7-flash:free' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
     { provider: 'mistral', model: 'mistral-small-latest' },
   ],
   analyze: [
+    { provider: 'nousresearch', model: 'stepfun/step-3.7-flash:free' },
     { provider: 'groq', model: 'llama-3.3-70b-versatile' },
     { provider: 'openai', model: 'gpt-4o' },
   ],

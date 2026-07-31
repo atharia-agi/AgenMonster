@@ -25,9 +25,10 @@ let llmSaveError = $state('');
   const cfg = loadConfig();
   useAutoDetect = !cfg.llmApiKey;
   llmConfig = {
-    provider: (cfg.llmProvider || 'groq') as LLMConfig['provider'],
-    model: cfg.model || 'llama-3.3-70b-versatile',
+    provider: (cfg.llmProvider || 'nousresearch') as LLMConfig['provider'],
+    model: cfg.model || 'stepfun/step-3.7-flash:free',
     apiKey: cfg.llmApiKey || '',
+    customEndpoint: cfg.customEndpoint || '',
   };
   const persisted = loadPersistedLLMChoice();
   if (persisted?.provider) llmConfig.provider = persisted.provider;
@@ -50,6 +51,7 @@ function saveLLMSettings(): void {
   cfg.llmProvider = llmConfig.provider;
   cfg.model = llmConfig.model;
   cfg.llmApiKey = llmConfig.apiKey;
+  cfg.customEndpoint = llmConfig.customEndpoint || '';
   saveConfig(cfg);
   saveLLMConfig(llmConfig);
   savingLLM = true;
@@ -371,15 +373,47 @@ function getAdaptStats() {
           <div class="info-block">
             <div class="row"><span class="label">Provider</span>
               <select bind:value={llmConfig.provider}>
+                <option value="nousresearch">NousResearch</option>
                 <option value="groq">Groq</option>
                 <option value="mistral">Mistral</option>
                 <option value="openai">OpenAI</option>
                 <option value="openrouter">OpenRouter</option>
+                <option value="custom">Custom...</option>
               </select>
             </div>
+
+            {#if llmConfig.provider === 'custom'}
+              <div class="row"><span class="label">Custom Endpoint</span>
+                <input class="input" bind:value={llmConfig.customEndpoint} placeholder="https://your-proxy/v1/chat/completions" style="flex:1;min-width:0" />
+              </div>
+            {/if}
+
             <div class="row"><span class="label">Model</span>
-              <input class="input" bind:value={llmConfig.model} placeholder="e.g. llama-3.3-70b-versatile" style="flex:1;min-width:0" />
+              <select bind:value={llmConfig.model} style="flex:1;min-width:0">
+                {#if llmConfig.provider === 'nousresearch'}
+                  <option value="inclusionai/ling-3.0-flash:free">inclusionai/ling-3.0-flash:free</option>
+                  <option value="poolside/laguna-s-2.1:free">poolside/laguna-s-2.1:free</option>
+                  <option value="poolside/laguna-xs-2.1:free">poolside/laguna-xs-2.1:free</option>
+                  <option value="stepfun/step-3.7-flash:free">stepfun/step-3.7-flash:free</option>
+                  <option value="tencent/hy3:free">tencent/hy3:free</option>
+                {:else if llmConfig.provider === 'groq'}
+                  <option value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</option>
+                  <option value="llama-3.1-8b-instant">llama-3.1-8b-instant</option>
+                {:else if llmConfig.provider === 'mistral'}
+                  <option value="mistral-small-latest">mistral-small-latest</option>
+                  <option value="codestral-latest">codestral-latest</option>
+                {:else if llmConfig.provider === 'openai'}
+                  <option value="gpt-4o-mini">gpt-4o-mini</option>
+                  <option value="gpt-4o">gpt-4o</option>
+                {:else if llmConfig.provider === 'openrouter'}
+                  <option value="openrouter/auto">openrouter/auto</option>
+                  <option value="google/gemma-4-26b-a4b-it:free">google/gemma-4-26b-a4b-it:free</option>
+                {:else if llmConfig.provider === 'custom'}
+                  <option value="default">default</option>
+                {/if}
+              </select>
             </div>
+
             <div class="row"><span class="label">API Key</span>
               <input class="input" bind:value={llmConfig.apiKey} type="password" placeholder="Paste key here" style="flex:1;min-width:0" />
             </div>

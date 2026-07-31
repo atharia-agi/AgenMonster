@@ -16,7 +16,7 @@ const ls = new LS();
 test('loadConfig returns defaults when nothing stored', () => {
   const c = loadConfig();
   assert.equal(c.soundEnabled, true);
-  assert.equal(c.llmProvider, 'openrouter');
+  assert.equal(c.llmProvider, 'nousresearch');
   assert.equal(c.volume, 0.8);
 });
 
@@ -72,7 +72,7 @@ test('loadConfig returns defaults when nothing stored', () => {
   ls.store = {};
   const c = loadConfig();
   assert.equal(c.soundEnabled, true);
-  assert.equal(c.llmProvider, 'openrouter');
+  assert.equal(c.llmProvider, 'nousresearch');
   assert.equal(c.volume, 0.8);
 });
 
