@@ -3,6 +3,8 @@ import type { GameState } from "$lib/gameState";
 import { getEvolutionProgress, selectBestPrompt, evolve } from "$lib/evolution";
 import { getAdaptationReport } from "$lib/gameState";
 import { loadTheme, saveTheme, applyTheme, describeTheme, type ThemeName } from "$lib/theme.ts";
+import { loadConfig, saveConfig, type AppConfig } from "$lib/config";
+import { loadLLMConfig, saveLLMConfig, getAvailableProviders, loadPersistedLLMChoice, type LLMConfig } from "$lib/llm";
 
 let { state: petState, onClose, onOpenAbout }: { state: GameState; onClose: () => void; onOpenAbout: () => void } = $props();
 
@@ -17,8 +19,47 @@ let resetEvolution = $state(false);
 let gameState = $derived(petState);
 
 let readabilityMode = $state(localStorage.getItem("agenmonster_readability") === "1");
-
 let currentTheme = $state<ThemeName>(loadTheme());
+let useAutoDetect = $state(true);
+let llmConfig = $state<LLMConfig>({ provider: 'groq', model: 'llama-3.3-70b-versatile', apiKey: '' });
+let customEndpoint = $state('');
+let savingLLM = $state(false);
+
+(function initLLMSettings(): void {
+  const cfg = loadConfig();
+  useAutoDetect = !cfg.llmApiKey;
+  llmConfig = {
+    provider: (cfg.llmProvider || 'groq') as LLMConfig['provider'],
+    model: cfg.model || 'llama-3.3-70b-versatile',
+    apiKey: cfg.llmApiKey || '',
+  };
+  const persisted = loadPersistedLLMChoice();
+  if (persisted?.provider) llmConfig.provider = persisted.provider;
+  if (persisted?.model) llmConfig.model = persisted.model;
+})();
+
+function saveLLMSettings(): void {
+  const cfg = loadConfig();
+  cfg.llmProvider = llmConfig.provider;
+  cfg.model = llmConfig.model;
+  cfg.llmApiKey = llmConfig.apiKey;
+  saveConfig(cfg);
+  saveLLMConfig(llmConfig);
+  savingLLM = true;
+  setTimeout(() => { savingLLM = false; }, 1500);
+}
+
+async function autoDetectProviders(): Promise<void> {
+  try {
+    const providers = await getAvailableProviders();
+    if (providers.length > 0) {
+      llmConfig.provider = providers[0].id;
+      llmConfig.model = providers[0].models[0] || 'llama-3.3-70b-versatile';
+    }
+  } catch {
+    // no provider endpoint reachable
+  }
+}
 
 function setTheme(t: ThemeName): void {
   currentTheme = t;
@@ -85,7 +126,7 @@ const aboutRows = [
   { label: "AgenMonster", accent: true },
   { label: "Version: __desktop", accent: false },
   { label: "Arch: Tauri 2 + Svelte 5 + Rust Core", accent: false },
-  { label: "Tests: 427 passing", accent: false },
+  { label: "Tests: 439 passing", accent: false },
   { label: "MCP: 19 tools", accent: false },
   { label: "Transport: stdio JSON", accent: false },
   { label: "DAILY COMPANION: 5 levels", accent: false },
@@ -229,7 +270,7 @@ function getAdaptStats() {
         {#if gameState}
           <div class="row"><span class="label">Days Active</span><span class="mono">{gameState._moodHistory.length}</span></div>
           <div class="row"><span class="label">Total Messages</span><span class="mono">{gameState.totalInteractions}</span></div>
-          <div class="row"><span class="label">Goals Completed</span><span class="mono">{gameState.goals.filter((g: any) => g.completed).length}</span></div>
+          <div class="row"><span class="label">Goals Completed</span><span class="mono">{gameState.goals.filter((g) => g.doneAt).length}</span></div>
           <div class="row"><span class="label">Relationship</span><span class="mono">LVL {gameState.relationshipLevel}</span></div>
           <div class="row"><span class="label">Stage</span><span class="mono">{gameState.currentStage}</span></div>
           <div class="row"><span class="label">Total XP</span><span class="mono">{gameState._accumulatedXP}</span></div>
@@ -294,6 +335,55 @@ function getAdaptStats() {
           <label class="toggle"><input type="checkbox" checked={readabilityMode} onclick={toggleReadability} /><span class="slider"></span></label>
         </div>
         <div class="hint" style="margin-top:6px">Larger text, same pixel-art aesthetic. Saved per browser.</div>
+      </section>
+    {/if}
+
+    {#if activeSection === "ai"}
+      <section class="section">
+        <h3 class="section-title">🤖 AI Configuration</h3>
+
+        <div class="status-row">
+          <span class="label">Auto-Detect Model</span>
+          <label class="toggle">
+            <input type="checkbox" checked={useAutoDetect} onclick={() => { useAutoDetect = !useAutoDetect; }} />
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        {#if useAutoDetect}
+          <div class="info-block">
+            <div class="row"><span class="label">Mode</span><span class="mono">Auto</span></div>
+            <div class="row"><span class="label">Provider</span><span class="mono">First available from server env</span></div>
+            <button class="button-secondary" onclick={autoDetectProviders}>🔍 Detect Providers Now</button>
+            <div class="muted" style="margin-top:4px">Keys read from server-side .env only. Browser never sees them.</div>
+          </div>
+        {:else}
+          <div class="info-block">
+            <div class="row"><span class="label">Provider</span>
+              <select bind:value={llmConfig.provider}>
+                <option value="groq">Groq</option>
+                <option value="mistral">Mistral</option>
+                <option value="openai">OpenAI</option>
+                <option value="openrouter">OpenRouter</option>
+              </select>
+            </div>
+            <div class="row"><span class="label">Model</span>
+              <input class="input" bind:value={llmConfig.model} placeholder="e.g. llama-3.3-70b-versatile" style="flex:1;min-width:0" />
+            </div>
+            <div class="row"><span class="label">API Key</span>
+              <input class="input" bind:value={llmConfig.apiKey} type="password" placeholder="Paste key here" style="flex:1;min-width:0" />
+            </div>
+            <div class="row"><span class="label">Custom Endpoint</span>
+              <input class="input" bind:value={customEndpoint} placeholder="Leave empty for default proxy" style="flex:1;min-width:0" />
+            </div>
+            <button class="button-primary" onclick={saveLLMSettings}>
+              {savingLLM ? '✓ Saved' : '💾 Save LLM Config'}
+            </button>
+            <div class="muted" style="margin-top:4px">
+              Key saved to localStorage for this session. Proxy routes server-side — key never leaves the server.
+            </div>
+          </div>
+        {/if}
       </section>
     {/if}
 

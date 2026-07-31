@@ -86,13 +86,13 @@
       </thead>
       <tbody>
         {#each Object.entries(stats.byRoute) as [key, r] (key)}
-          {@const tk = (tokens.byRoute as any)[key]}
+          {@const tk = tokens.byRoute[key]}
           <tr>
             <td class="route">{key}</td>
-            <td>{(r as any).calls}</td>
-            <td>{pct((r as any).successes, (r as any).calls)}</td>
-            <td>{msLabel((r as any).msLast)}</td>
-            <td>{msLabel((r as any).msAvg)}</td>
+            <td>{r.calls}</td>
+            <td>{pct(r.successes, r.calls)}</td>
+            <td>{msLabel(r.msLast)}</td>
+            <td>{msLabel(r.msAvg)}</td>
             <td>{tk ? formatTokens(tk.total) : '—'}</td>
             <td>{tk ? formatCost(tk.cost) : '—'}</td>
           </tr>

@@ -308,8 +308,8 @@
   $effect(() => {
     let lastTrigger = 0;
     const adapt = () => {
-      if ((window as any).__AM_ADAPT) {
-        (window as any).__AM_ADAPT();
+      if (window.__AM_ADAPT) {
+        window.__AM_ADAPT();
       }
       try { localStorage.setItem('agenmonster_adaptation', JSON.stringify(gs.adaptationWeights)); } catch {}
     };
@@ -320,7 +320,7 @@
         { type: detail.success ? 'goal_complete' : 'goal_fail', timestamp: Date.now(), detail: detail.text?.slice(0, 50) || 'chat', value: detail.success ? 1 : -0.3 }
       ];
       for (const sig of signals) {
-        (window as any).__AM_INTERACT?.(sig, detail.success ? 0.8 : -0.2);
+        window.__AM_INTERACT?.(sig, detail.success ? 0.8 : -0.2);
       }
       if (gs.totalInteractions - lastTrigger >= 10) {
         adapt();
@@ -354,7 +354,7 @@
       <SidebarPanel title="Status" icon="⬡" open={true}>
         <MonsterStatus
           state={gs}
-          goals={(gs as any).goals || []}
+          goals={gs.goals ?? []}
           onFeed={handleFeed}
           onPlay={handlePlay}
           onTalk={handleTalk}

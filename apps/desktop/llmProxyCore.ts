@@ -1,93 +1,110 @@
-// Framework-agnostic LLM proxy core.
-// Shared by: the dev/preview middleware (vite.config.ts), the standalone
-// production server (server.mjs), and the unit tests (tests/llmProxyCore.test.ts).
-// Holds no HTTP-framework specifics so it can be unit-tested in isolation.
-
-export interface ProviderConfig {
-  url: string;
+export interface ProviderDefinition {
+  keyEnv: string;
+  keyEnvPrefix: string;
+  api: string;
   def: string;
-  models: string[];
-  keys: string[];
 }
 
-export const PROVIDERS: Record<string, ProviderConfig> = {
+export interface ProviderInfo {
+  id: string;
+  label: string;
+  models: string[];
+  hasKey: boolean;
+}
+
+export const PROVIDERS: Record<string, ProviderDefinition> = {
   groq: {
-    url: 'https://api.groq.com/openai/v1',
-    def: 'llama-3.3-70b-versatile',
-    models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'mixtral-8x7b-32768', 'gemma2-9b-it'],
-    keys: ['GROQ_API_KEY', 'GROQ_API_KEY_1', 'VITE_GROQ_API_KEY'],
+    keyEnv: 'GROQ_API_KEY',
+    keyEnvPrefix: 'GROQ_',
+    api: 'https://api.groq.com/openai/v1/chat/completions',
+    def: 'llama-3.1-8b-instant',
   },
   mistral: {
-    url: 'https://api.mistral.ai/v1',
+    keyEnv: 'MISTRAL_API_KEY',
+    keyEnvPrefix: 'MISTRAL_',
+    api: 'https://api.mistral.ai/v1/chat/completions',
     def: 'mistral-small-latest',
-    models: ['mistral-small-latest', 'mistral-large-latest', 'codestral-latest'],
-    keys: ['MISTRAL_API_KEY_1', 'MISTRAL_API_KEY', 'VITE_MISTRAL_API_KEY'],
   },
   openai: {
-    url: 'https://api.openai.com/v1',
+    keyEnv: 'OPENAI_API_KEY',
+    keyEnvPrefix: 'OPENAI_',
+    api: 'https://api.openai.com/v1/chat/completions',
     def: 'gpt-4o-mini',
-    models: ['gpt-4o-mini', 'gpt-4o'],
-    keys: ['OPENAI_API_KEY', 'VITE_OPENAI_API_KEY'],
   },
   openrouter: {
-    url: 'https://openrouter.ai/api/v1',
+    keyEnv: 'OPENROUTER_API_KEY',
+    keyEnvPrefix: 'OPENROUTER_',
+    api: 'https://openrouter.ai/api/v1/chat/completions',
     def: 'openrouter/auto',
-    models: ['openrouter/auto'],
-    keys: ['OPENROUTER_API_KEY', 'VITE_OPENROUTER_API_KEY'],
   },
 };
 
+interface UpstreamPayload {
+  model: string;
+  messages: Array<{ role: string; content: string }>;
+  stream: boolean;
+  max_tokens: number;
+}
+
 export function resolveKey(env: Record<string, string>, provider: string): string {
-  const p = PROVIDERS[provider];
-  if (!p) return '';
-  for (const k of p.keys) if (env[k]?.trim()) return env[k].trim();
+  const def = PROVIDERS[provider];
+  if (!def) return '';
+  const variants: string[] = [];
+  for (let i = 0; i < 10; i++) {
+    variants.push(`${def.keyEnvPrefix}API_KEY${i === 0 ? '' : `_${i}`}`);
+  }
+  variants.push(`VITE_${def.keyEnvPrefix}API_KEY`);
+  for (const key of variants) {
+    if (env[key]) return env[key];
+  }
   return '';
 }
 
-export function availableProviders(env: Record<string, string>) {
+export function availableProviders(env: Record<string, string>): ProviderInfo[] {
   return Object.entries(PROVIDERS)
-    .map(([id, p]) => ({
-      id,
+    .filter(([id]) => resolveKey(env, id) !== '')
+    .map(([id, def]) => ({
+      id: id as ProviderInfo['id'],
       label: id.charAt(0).toUpperCase() + id.slice(1),
-      models: p.models,
-      hasKey: p.keys.some((k) => !!env[k]?.trim()),
-    }))
-    .filter((p) => p.hasKey);
+      models: [def.def],
+      hasKey: true,
+    }));
 }
 
-// Validate the incoming body and build the upstream request. Throws a clean
-// Error (message only) on unknown provider or missing key so hosts can map it
-// to a 400 without leaking internals.
-// `stream` flags SSE streaming so the host can pipe chunks back to the client.
-export function prepareUpstreamRequest(env: Record<string, string>, body: any, stream = false) {
-  const provider = body?.provider;
-  if (!provider || !PROVIDERS[provider]) throw new Error('unknown provider');
+export function prepareUpstreamRequest(
+  env: Record<string, string>,
+  body: { provider?: string; model?: string; messages?: Array<{ role: string; content: string }>; stream?: boolean },
+  stream = false,
+): { url: string; headers: Record<string, string>; payload: UpstreamPayload } {
+  const provider = body.provider || 'groq';
+  const def = PROVIDERS[provider];
+  if (!def) throw new Error('unknown provider');
   const key = resolveKey(env, provider);
-  if (!key) throw new Error(`No API key configured for ${provider}`);
-  const p = PROVIDERS[provider];
+  if (!key) throw new Error(`No API key for ${provider}`);
+  const model = body.model || def.def;
   return {
-    url: `${p.url}/chat/completions`,
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    url: def.api,
+    headers: {
+      Authorization: `Bearer ${key}`,
+      'Content-Type': 'application/json',
+      ...(provider === 'openrouter' ? { HTTP_Referer: 'https://agenmonster.local' } : {}),
+    },
     payload: {
-      model: body.model || p.def,
-      messages: body.messages,
+      model,
+      messages: body.messages ?? [],
       stream,
-      max_tokens: body.max_tokens || 1024,
-      temperature: body.temperature ?? 0.7,
+      max_tokens: 1024,
     },
   };
 }
 
-// Read a Node IncomingMessage body into a string (used by both hosts, which
-// receive a Node-style request object).
-export function readBody(req: any): Promise<string> {
+export function readBody(req: { on(event: string, fn: (data: unknown) => void): void; once(event: string, fn: () => void): void }): Promise<string> {
   return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', (c: any) => {
-      data += c;
-      if (data.length > 5e6) req.destroy();
-    });
-    req.on('end', () => resolve(data));
+    const chunks: string[] = [];
+    req.on('data', (chunk) => {
+  chunks.push(typeof chunk === 'string' ? chunk : (chunk as Buffer).toString('utf8'));
+});
+    req.on('end', () => resolve(chunks.join('')));
     req.on('error', reject);
   });
 }
