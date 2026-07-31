@@ -3,7 +3,7 @@
   import ChatInput from './ChatInput.svelte';
   import { sendLLMStream, getAvailableProviders, saveLLMConfig, loadPersistedLLMChoice, type LLMConfig, type ProviderInfo } from '$lib/llm';
   import { routeMessage } from '$lib/router';
-  import { getGameState, addAssistantMessage } from '$lib/gameState';
+  import { getGameState, addAssistantMessage, saveState } from '$lib/gameState';
   import { soundPlayer } from '$lib/audio';
   import { getPersonalityForStage, getEvolvedPersonality, PERSONALITY_PROFILES } from '$lib/personality';
   import { emptyStats, recordCall, type ChatStatsState } from '$lib/chatStats';
@@ -13,15 +13,7 @@
   import { evaluateCostGuard, dispatchAgentTool, isTransientError, isAbortError } from '$lib/chatEngine.ts';
   import { installSessionEndHook } from '$lib/sessionEnd';
   import { evaluateReply } from '$lib/selfCorrect';
-  import {
-    getThreadState,
-    switchThread,
-    deleteThread,
-    renameThread,
-    createThread,
-    ensureThreadState,
-    THREAD_TITLE_MAX,
-  } from '$lib/threads';
+  import { getThreadState, switchThread, deleteThread, renameThread, createThread, ensureThreadState, appendToActive, THREAD_TITLE_MAX } from '$lib/threads';
   import { pickActiveGoal, buildGoalFromText, isGoalActive, detectCompletionFromReply, type Goal } from '$lib/goals';
   import { handleSlashCommand } from '$lib/commands/slashCommands.ts';
   import { onMount } from 'svelte';
@@ -150,6 +142,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
   onMount(initLLM);
 
   let sessionHookDisposer: (() => void) | null = null;
+  let petInitiateDisposer: (() => void) | null = null;
   onMount(() => {
     sessionHookDisposer = installSessionEndHook({
       snapshot: {
@@ -166,6 +159,24 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       },
     });
     return () => sessionHookDisposer?.();
+  });
+
+  onMount(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.message) return;
+      const gs = getGameState();
+      const ts = ensureThreadState(gs);
+      const updated = appendToActive(ts, { id: crypto.randomUUID(), role: 'assistant', content: detail.message, timestamp: Date.now() });
+      gs.chatThreads = updated.threads;
+      gs.chatActiveThreadId = updated.activeId;
+      gs.chatThreadOrder = updated.order;
+      saveState(gs);
+      window.dispatchEvent(new Event('gamestate-change'));
+    };
+    window.addEventListener('pet-initiate', handler);
+    petInitiateDisposer = () => window.removeEventListener('pet-initiate', handler);
+    return petInitiateDisposer;
   });
 
   const gameState = getGameState();
