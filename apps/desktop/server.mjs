@@ -44,6 +44,64 @@ async function loadEnv() {
 
 const ENV = await loadEnv();
 
+const SYNC_MESSAGES = [];
+const SYNC_MAX_MESSAGES = 1000;
+const SYNC_TTL_MS = 5 * 60 * 1000;
+const SYNC_SECRET = ENV.SYNC_SECRET || '';
+
+const RATE_LIMIT_WINDOW = 60_000;
+const RATE_LIMIT_MAX = 120;
+const rateBuckets = new Map();
+
+function checkRateLimit(req) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+  const now = Date.now();
+  const bucket = rateBuckets.get(ip) || { count: 0, resetAt: now + RATE_LIMIT_WINDOW };
+  if (now > bucket.resetAt) {
+    bucket.count = 0;
+    bucket.resetAt = now + RATE_LIMIT_WINDOW;
+  }
+  bucket.count++;
+  rateBuckets.set(ip, bucket);
+  if (bucket.count > RATE_LIMIT_MAX) {
+    return false;
+  }
+  return true;
+}
+
+function rateLimitHeaders(res, remaining, resetAt) {
+  res.setHeader('X-RateLimit-Limit', String(RATE_LIMIT_MAX));
+  res.setHeader('X-RateLimit-Remaining', String(remaining));
+  res.setHeader('X-RateLimit-Reset', String(Math.ceil(resetAt / 1000)));
+}
+
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': 'http://localhost:* http://127.0.0.1:* tauri://localhost file://',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Device-Token',
+  'Access-Control-Max-Age': '86400',
+};
+
+function setCors(res) {
+  res.writeHead(200, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+}
+
+function corsPreflight(res) {
+  res.writeHead(204, CORS_HEADERS);
+  res.end();
+}
+
+function checkSyncAuth(req) {
+  if (!SYNC_SECRET) return true;
+  const token = req.headers['x-device-token'] || req.headers['authorization'] || '';
+  return token === SYNC_SECRET || token === `Bearer ${SYNC_SECRET}`;
+}
+
+function writeJson(res, status, obj) {
+  res.writeHead(status, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+  res.end(JSON.stringify(obj));
+}
+
 const MIME = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -66,9 +124,23 @@ const server = createServer(async (req, res) => {
     const url = new URL(req.url || '/', `http://localhost:${PORT}`);
     const pathname = decodeURIComponent(url.pathname);
 
+    // ── CORS preflight ──
+    if (req.method === 'OPTIONS') {
+      corsPreflight(res);
+      return;
+    }
+
     // ── LLM proxy (server-side keys) ──
     if (req.method === 'GET' && pathname === '/api/llm/providers') {
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+      if (!checkRateLimit(req)) {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+        const bucket = rateBuckets.get(ip) || { resetAt: Date.now() + RATE_LIMIT_WINDOW };
+        rateLimitHeaders(res, 0, bucket.resetAt);
+        res.writeHead(429, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'rate limit exceeded' }));
+        return;
+      }
+      setCors(res);
       res.end(JSON.stringify(availableProviders(ENV)));
       return;
     }
@@ -76,41 +148,130 @@ const server = createServer(async (req, res) => {
     // JSON. Stateful tools (memory.*, chat.budget.set, chat.theme) mutate
     // server-side modules that are also imported by the SPA bundle on dev.
     if (req.method === 'POST' && pathname === '/api/mcp') {
+      if (!checkRateLimit(req)) {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+        const bucket = rateBuckets.get(ip) || { resetAt: Date.now() + RATE_LIMIT_WINDOW };
+        rateLimitHeaders(res, 0, bucket.resetAt);
+        res.writeHead(429, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'rate limit exceeded' }));
+        return;
+      }
       const raw = (await readBody(req)) || '{}';
       let body;
       try {
         body = JSON.parse(raw);
       } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: 'invalid JSON body' }));
+        writeJson(res, 400, { ok: false, error: 'invalid JSON body' });
         return;
       }
       try {
         const { handleTool } = await import('./mcp.ts').catch(() => ({ handleTool: null }));
         if (!handleTool) {
-          res.writeHead(503, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: false, error: 'mcp module unavailable' }));
+          writeJson(res, 503, { ok: false, error: 'mcp module unavailable' });
           return;
         }
         const name = String(body?.name || '');
         const params = body?.params || {};
         const result = handleTool(name, params);
-        res.writeHead(result.ok ? 200 : 400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(result));
+        writeJson(res, result.ok ? 200 : 400, result);
       } catch (e) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ ok: false, error: e?.message || 'mcp error' }));
+        writeJson(res, 500, { ok: false, error: e?.message || 'mcp error' });
       }
       return;
     }
+
+    // Sync relay for cross-device sync (server-relay transport fallback).
+    if (req.method === 'OPTIONS' && pathname.startsWith('/api/sync')) {
+      corsPreflight(res);
+      return;
+    }
+    if (req.method === 'POST' && pathname === '/api/sync/publish') {
+      if (!checkSyncAuth(req)) {
+        writeJson(res, 401, { ok: false, error: 'unauthorized' });
+        return;
+      }
+      if (!checkRateLimit(req)) {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+        const bucket = rateBuckets.get(ip) || { resetAt: Date.now() + RATE_LIMIT_WINDOW };
+        rateLimitHeaders(res, 0, bucket.resetAt);
+        res.writeHead(429, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'rate limit exceeded' }));
+        return;
+      }
+      const raw = (await readBody(req)) || '{}';
+      let msg;
+      try {
+        msg = JSON.parse(raw);
+      } catch {
+        writeJson(res, 400, { ok: false, error: 'invalid JSON body' });
+        return;
+      }
+      msg._receivedAt = Date.now();
+      SYNC_MESSAGES.push(msg);
+      if (SYNC_MESSAGES.length > SYNC_MAX_MESSAGES) SYNC_MESSAGES.splice(0, SYNC_MESSAGES.length - SYNC_MAX_MESSAGES);
+      setCors(res);
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+    if (req.method === 'GET' && pathname === '/api/sync/poll') {
+      if (!checkSyncAuth(req)) {
+        writeJson(res, 401, { ok: false, error: 'unauthorized' });
+        return;
+      }
+      if (!checkRateLimit(req)) {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+        const bucket = rateBuckets.get(ip) || { resetAt: Date.now() + RATE_LIMIT_WINDOW };
+        rateLimitHeaders(res, 0, bucket.resetAt);
+        res.writeHead(429, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'rate limit exceeded' }));
+        return;
+      }
+      const since = Number(new URL(req.url || '/', `http://localhost:${PORT}`).searchParams.get('since') || 0);
+      const now = Date.now();
+      const messages = SYNC_MESSAGES.filter((m) => m._receivedAt >= since && now - m._receivedAt < SYNC_TTL_MS);
+      setCors(res);
+      res.end(JSON.stringify(messages));
+      return;
+    }
+    if (req.method === 'GET' && pathname === '/api/sync/peers') {
+      if (!checkSyncAuth(req)) {
+        writeJson(res, 401, { ok: false, error: 'unauthorized' });
+        return;
+      }
+      if (!checkRateLimit(req)) {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+        const bucket = rateBuckets.get(ip) || { resetAt: Date.now() + RATE_LIMIT_WINDOW };
+        rateLimitHeaders(res, 0, bucket.resetAt);
+        res.writeHead(429, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'rate limit exceeded' }));
+        return;
+      }
+      const now = Date.now();
+      const peers = new Map();
+      for (const m of SYNC_MESSAGES) {
+        if (now - m._receivedAt < 15000 && m.deviceId) {
+          peers.set(m.deviceId, { deviceId: m.deviceId, lastSeen: Math.max(peers.get(m.deviceId)?.lastSeen || 0, m._receivedAt) });
+        }
+      }
+      setCors(res);
+      res.end(JSON.stringify(Array.from(peers.values())));
+      return;
+    }
     if (req.method === 'POST' && pathname === '/api/llm') {
+      if (!checkRateLimit(req)) {
+        const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
+        const bucket = rateBuckets.get(ip) || { resetAt: Date.now() + RATE_LIMIT_WINDOW };
+        rateLimitHeaders(res, 0, bucket.resetAt);
+        res.writeHead(429, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'rate limit exceeded' }));
+        return;
+      }
       const raw = (await readBody(req)) || '{}';
       let body;
       try {
         body = JSON.parse(raw);
       } catch {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'invalid JSON body' }));
+        writeJson(res, 400, { error: 'invalid JSON body' });
         return;
       }
       let upstream;
@@ -118,8 +279,7 @@ const server = createServer(async (req, res) => {
         upstream = prepareUpstreamRequest(ENV, body, body?.stream === true);
       } catch (e) {
         const isClient = e.message === 'unknown provider' || e.message.startsWith('No API key');
-        res.writeHead(isClient ? 400 : 500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: e.message }));
+        writeJson(res, isClient ? 400 : 500, { error: e.message });
         return;
       }
 
@@ -132,11 +292,12 @@ const server = createServer(async (req, res) => {
         });
         if (!resp.ok || !resp.body) {
           const text = await resp.text();
-          res.writeHead(resp.status || 502, { 'Content-Type': 'application/json' });
+          res.writeHead(resp.status || 502, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
           res.end(text || JSON.stringify({ error: 'upstream stream error' }));
           return;
         }
         res.writeHead(200, {
+          ...CORS_HEADERS,
           'Content-Type': 'text/event-stream; charset=utf-8',
           'Cache-Control': 'no-cache, no-transform',
           'Connection': 'keep-alive',
@@ -163,7 +324,7 @@ const server = createServer(async (req, res) => {
         body: JSON.stringify(upstream.payload),
       });
       const text = await resp.text();
-      res.writeHead(resp.status, { 'Content-Type': 'application/json' });
+      res.writeHead(resp.status, { ...CORS_HEADERS, 'Content-Type': 'application/json' });
       res.end(text);
       return;
     }
@@ -171,7 +332,7 @@ const server = createServer(async (req, res) => {
     // ── Static SPA serving with index.html fallback ──
     let filePath = normalize(join(BUILD_DIR, pathname));
     if (!filePath.startsWith(BUILD_DIR)) {
-      res.writeHead(403);
+      res.writeHead(403, CORS_HEADERS);
       res.end('Forbidden');
       return;
     }
@@ -186,10 +347,10 @@ const server = createServer(async (req, res) => {
 
     try {
       const data = await readFileP(filePath);
-      res.writeHead(200, { 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
+      res.writeHead(200, { ...CORS_HEADERS, 'Content-Type': MIME[extname(filePath)] || 'application/octet-stream' });
       res.end(data);
     } catch {
-      res.writeHead(404);
+      res.writeHead(404, CORS_HEADERS);
       res.end('Not found');
     }
   } catch (e) {

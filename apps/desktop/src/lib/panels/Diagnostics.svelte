@@ -4,6 +4,8 @@
   import { subscribeChatStats, resetChatStats, msLabel, type ChatStatsState } from '$lib/chatStatsStore.svelte';
   import { getTokenState, resetTokenState, formatCost, formatTokens, type TokenState, hydrateTokenState, getDailySpend } from '$lib/tokenTracker';
   import { loadCaps, type BudgetCaps } from '$lib/costGuard';
+  import { getRetryConfidenceStats } from '$lib/selfCorrect';
+  import { getPerformanceState, subscribePerformance, type TurnMeasure, type ToolMeasure } from '$lib/performanceMonitor';
 
   let stats = $state<ChatStatsState>({
     entries: [],
@@ -18,14 +20,20 @@
   let tokens = $state<TokenState>(getTokenState());
   let caps = $state<BudgetCaps>(loadCaps());
   let daily = $state(getDailySpend());
+  let retryStats = $state(getRetryConfidenceStats());
+  let perf = $state(getPerformanceState());
 
   $effect(() => {
     hydrateTokenState();
     tokens = getTokenState();
     daily = getDailySpend();
+    retryStats = getRetryConfidenceStats();
+    perf = getPerformanceState();
     const unsub = subscribeChatStats((s) => { stats = s; });
+    const unsubPerf = subscribePerformance((s) => { perf = s; });
     return () => {
       try { unsub(); } catch {}
+      try { unsubPerf(); } catch {}
     };
   });
 
@@ -163,8 +171,73 @@
     </div>
   {/if}
 
+  {#if retryStats.total > 0}
+    <div class="table-title">SELF-CORRECTION</div>
+    <div class="diag-row totals">
+      <div class="kpi">
+        <div class="kpi-val">{retryStats.total}</div>
+        <div class="kpi-lbl">RETRIES</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val {retryStats.successRate >= 0.5 ? 'ok' : 'err'}">{pct(retryStats.successRate * 100, 100)}</div>
+        <div class="kpi-lbl">SUCCESS</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">{Math.round(retryStats.avgConfidence * 100)}%</div>
+        <div class="kpi-lbl">CONF</div>
+      </div>
+    </div>
+  {/if}
+
+  {#if perf.totalTurns > 0}
+    <div class="table-title">PERFORMANCE</div>
+    <div class="diag-row totals">
+      <div class="kpi">
+        <div class="kpi-val">{perf.totalTurns}</div>
+        <div class="kpi-lbl">TURNS</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">{msLabel(perf.avgTurnMs)}</div>
+        <div class="kpi-lbl">AVG TURN</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">{msLabel(perf.lastTurnMs)}</div>
+        <div class="kpi-lbl">LAST TURN</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">{msLabel(perf.avgToolMs)}</div>
+        <div class="kpi-lbl">AVG TOOL</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">{perf.slowestTool ? perf.slowestTool.durationMs + 'ms' : '—'}</div>
+        <div class="kpi-lbl">SLOWEST TOOL</div>
+      </div>
+    </div>
+    {#if perf.recentTurns.length > 0}
+      <div class="table-title">TURN LATENCY (last {Math.min(perf.recentTurns.length, 10)})</div>
+      <table class="perf-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>TOTAL</th>
+            <th>TOOLS</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each perf.recentTurns.slice(-10) as turn}
+            <tr>
+              <td>{turn.turn}</td>
+              <td>{msLabel(turn.durationMs)}</td>
+              <td>{turn.tools.map(t => `${t.name} ${t.durationMs}ms`).join(', ') || '—'}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {/if}
+  {/if}
+
   <div class="actions">
-    <button class="reset-btn" onclick={() => { resetChatStats(); tokens = (resetTokenState()); }}>RESET STATS</button>
+    <button class="reset-btn" onclick={() => { resetChatStats(); tokens = (resetTokenState()); perf = { totalTurns: 0, avgTurnMs: 0, lastTurnMs: 0, totalTools: 0, avgToolMs: 0, lastToolMs: 0, slowestTool: null, recentTurns: [] }; }}>RESET STATS</button>
   </div>
 </div>
 
@@ -297,4 +370,5 @@
     image-rendering: pixelated;
   }
   .reset-btn:hover { background: var(--gb-border); color: var(--gb-bg); }
+  .perf-table td { font-size: 7px; }
 </style>

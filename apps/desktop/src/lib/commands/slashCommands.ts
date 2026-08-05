@@ -14,6 +14,7 @@ import {
 } from '../threads.ts';
 import { buildGoalFromText, type Goal } from '../goals.ts';
 import { runDailyRecap } from '../dailyRecap.ts';
+import { logger } from '../logger.ts';
 
 export interface SlashMsg {
   role: 'assistant';
@@ -25,7 +26,7 @@ export type AppendFn = (msg: SlashMsg) => void;
 const PERSONA_STORAGE_KEY = 'agenmonster_persona';
 
 function saveGameState(): void {
-  try { window.dispatchEvent(new Event('gamestate-change')); } catch {}
+  try { window.dispatchEvent(new Event('gamestate-change')); } catch (e) { logger.warn('saveGameState dispatch failed', { error: String(e) }); }
 }
 
 function downloadBlob(content: string, filename: string, type: string): void {
@@ -39,7 +40,7 @@ function downloadBlob(content: string, filename: string, type: string): void {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  } catch {}
+  } catch (e) { logger.warn('downloadBlob failed', { error: String(e) }); }
 }
 
 // ---------- individual handlers ----------
@@ -257,7 +258,7 @@ function cmdPersona(args: string, append: AppendFn): void {
   try {
     if (!persona) localStorage.removeItem(PERSONA_STORAGE_KEY);
     else localStorage.setItem(PERSONA_STORAGE_KEY, persona);
-  } catch {}
+  } catch (e) { logger.warn('cmdPersona storage failed', { error: String(e) }); }
   append({ role: 'assistant', content: persona ? 'Persona updated. Shape locked in.' : 'Persona cleared. Back to stage default.' });
 }
 
@@ -268,7 +269,7 @@ function cmdPreset(args: string, append: AppendFn): void {
   if (!valid.includes(p)) { append({ role: 'assistant', content: `Unknown preset "${p}". Try: ${valid.join(', ')}` }); return; }
   try {
     import('../memory.ts').then((m: any) => { m.setPersonaPreset?.(p); });
-  } catch {}
+  } catch (e) { logger.warn('cmdPreset import failed', { error: String(e) }); }
   append({ role: 'assistant', content: `Persona preset: ${p}.` });
 }
 

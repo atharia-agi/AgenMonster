@@ -1,28 +1,19 @@
 # Security Policy
 
-We take self-evolving-agent safety seriously.
+## Reporting a Vulnerability
 
-## Threat model
+If you discover a security vulnerability in AgenMonster, please report it responsibly by emailing the maintainers directly. Do not open a public issue for security vulnerabilities.
 
-1. **Prompt injection via skills**: a malicious skill could override system
-   prompt. Mitigation: skills are yaml-only, front-matter description only.
-   Skill bodies are not auto-injected; they are read on-demand.
+## Security Model
 
-2. **Tool-call exfiltration**: a tool I wrote myself could snoop sensitive
-   data. Mitigation: tools shipped with `monster-tools` are audited and
-   must declare a `permission()` level. New tools written by the agent
-   run only with sandboxed-code permission by default; user must opt in
-   to higher permissions.
+- **API Keys**: All LLM provider API keys are stored server-side in `.env` and are never exposed to the browser. The browser communicates with the local server proxy at `/api/llm`.
+- **Sync Transport**: Cross-device sync uses a transport priority chain: libp2p WebRTC > BroadcastChannel (same-origin) > ServerRelay (with optional `SYNC_SECRET` authentication).
+- **CORS**: The production server (`server.mjs`) restricts CORS to localhost and Tauri origins.
+- **Cost Guards**: Per-call, daily, and per-provider budget caps are enforced client-side with localStorage persistence.
 
-3. **Skill library poisoning**: the pet may install a skill from a 3rd
-   party. Mitigation: signed skill manifest, content-addressed storage,
-   and an explicit user-consent flow to "adopt" a 3rd party skill.
+## Best Practices
 
-4. **Cost runaway**: self-evolution could blow the budget via LLM loops.
-   Mitigation: `EvolutionPolicy.cost_cap_usd_per_day` ceiling. Default $5
-   / day. Per-evolution cap of $1.
-
-## Reporting
-
-Open a GitHub Security Advisory. Contact: `security@agenmonster.dev`
-(TODO: replace with real address when available).
+- Never commit `.env` to version control
+- Rotate API keys regularly
+- Use `SYNC_SECRET` in production for sync relay authentication
+- Review `npm audit` output before deploying

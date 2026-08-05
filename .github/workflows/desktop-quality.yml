@@ -1,0 +1,110 @@
+name: Desktop Quality Gates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - "tests/**"
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"
+
+concurrency:
+  group: desktop-quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: E2E (chromium / firefox / webkit)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+      - run: cd apps/desktop && CI=1 npm ci --legacy-peer-deps
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - name: Run E2E
+        run: cd apps/desktop && npx playwright test --project=chromium --project=firefox --project=webkit
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-report
+          path: apps/desktop/playwright-report
+          retention-days: 7
+
+  visual-regression:
+    name: Visual Regression (chromium)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+      - run: cd apps/desktop && CI=1 npm ci --legacy-peer-deps
+      - run: npx playwright install --with-deps chromium
+      - name: Run visual regression
+        run: cd apps/desktop && npx playwright test tests/e2e/visual-regression.spec.ts --project=chromium
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: visual-diffs
+          path: apps/desktop/test-results
+          retention-days: 7
+
+  load-smoke:
+    name: Load Smoke (k6)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'schedule' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+      - run: cd apps/desktop && CI=1 npm ci --legacy-peer-deps
+      - uses: grafana/setup-k6-action@v1
+      - name: Start dev server
+        run: cd apps/desktop && npm run dev &
+      - name: Wait for server
+        run: npx --yes wait-on http://localhost:1420 --timeout 120000
+      - name: Run k6 smoke
+        run: cd apps/desktop && npm run test:load:smoke
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-results
+          path: apps/desktop/results/load-test-results.json
+          retention-days: 7
+
+  chaos:
+    name: Chaos Engineering
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+      - run: cd apps/desktop && CI=1 npm ci --legacy-peer-deps
+      - name: Run chaos test suite
+        run: cd apps/desktop && npm run test:chaos

@@ -1,5 +1,7 @@
 // Sound player — plays chiptune SFX via Web Audio API.
 
+import { logger } from '../logger.ts';
+
 export class SoundPlayer {
   private ctx: AudioContext | null = null;
   private buffers: Map<string, AudioBuffer> = new Map();
@@ -16,7 +18,7 @@ export class SoundPlayer {
       const buffer = await this.ctx.decodeAudioData(data);
       this.buffers.set(name, buffer);
     } catch (e) {
-      console.warn(`Failed to load sound ${name}:`, e);
+      logger.warn(`Failed to load sound ${name}`, { error: String(e) });
     }
   }
 

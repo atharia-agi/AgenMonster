@@ -5,14 +5,24 @@
   import { routeMessage } from '$lib/router';
   import { getGameState, addAssistantMessage, saveState } from '$lib/gameState';
   import { soundPlayer } from '$lib/audio';
+  import { logger } from '$lib/logger';
   import { getPersonalityForStage, getEvolvedPersonality, PERSONALITY_PROFILES } from '$lib/personality';
   import { emptyStats, recordCall, type ChatStatsState } from '$lib/chatStats';
   import { pushChatCall, msLabel } from '$lib/chatStatsStore.svelte';
   import { rememberEvent, recordTopic, getMemoriesForPrompt, getTopTopics, getPersona } from '$lib/memory';
   import { recordTokenUsage } from '$lib/tokenTracker';
-  import { evaluateCostGuard, dispatchAgentTool, isTransientError, isAbortError } from '$lib/chatEngine.ts';
-  import { installSessionEndHook } from '$lib/sessionEnd';
-  import { evaluateReply } from '$lib/selfCorrect';
+  import { evaluateCostGuard, dispatchAgentTool, dispatchAgentToolWithHooks, isTransientError, isAbortError, selectToolsForPrompt, searchToolsForPrompt, spawnSubagentForTask, spawnExternalAgent } from '$lib/chatEngine.ts';
+  import { getDailySpend } from '$lib/tokenTracker';
+  import { createDefaultHooks as createAgentLoopHooks } from '$lib/agentLoop.ts';
+  import { getMemoryGraphContext } from '$lib/memory';
+import { getModeConfig, isModeReadOnly, type AgentMode } from '$lib/agentMode.ts';
+import { getSkillsForQuery, type AgentSkill, recordSkillUsage } from '$lib/agentSkills.ts';
+import { shouldCompact, compactMessages } from '$lib/compaction.ts';
+import { DoomLoopDetector } from '$lib/doomLoop.ts';
+import { installSessionEndHook } from '$lib/sessionEnd';
+import { evaluateReply } from '$lib/selfCorrect';
+import { processEmotion } from '$lib/gameLoop';
+import { tickSelfHealing, getHealingSummary, createInitialSelfHealingState } from '$lib/selfHealing';
   import { getThreadState, switchThread, deleteThread, renameThread, createThread, ensureThreadState, appendToActive, THREAD_TITLE_MAX } from '$lib/threads';
   import { pickActiveGoal, buildGoalFromText, isGoalActive, detectCompletionFromReply, type Goal } from '$lib/goals';
   import { handleSlashCommand } from '$lib/commands/slashCommands.ts';
@@ -131,6 +141,14 @@ You are genuinely a dynamic digital creature — your traits come through in eve
   let stats = $state<ChatStatsState>(emptyStats());
   let inFlightAbort: AbortController | null = null;
 
+  let agentMode = $state<AgentMode>('build');
+  let showSkillPicker = $state(false);
+  let messageQueue: string[] = $state([]);
+  let isSteering = $state(false);
+  let isProcessingQueue = $state(false);
+  const doomLoopDetector = new DoomLoopDetector({ maxIdenticalCalls: 3, maxNearIdenticalRatio: 0.8, windowMs: 60000 });
+  let healingSummary = $state('');
+
   async function initLLM() {
     providers = await getAvailableProviders();
     if (providers.length) {
@@ -143,6 +161,17 @@ You are genuinely a dynamic digital creature — your traits come through in eve
 
   let sessionHookDisposer: (() => void) | null = null;
   let petInitiateDisposer: (() => void) | null = null;
+
+  function makeHooks(provider: string): ReturnType<typeof createAgentLoopHooks> {
+    return createAgentLoopHooks({
+      callUsd: 0.01,
+      provider,
+      totalUsdProvider: 0,
+      dailyUsdProvider: 0,
+      dailyUsdTotal: 0,
+    });
+  }
+
   onMount(() => {
     sessionHookDisposer = installSessionEndHook({
       snapshot: {
@@ -198,8 +227,74 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     }
   }
 
-  async function handleSend(text: string) {
-    if (!text.trim() || loading) return;
+  function cycleMode() {
+    const modes: AgentMode[] = ['build', 'plan', 'review', 'explore'];
+    const idx = modes.indexOf(agentMode);
+    agentMode = modes[(idx + 1) % modes.length];
+    const modeConfig = getModeConfig(agentMode);
+    const hooks = makeHooks(llmConfig.provider);
+    if (isModeReadOnly(agentMode)) {
+      hooks.setMode('plan');
+    } else {
+      hooks.setMode('default');
+    }
+    try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'MODE', message: `Switched to ${modeConfig.label} mode`, color: modeConfig.color } })); } catch {}
+  }
+
+  function queueMessage(text: string) {
+    messageQueue = [...messageQueue, text];
+    try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'QUEUED', message: `${messageQueue.length} message(s) in queue`, color: 'var(--gb-text)' } })); } catch {}
+  }
+
+  async function processQueue() {
+    if (isSteering || messageQueue.length === 0 || isProcessingQueue) return;
+    isSteering = true;
+    isProcessingQueue = true;
+    while (messageQueue.length > 0 && !cancelledByUser) {
+      const next = messageQueue[0];
+      messageQueue = messageQueue.slice(1);
+      await handleSend(next, true);
+      if (loading) {
+        await new Promise((resolve) => {
+          const check = setInterval(() => {
+            if (!loading) { clearInterval(check); resolve(true); }
+          }, 100);
+        });
+      }
+    }
+    isProcessingQueue = false;
+    isSteering = false;
+    if (messageQueue.length === 0) {
+      try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'STEER DONE', message: 'All queued messages processed', color: '#50b8a0' } })); } catch {}
+    }
+  }
+
+  function startSteerMode() {
+    isSteering = true;
+    try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'STEER MODE', message: 'Queue messages with /queue or paste multiple lines', color: '#e85050' } })); } catch {}
+  }
+
+  function stopSteerMode() {
+    isSteering = false;
+    isProcessingQueue = false;
+    messageQueue = [];
+    try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'STEER STOPPED', message: 'Steer mode deactivated', color: 'var(--gb-text)' } })); } catch {}
+  }
+
+  async function handleSend(text: string, fromQueue = false) {
+    if (!text.trim()) return;
+
+    // Steer mode: queue messages instead of sending immediately
+    if (isSteering && !fromQueue) {
+      queueMessage(text);
+      messages = [...messages, { id: crypto.randomUUID(), role: 'user', content: `[QUEUED] ${text}`, timestamp: Date.now() }];
+      if (!loading && messageQueue.length === 1) {
+        processQueue();
+      }
+      return;
+    }
+
+    if (loading) return;
 
     // Goal-oriented auto-detect: if the user is issuing an imperative directive,
     // auto-create a goal in `state.goals`. Done silently unless verbose.
@@ -255,9 +350,10 @@ You are genuinely a dynamic digital creature — your traits come through in eve
         .map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    const activeConfig: LLMConfig = resolveConfigForText(text);
+    let activeConfig: LLMConfig = resolveConfigForText(text);
     const taskType = (routeForStats?.taskType || 'CHAT').toUpperCase();
     recordTopic(taskType.toLowerCase());
+    let hooks = makeHooks(activeConfig.provider);
 
     const placeholderId = crypto.randomUUID();
     messages = [...messages, { id: placeholderId, role: 'assistant', content: '', timestamp: Date.now() }];
@@ -288,6 +384,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     let reply = '';
     let ok = false;
     let ms = 0;
+    let retryMs = 0;
 
     // Cost guard: refuse or warn the call before it fires, based on caps.
     const estimatedPromptText = historyForLLM.map((m) => m.content).join('\n');
@@ -308,6 +405,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     }
 
     try {
+      await hooks.onAgentStart({ step: 0, turnCount: 0 });
       try {
         reply = await streamOnce();
       } catch (e: any) {
@@ -326,36 +424,82 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     } catch (e: any) {
       messages = messages.filter((m) => m.id !== placeholderId);
       error = e?.message || 'Failed to send message';
-      console.error('[LLM]', e);
-    } finally {
-      ms = performance.now() - startedAt;
-      stats = recordCall(stats, {
-        provider: activeConfig.provider,
-        model: activeConfig.model,
-        task: taskType,
-        ms,
-        ok,
-      });
-      pushChatCall({ provider: activeConfig.provider, model: activeConfig.model, task: taskType, ms, ok });
-      const routeLabel = pinnedProvider
-        ? `PINNED · ${pinnedProvider.label}`
-        : `AUTO · ${taskType} · ${activeConfig.provider}/${activeConfig.model}`;
-      const evo = getEvolvedPersonality(getGameState().stage, getTopTopics(5));
-      const driftLabel = evo.shift ? ` · DRIFTED → ${PERSONALITY_PROFILES[evo.shift].name.toUpperCase()}` : '';
-      lastRoute = `${routeLabel}${topicBias ? ' · ' + topicBias.toUpperCase() : ''}${driftLabel} · ${ok ? 'OK' : 'ERR'} · ${msLabel(ms)} · avg ${msLabel(stats.rollingMsAvg)} · ${stats.totalCalls}calls`;
-      loading = false;
-      cancelledByUser = false;
-      onStreamState({ streaming: false, route: lastRoute, ms });
-      if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+      logger.error('[LLM]', { error: String(e) });
     }
 
+    // Tool dispatch + optional retry happens AFTER first stream completes,
+    // but BEFORE we finalize stats so retry latency is captured.
     if (ok) {
       const recalled = getMemoriesForPrompt(text, 1);
       const reflection = recalled.length && recalled[0].length > 30
         ? `💭 I remember: ${recalled[0]}\n\n`
         : '';
-      const { stripped, toolNote } = await dispatchAgentTool(reply);
-      const finalReply = reflection + stripped + toolNote;
+      const pickFallback = () => {
+        const fallback = pickFallbackRoute(activeConfig, providers, pinnedProvider);
+        if (!fallback) return activeConfig.provider;
+        activeConfig = fallback;
+        llmConfig = { provider: fallback.provider, model: fallback.model, apiKey: '' };
+        hooks = makeHooks(fallback.provider);
+        return fallback.provider;
+      };
+      const { stripped, toolNote, needsRetry } = await dispatchAgentToolWithHooks(reply, {
+        provider: activeConfig.provider,
+        riskTolerance: getGameState().personalityTraits?.riskTolerance ?? 0.5,
+        dailySpend: getDailySpend(),
+        doomLoopDetector,
+        providerFallback: pickFallback,
+        onToolCall: (call, _result) => {
+          hooks.onStepStart(1, call.name);
+        },
+        onRetry: (attempt, reason) => {
+          rememberEvent({ kind: 'lesson', title: 'AUTO-RETRY', detail: reason, tags: ['agent-hook', 'retry'], confidence: 0.9 });
+        },
+        onNotification: (message, level) => {
+          try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: level.toUpperCase(), message, color: level === 'error' ? '#c03030' : 'var(--gb-text)' } })); } catch {}
+        },
+      });
+
+      let retryStripped = stripped;
+      let retryToolNote = toolNote;
+      let retryAttempt = 0;
+      if (needsRetry) {
+        const retryStart = performance.now();
+        try {
+          const backoffMs = Math.min(500 * Math.pow(2, retryAttempt) + Math.random() * 200, 3000);
+          await new Promise((r) => setTimeout(r, backoffMs));
+          retryAttempt++;
+          const fallbackProvider = pickFallback();
+          hooks.onAgentStart({ step: 0, turnCount: 0 });
+          reply = await streamOnce();
+          if (!reply) throw new Error('Empty retry response from LLM');
+          const retryResult = await dispatchAgentToolWithHooks(reply, {
+            provider: activeConfig.provider,
+            riskTolerance: getGameState().personalityTraits?.riskTolerance ?? 0.5,
+            dailySpend: getDailySpend(),
+            doomLoopDetector,
+            onToolCall: (call, _result) => {
+              hooks.onStepStart(1, call.name);
+            },
+            onRetry: (attempt, reason) => {
+              rememberEvent({ kind: 'lesson', title: 'AUTO-RETRY', detail: reason, tags: ['agent-hook', 'retry'], confidence: 0.9 });
+            },
+            onNotification: (message, level) => {
+              try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: level.toUpperCase(), message, color: level === 'error' ? '#c03030' : 'var(--gb-text)' } })); } catch {}
+            },
+          });
+          retryStripped = retryResult.stripped;
+          retryToolNote = retryResult.toolNote;
+        } catch (e: any) {
+          recordProviderFailure(activeConfig.provider);
+          logger.error('[LLM retry]', { error: String(e) });
+        } finally {
+          try { await hooks.onAgentEnd({ step: 0 }); } catch {}
+        }
+        retryMs = performance.now() - retryStart;
+      }
+
+      hooks.onStepEnd(1, { ok: true });
+      const finalReply = reflection + retryStripped + retryToolNote;
       const tokensApprox = Math.round((text.length + finalReply.length) / 4);
       messages = messages.map((m) =>
         m.id === placeholderId
@@ -372,7 +516,8 @@ You are genuinely a dynamic digital creature — your traits come through in eve
         promptText: historyForLLM.map((m) => m.role + ': ' + m.content).join('\n'),
         completionText: finalReply,
       });
-      rememberEvent({ kind: 'success', title: text.slice(0, 40), detail: reply.slice(0, 120), tags: [taskType.toLowerCase()], confidence: 0.9 });
+      rememberEvent({ kind: 'success', title: text.slice(0, 40), detail: finalReply.slice(0, 120), tags: [taskType.toLowerCase()], confidence: 0.9 });
+      try { processEmotion('task_success'); } catch {}
       try { soundPlayer.play('levelup'); } catch {}
 
       // Goal-oriented: if the reply mentions completing a step, mark the
@@ -383,7 +528,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
         const goalsArr = gsG3.goals ?? [];
         const active = pickActiveGoal(goalsArr);
         if (active && !active.doneAt) {
-          const updated = detectCompletionFromReply(active, reply);
+          const updated = detectCompletionFromReply(active, finalReply);
           if (updated !== active) {
             const idx = goalsArr.findIndex((g) => g.id === active.id);
             if (idx >= 0) {
@@ -392,6 +537,18 @@ You are genuinely a dynamic digital creature — your traits come through in eve
               window.dispatchEvent(new Event('gamestate-change'));
             }
           }
+        }
+      } catch {}
+
+      // Self-healing tick — auto-apply healing when needs are critical
+      try {
+        const gsHeal = getGameState();
+        const healResult = tickSelfHealing(gsHeal.needs, gsHeal.selfHealing ?? createInitialSelfHealingState(), Date.now());
+        if (healResult.actionTaken) {
+          saveState({ ...gsHeal, needs: healResult.needs, selfHealing: healResult.healingState });
+          healingSummary = getHealingSummary(healResult.healingState);
+          try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'HEALING', message: `Auto-healed: ${healResult.actionTaken}`, color: '#90c878' } })); } catch {}
+          window.dispatchEvent(new Event('gamestate-change'));
         }
       } catch {}
 
@@ -457,6 +614,28 @@ You are genuinely a dynamic digital creature — your traits come through in eve
           // No-op — reply is fine.
         }
       } catch {}
+
+      // Finalize stats AFTER tool dispatch + retry so ms includes retry latency.
+      ms = performance.now() - startedAt + retryMs;
+      stats = recordCall(stats, {
+        provider: activeConfig.provider,
+        model: activeConfig.model,
+        task: taskType,
+        ms,
+        ok,
+      });
+      pushChatCall({ provider: activeConfig.provider, model: activeConfig.model, task: taskType, ms, ok });
+      const routeLabel = pinnedProvider
+        ? `PINNED · ${pinnedProvider.label}`
+        : `AUTO · ${taskType} · ${activeConfig.provider}/${activeConfig.model}`;
+      const evo = getEvolvedPersonality(getGameState().stage, getTopTopics(5));
+      const driftLabel = evo.shift ? ` · DRIFTED → ${PERSONALITY_PROFILES[evo.shift].name.toUpperCase()}` : '';
+      lastRoute = `${routeLabel}${topicBias ? ' · ' + topicBias.toUpperCase() : ''}${driftLabel} · ${ok ? 'OK' : 'ERR'} · ${msLabel(ms)} · avg ${msLabel(stats.rollingMsAvg)} · ${stats.totalCalls}calls`;
+      loading = false;
+      cancelledByUser = false;
+      onStreamState({ streaming: false, route: lastRoute, ms });
+      if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+      try { await hooks.onAgentEnd({ step: 0 }); } catch {}
       return;
     }
 
@@ -467,6 +646,19 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     if (e.key === 'Escape' && loading) {
       e.preventDefault();
       cancelInFlight();
+    }
+    if (e.key === 'Tab' && !(e.target as HTMLElement)?.closest('input, textarea')) {
+      e.preventDefault();
+      cycleMode();
+    }
+    if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+      e.preventDefault();
+      showSkillPicker = !showSkillPicker;
+    }
+    if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+      e.preventDefault();
+      if (isSteering) stopSteerMode();
+      else startSteerMode();
     }
   }
 
@@ -519,15 +711,73 @@ You are genuinely a dynamic digital creature — your traits come through in eve
 
   // Pick the first available provider/model DIFFERENT from the current one
   // (and not pinned if pinning is active). Returns null if no alternative.
+  let fallbackRotation = 0;
+  const failedProviders = new Set<string>();
+  const FAILED_PROVIDER_TTL = 60_000;
+  const FALLBACK_STORAGE_KEY = 'agenmonster_fallback_state';
+
+  interface FallbackPersist {
+    rotation: number;
+    failedProviders: { id: string; ts: number }[];
+  }
+
+  function loadFallbackState(): FallbackPersist {
+    try {
+      const raw = localStorage.getItem(FALLBACK_STORAGE_KEY);
+      if (!raw) return { rotation: 0, failedProviders: [] };
+      const parsed = JSON.parse(raw) as FallbackPersist;
+      const now = Date.now();
+      return {
+        rotation: typeof parsed.rotation === 'number' ? parsed.rotation : 0,
+        failedProviders: Array.isArray(parsed.failedProviders)
+          ? parsed.failedProviders.filter((f: { id: string; ts: number }) => now - f.ts < FAILED_PROVIDER_TTL)
+          : [],
+      };
+    } catch {
+      return { rotation: 0, failedProviders: [] };
+    }
+  }
+
+  function saveFallbackState() {
+    try {
+      const failed = Array.from(failedProviders.entries()).map(([id, ts]) => ({ id, ts }));
+      localStorage.setItem(FALLBACK_STORAGE_KEY, JSON.stringify({ rotation: fallbackRotation, failedProviders: failed }));
+    } catch {}
+  }
+
+  onMount(() => {
+    const state = loadFallbackState();
+    fallbackRotation = state.rotation;
+    for (const f of state.failedProviders) failedProviders.add(f.id);
+  });
+
   function pickFallbackRoute(current: LLMConfig, all: ProviderInfo[], pinned: ProviderInfo | null): LLMConfig | null {
-    for (const p of all) {
-      if (pinned && p.id === pinned.id) continue;
-      if (p.id === current.provider) continue;
+    const candidates = all.filter((p) => {
+      if (pinned && p.id === pinned.id) return false;
+      if (p.id === current.provider) return false;
+      if (failedProviders.has(p.id)) return false;
       const model = p.models[0];
-      if (!model) continue;
-      return { provider: p.id as LLMConfig['provider'], model, apiKey: '' };
+      return !!model;
+    });
+    if (candidates.length === 0) return null;
+    const start = fallbackRotation % candidates.length;
+    for (let i = 0; i < candidates.length; i++) {
+      const idx = (start + i) % candidates.length;
+      const p = candidates[idx];
+      fallbackRotation = (idx + 1) % candidates.length;
+      saveFallbackState();
+      return { provider: p.id as LLMConfig['provider'], model: p.models[0], apiKey: '' };
     }
     return null;
+  }
+
+  function recordProviderFailure(providerId: string) {
+    failedProviders.add(providerId);
+    saveFallbackState();
+    setTimeout(() => {
+      failedProviders.delete(providerId);
+      saveFallbackState();
+    }, FAILED_PROVIDER_TTL);
   }
 </script>
 
@@ -557,6 +807,61 @@ You are genuinely a dynamic digital creature — your traits come through in eve
           </button>
         {/each}
         <button class="prov-btn auto" class:active={!pinnedProvider} onclick={() => (pinnedProvider = null)}>AUTO</button>
+      </div>
+    {/if}
+
+    <div class="mode-bar">
+      <span class="route-label">MODE</span>
+      {#each ['build', 'plan', 'review', 'explore'] as m}
+        {@const mode = m as AgentMode}
+        <button class="mode-btn" class:active={agentMode === mode} onclick={() => { agentMode = mode; const mc = getModeConfig(mode); const hooks = makeHooks(llmConfig.provider); if (isModeReadOnly(mode)) hooks.setMode('plan'); else hooks.setMode('default'); }} style="--mode-color: {getModeConfig(mode).color}">
+          {mode.toUpperCase()}
+        </button>
+      {/each}
+      <span class="mode-hint">TAB to switch</span>
+    </div>
+
+    {#if showSkillPicker}
+      <div class="skill-picker">
+        <span class="route-label">SKILLS</span>
+        {#each getSkillsForQuery(lastUserMsgText || '') as skill}
+          <button class="skill-tag" onclick={() => { recordSkillUsage(skill.id); try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'SKILL', message: `Activated: ${skill.name}`, color: 'var(--gb-text)' } })); } catch {} }}>
+            {skill.name}
+          </button>
+        {/each}
+        <button class="skill-close" onclick={() => showSkillPicker = false}>×</button>
+      </div>
+    {/if}
+
+    {#if isSteering}
+      <div class="steer-bar">
+        <span class="route-label">STEER</span>
+        <span class="queue-count">{messageQueue.length} queued</span>
+        <button class="prov-btn" onclick={stopSteerMode}>STOP</button>
+      </div>
+    {/if}
+
+    {#if messages.length > 20}
+      <div class="compaction-bar">
+        <button class="prov-btn" onclick={() => {
+          const compacted = compactMessages(messages);
+          messages = compacted.messages.map((m) => ({
+            ...m,
+            id: crypto.randomUUID(),
+            timestamp: Date.now(),
+            xpEarned: 0,
+          })) as any;
+          const savings = compacted.originalCharCount - compacted.compressedCharCount;
+          try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'COMPACTED', message: `Saved ${savings} chars`, color: '#90c878' } })); } catch {}
+        }}>COMPACT</button>
+        <span class="route-label">{messages.length} msgs</span>
+      </div>
+    {/if}
+    {#if healingSummary}
+      <div class="healing-bar">
+        <span class="route-label">HEAL</span>
+        <span class="healing-text">{healingSummary}</span>
+        <button class="prov-btn" onclick={() => { healingSummary = ''; }}>×</button>
       </div>
     {/if}
     {#if error}
@@ -700,8 +1005,62 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     font-family: var(--font-body);
     letter-spacing: 0.3px;
   }
-  @keyframes dotBounce {
-    0%, 100% { transform: translateY(0); opacity: 1; }
-    50% { transform: translateY(-3px); opacity: 0.4; }
-  }
-</style>
+   @keyframes dotBounce {
+     0%, 100% { transform: translateY(0); opacity: 1; }
+     50% { transform: translateY(-3px); opacity: 0.4; }
+   }
+
+   .mode-bar, .steer-bar, .skill-picker {
+     display: flex;
+     gap: 4px;
+     padding: 4px 6px;
+     background: var(--gb-panel);
+     border-bottom: 3px solid var(--gb-border);
+     align-items: center;
+   }
+   .mode-btn {
+     font-size: 8px;
+     padding: 3px 6px;
+     background: var(--gb-bg);
+     border: 3px solid var(--gb-border);
+     color: var(--gb-dark);
+     cursor: pointer;
+     font-family: var(--font-body);
+     image-rendering: pixelated;
+   }
+   .mode-btn.active {
+     color: var(--gb-bg);
+     background: var(--mode-color, var(--gb-border));
+     border-color: var(--gb-text);
+   }
+   .mode-btn:hover { background: var(--gb-dark); color: var(--gb-bg); }
+   .mode-hint { font-size: 7px; color: var(--gb-dark); margin-left: auto; }
+   .skill-tag {
+     font-size: 7px;
+     padding: 2px 5px;
+     background: var(--gb-bg);
+     border: 2px solid var(--gb-border);
+     color: var(--gb-dark);
+     cursor: pointer;
+     font-family: var(--font-body);
+   }
+   .skill-tag:hover { background: var(--gb-text); color: var(--gb-bg); }
+   .skill-close {
+     margin-left: auto;
+     background: none;
+     border: none;
+     color: var(--gb-dark);
+     cursor: pointer;
+     font-size: 12px;
+   }
+   .steer-bar { justify-content: space-between; }
+   .queue-count { font-size: 7px; color: var(--gb-dark); }
+    .compaction-bar { display: flex; gap: 4px; padding: 4px 6px; background: var(--gb-panel); border-bottom: 3px solid var(--gb-border); align-items: center; justify-content: space-between; }
+    .healing-bar { display: flex; gap: 4px; padding: 4px 6px; background: var(--gb-panel); border-bottom: 3px solid var(--gb-border); align-items: center; }
+    .healing-text { font-size: 7px; color: var(--gb-dark); flex: 1; }
+ </style>
+
+
+
+
+
