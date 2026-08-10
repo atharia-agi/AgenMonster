@@ -3,7 +3,7 @@
   import ChatInput from './ChatInput.svelte';
   import { sendLLMStream, getAvailableProviders, saveLLMConfig, loadPersistedLLMChoice, type LLMConfig, type ProviderInfo } from '$lib/llm';
   import { routeMessage } from '$lib/router';
-  import { getGameState, addAssistantMessage, saveState } from '$lib/gameState';
+   import { getGameState, addAssistantMessage, saveState, addXP, type ChatMessage as ChatMessageType } from '$lib/gameState';
   import { soundPlayer } from '$lib/audio';
   import { logger } from '$lib/logger';
   import { getPersonalityForStage, getEvolvedPersonality, PERSONALITY_PROFILES } from '$lib/personality';
@@ -11,11 +11,10 @@
   import { pushChatCall, msLabel } from '$lib/chatStatsStore.svelte';
   import { rememberEvent, recordTopic, getMemoriesForPrompt, getTopTopics, getPersona } from '$lib/memory';
   import { recordTokenUsage } from '$lib/tokenTracker';
-  import { evaluateCostGuard, dispatchAgentTool, dispatchAgentToolWithHooks, isTransientError, isAbortError, selectToolsForPrompt, searchToolsForPrompt, spawnSubagentForTask, spawnExternalAgent } from '$lib/chatEngine.ts';
+  import { evaluateCostGuard, dispatchAgentTool, dispatchAgentToolWithHooks, isTransientError, isAbortError } from '$lib/chatEngine.ts';
   import { getDailySpend } from '$lib/tokenTracker';
   import { createDefaultHooks as createAgentLoopHooks } from '$lib/agentLoop.ts';
-  import { getMemoryGraphContext } from '$lib/memory';
-import { getModeConfig, isModeReadOnly, type AgentMode } from '$lib/agentMode.ts';
+  import { getModeConfig, isModeReadOnly, type AgentMode } from '$lib/agentMode.ts';
 import { getSkillsForQuery, type AgentSkill, recordSkillUsage } from '$lib/agentSkills.ts';
 import { shouldCompact, compactMessages } from '$lib/compaction.ts';
 import { DoomLoopDetector } from '$lib/doomLoop.ts';
@@ -243,7 +242,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
 
   function queueMessage(text: string) {
     messageQueue = [...messageQueue, text];
-    try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'QUEUED', message: `${messageQueue.length} message(s) in queue`, color: 'var(--gb-text)' } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'QUEUED', message: `${messageQueue.length} message(s) in queue`, color: 'var(--text-primary)' } })); } catch {}
   }
 
   async function processQueue() {
@@ -278,7 +277,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     isSteering = false;
     isProcessingQueue = false;
     messageQueue = [];
-    try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'STEER STOPPED', message: 'Steer mode deactivated', color: 'var(--gb-text)' } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'STEER STOPPED', message: 'Steer mode deactivated', color: 'var(--text-primary)' } })); } catch {}
   }
 
   async function handleSend(text: string, fromQueue = false) {
@@ -344,7 +343,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     const topicBias = routeForStats?.topicBias;
     const historyForLLM: Array<{ role: string; content: string }> = [
       { role: 'system', content: systemPrompt },
-      ...gameStateBefore.chatMessages
+      ...messages
         .filter((m: any) => m.role !== 'system')
         .slice(-20)
         .map((m: any) => ({ role: m.role, content: m.content })),
@@ -401,7 +400,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
     }
     if (decision.level === 'warn') {
       costWarnings.push(decision.reason);
-      try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'BUDGET WARN', message: decision.reason, color: 'var(--gb-text)' } })); } catch {}
+      try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'BUDGET WARN', message: decision.reason, color: 'var(--text-primary)' } })); } catch {}
     }
 
     try {
@@ -445,7 +444,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       const { stripped, toolNote, needsRetry } = await dispatchAgentToolWithHooks(reply, {
         provider: activeConfig.provider,
         riskTolerance: getGameState().personalityTraits?.riskTolerance ?? 0.5,
-        dailySpend: getDailySpend(),
+        dailySpend: getDailySpend().total,
         doomLoopDetector,
         providerFallback: pickFallback,
         onToolCall: (call, _result) => {
@@ -455,7 +454,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
           rememberEvent({ kind: 'lesson', title: 'AUTO-RETRY', detail: reason, tags: ['agent-hook', 'retry'], confidence: 0.9 });
         },
         onNotification: (message, level) => {
-          try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: level.toUpperCase(), message, color: level === 'error' ? '#c03030' : 'var(--gb-text)' } })); } catch {}
+              try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: level.toUpperCase(), message, color: level === 'error' ? 'var(--error)' : 'var(--text-primary)' } })); } catch {}
         },
       });
 
@@ -475,7 +474,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
           const retryResult = await dispatchAgentToolWithHooks(reply, {
             provider: activeConfig.provider,
             riskTolerance: getGameState().personalityTraits?.riskTolerance ?? 0.5,
-            dailySpend: getDailySpend(),
+            dailySpend: getDailySpend().total,
             doomLoopDetector,
             onToolCall: (call, _result) => {
               hooks.onStepStart(1, call.name);
@@ -484,7 +483,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
               rememberEvent({ kind: 'lesson', title: 'AUTO-RETRY', detail: reason, tags: ['agent-hook', 'retry'], confidence: 0.9 });
             },
             onNotification: (message, level) => {
-              try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: level.toUpperCase(), message, color: level === 'error' ? '#c03030' : 'var(--gb-text)' } })); } catch {}
+          try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: level.toUpperCase(), message, color: level === 'error' ? 'var(--error)' : 'var(--text-primary)' } })); } catch {}
             },
           });
           retryStripped = retryResult.stripped;
@@ -507,7 +506,16 @@ You are genuinely a dynamic digital creature — your traits come through in eve
           : m
       );
       saveLLMConfig({ provider: activeConfig.provider, model: activeConfig.model, apiKey: '' });
-      onMessageSent(text);
+      const gsChat = getGameState();
+      const xpGain = 5;
+      const xpUpdated = addXP(gsChat, xpGain);
+      const userMsgForState: ChatMessageType = { id: crypto.randomUUID(), role: 'user', content: text, timestamp: Date.now() };
+      saveState({
+        ...xpUpdated,
+        chatMessages: [...(xpUpdated.chatMessages || []), userMsgForState],
+        _totalMessages: xpUpdated._totalMessages + 1,
+        lastActivityTs: Date.now(),
+      });
       addAssistantMessage(getGameState(), finalReply);
       recordTokenUsage({
         provider: activeConfig.provider,
@@ -655,16 +663,28 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       e.preventDefault();
       showSkillPicker = !showSkillPicker;
     }
-    if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'Q' || e.key === 'q')) {
       e.preventDefault();
       if (isSteering) stopSteerMode();
       else startSteerMode();
     }
   }
 
+  let keyboardHandlerInstalled = false;
   onMount(() => {
+    if (keyboardHandlerInstalled) return;
+    keyboardHandlerInstalled = true;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && loading) cancelInFlight();
+      if (e.ctrlKey && e.shiftKey && e.key === 'S') {
+        e.preventDefault();
+        showSkillPicker = !showSkillPicker;
+      }
+      if (e.ctrlKey && e.shiftKey && (e.key === 'Q' || e.key === 'q')) {
+        e.preventDefault();
+        if (isSteering) stopSteerMode();
+        else startSteerMode();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -781,7 +801,8 @@ You are genuinely a dynamic digital creature — your traits come through in eve
   }
 </script>
 
-<div class="chat-panel" use:syncFromParent role="region" aria-label="Chat">
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+<section class="chat-panel" use:syncFromParent aria-label="Chat" onkeydown={onKeydown}>
   <div class="chat-messages" bind:this={chatEl} role="log" aria-live="polite">
     <div class="thread-bar">
       {#each threadState.order as id, i (id)}
@@ -825,7 +846,7 @@ You are genuinely a dynamic digital creature — your traits come through in eve
       <div class="skill-picker">
         <span class="route-label">SKILLS</span>
         {#each getSkillsForQuery(lastUserMsgText || '') as skill}
-          <button class="skill-tag" onclick={() => { recordSkillUsage(skill.id); try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'SKILL', message: `Activated: ${skill.name}`, color: 'var(--gb-text)' } })); } catch {} }}>
+          <button class="skill-tag" onclick={() => { recordSkillUsage(skill.id); try { window.dispatchEvent(new CustomEvent('agenmonster:toast', { detail: { id: crypto.randomUUID(), title: 'SKILL', message: `Activated: ${skill.name}`, color: 'var(--text-primary)' } })); } catch {} }}>
             {skill.name}
           </button>
         {/each}
@@ -890,175 +911,199 @@ You are genuinely a dynamic digital creature — your traits come through in eve
         {/if}
       </div>
     {/if}
-  </div>
-  <ChatInput {messages} onSend={handleSend} onCancel={cancelInFlight} disabled={loading} />
-</div>
+   </div>
+   <ChatInput {messages} onSend={handleSend} onCancel={cancelInFlight} disabled={loading} />
+  </section>
 
 <style>
-  .chat-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; background: var(--gb-bg); }
-  .chat-messages { flex: 1; overflow-y: auto; padding: 6px 0; display: flex; flex-direction: column; gap: 4px; image-rendering: pixelated; }
-  .chat-messages::-webkit-scrollbar { width: 8px; }
-  .chat-messages::-webkit-scrollbar-track { background: var(--gb-panel); border: 2px solid var(--gb-border); }
-  .chat-messages::-webkit-scrollbar-thumb { background: var(--gb-border); }
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    background: var(--bg-surface);
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--sp-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    min-height: 0;
+  }
+
+  .chat-messages::-webkit-scrollbar { width: 6px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  .chat-messages::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
   .thread-bar {
     display: flex;
-    gap: 4px;
-    padding: 4px 6px;
-    background: var(--gb-panel);
-    border-bottom: 3px solid var(--gb-border);
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-default);
     overflow-x: auto;
   }
   .thread-bar::-webkit-scrollbar { height: 4px; }
   .thread-btn, .new-thread-btn {
     display: flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 5px;
-    background: var(--gb-bg);
-    border: 3px solid var(--gb-border);
-    color: var(--gb-dark);
-    font-family: var(--font-body);
-    font-size: 7px;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    font-size: var(--fs-xs);
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
+    font-family: var(--font-body);
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .thread-btn.active { background: var(--gb-text); color: var(--gb-bg); }
-  .thread-btn:hover { background: var(--gb-border); color: var(--gb-bg); }
-  .thread-idx { color: var(--gb-text); font-weight: bold; }
-  .thread-btn.active .thread-idx { color: var(--gb-bg); }
-  .new-thread-btn { padding: 2px 8px; font-weight: bold; }
+  .thread-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .thread-btn.active { background: var(--accent-subtle); color: var(--accent); border-color: rgba(99, 102, 241, 0.2); }
+  .thread-idx { color: var(--text-muted); font-weight: 600; }
+  .thread-btn.active .thread-idx { color: var(--accent); }
+  .new-thread-btn { font-weight: 600; }
 
   .provider-bar {
     display: flex;
-    gap: 4px;
-    padding: 4px 6px;
-    background: var(--gb-panel);
-    border-bottom: 3px solid var(--gb-border);
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-default);
+    align-items: center;
   }
   .prov-btn {
-    font-size: 8px;
-    padding: 3px 6px;
-    background: var(--gb-bg);
-    border: 3px solid var(--gb-border);
-    color: var(--gb-dark);
+    font-size: var(--fs-xs);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
     cursor: pointer;
     font-family: var(--font-body);
-    image-rendering: pixelated;
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .prov-btn.active { color: var(--gb-bg); background: var(--gb-border); border-color: var(--gb-text); }
-  .prov-btn:hover { background: var(--gb-dark); color: var(--gb-bg); }
-  .route-label { font-size: 7px; color: var(--gb-dark); text-transform: uppercase; letter-spacing: 0.5px; }
+  .prov-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .prov-btn.active { color: var(--accent); background: var(--accent-subtle); border-color: rgba(99, 102, 241, 0.2); }
+  .route-label { font-size: var(--fs-2xs); color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; font-weight: 600; }
 
   .error-msg {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    margin: 0 6px 4px;
-    background: var(--gb-panel);
-    border: 3px solid var(--gb-text);
-    color: var(--gb-bg);
-    font-size: 8px;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    margin: 0 var(--sp-2) var(--sp-2);
+    background: var(--error-subtle);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--error);
+    font-size: var(--fs-xs);
     font-family: var(--font-body);
-    image-rendering: pixelated;
+    border-radius: var(--radius-md);
   }
   .proxy-hint {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    margin: 0 6px 4px;
-    background: var(--gb-panel);
-    border: 3px solid var(--gb-text);
-    color: var(--gb-dark);
-    font-size: 8px;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    margin: 0 var(--sp-2) var(--sp-2);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
     font-family: var(--font-body);
-    image-rendering: pixelated;
+    border-radius: var(--radius-md);
   }
   .proxy-hint code {
-    background: var(--gb-bg);
-    border: 2px solid var(--gb-border);
-    padding: 0 3px;
-    color: var(--gb-text);
+    background: var(--bg-base);
+    border: 1px solid var(--border-default);
+    padding: 1px var(--sp-1);
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: var(--fs-2xs);
   }
   .route-status {
-    font-size: 7px;
-    color: var(--gb-dark);
-    padding: 2px 8px 4px;
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    padding: var(--sp-1) var(--sp-2) var(--sp-2);
     letter-spacing: 0.3px;
     word-break: break-all;
   }
-  .typing { display: flex; align-items: center; gap: 6px; padding: 6px 10px; flex-wrap: wrap; }
-  .dots { display: flex; gap: 4px; padding: 6px 10px; background: var(--gb-panel); border: 3px solid var(--gb-border); image-rendering: pixelated; }
+  .typing { display: flex; align-items: center; gap: var(--sp-2); padding: var(--sp-2) var(--sp-3); flex-wrap: wrap; }
+  .dots { display: flex; gap: var(--sp-1); padding: var(--sp-2) var(--sp-3); background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-md); }
   .dots span {
-    width: 5px; height: 5px; background: var(--gb-border);
-    animation: dotBounce 1s steps(2) infinite;
-    image-rendering: pixelated;
+    width: 6px; height: 6px; background: var(--border-strong);
+    border-radius: 50%;
+    animation: dotBounce 1s ease-in-out infinite;
   }
   .dots span:nth-child(2) { animation-delay: 0.2s; }
   .dots span:nth-child(3) { animation-delay: 0.4s; }
   .typing-stat {
-    font-size: 7px;
-    color: var(--gb-dark);
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
     font-family: var(--font-body);
     letter-spacing: 0.3px;
   }
-   @keyframes dotBounce {
-     0%, 100% { transform: translateY(0); opacity: 1; }
-     50% { transform: translateY(-3px); opacity: 0.4; }
-   }
+  @keyframes dotBounce {
+    0%, 100% { transform: translateY(0); opacity: 1; }
+    50% { transform: translateY(-3px); opacity: 0.4; }
+  }
 
-   .mode-bar, .steer-bar, .skill-picker {
-     display: flex;
-     gap: 4px;
-     padding: 4px 6px;
-     background: var(--gb-panel);
-     border-bottom: 3px solid var(--gb-border);
-     align-items: center;
-   }
-   .mode-btn {
-     font-size: 8px;
-     padding: 3px 6px;
-     background: var(--gb-bg);
-     border: 3px solid var(--gb-border);
-     color: var(--gb-dark);
-     cursor: pointer;
-     font-family: var(--font-body);
-     image-rendering: pixelated;
-   }
-   .mode-btn.active {
-     color: var(--gb-bg);
-     background: var(--mode-color, var(--gb-border));
-     border-color: var(--gb-text);
-   }
-   .mode-btn:hover { background: var(--gb-dark); color: var(--gb-bg); }
-   .mode-hint { font-size: 7px; color: var(--gb-dark); margin-left: auto; }
-   .skill-tag {
-     font-size: 7px;
-     padding: 2px 5px;
-     background: var(--gb-bg);
-     border: 2px solid var(--gb-border);
-     color: var(--gb-dark);
-     cursor: pointer;
-     font-family: var(--font-body);
-   }
-   .skill-tag:hover { background: var(--gb-text); color: var(--gb-bg); }
-   .skill-close {
-     margin-left: auto;
-     background: none;
-     border: none;
-     color: var(--gb-dark);
-     cursor: pointer;
-     font-size: 12px;
-   }
-   .steer-bar { justify-content: space-between; }
-   .queue-count { font-size: 7px; color: var(--gb-dark); }
-    .compaction-bar { display: flex; gap: 4px; padding: 4px 6px; background: var(--gb-panel); border-bottom: 3px solid var(--gb-border); align-items: center; justify-content: space-between; }
-    .healing-bar { display: flex; gap: 4px; padding: 4px 6px; background: var(--gb-panel); border-bottom: 3px solid var(--gb-border); align-items: center; }
-    .healing-text { font-size: 7px; color: var(--gb-dark); flex: 1; }
- </style>
+  .mode-bar, .steer-bar, .skill-picker {
+    display: flex;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-default);
+    align-items: center;
+  }
+  .mode-btn {
+    font-size: var(--fs-xs);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: all var(--duration-fast) var(--ease-default);
+  }
+  .mode-btn.active { color: var(--accent); background: var(--accent-subtle); border-color: rgba(99, 102, 241, 0.2); }
+  .mode-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .mode-hint { font-size: var(--fs-2xs); color: var(--text-muted); margin-left: auto; }
+  .skill-tag {
+    font-size: var(--fs-xs);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-family: var(--font-body);
+    transition: all var(--duration-fast) var(--ease-default);
+  }
+  .skill-tag:hover { background: var(--accent-subtle); color: var(--accent); border-color: rgba(99, 102, 241, 0.2); }
+  .skill-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: var(--fs-lg);
+    line-height: 1;
+  }
+  .steer-bar { justify-content: space-between; }
+  .queue-count { font-size: var(--fs-2xs); color: var(--text-muted); }
+  .compaction-bar { display: flex; gap: var(--sp-1); padding: var(--sp-1) var(--sp-2); background: var(--bg-elevated); border-bottom: 1px solid var(--border-default); align-items: center; justify-content: space-between; }
+  .healing-bar { display: flex; gap: var(--sp-1); padding: var(--sp-1) var(--sp-2); background: var(--bg-elevated); border-bottom: 1px solid var(--border-default); align-items: center; }
+  .healing-text { font-size: var(--fs-xs); color: var(--text-muted); flex: 1; }
+</style>
 
 
 
