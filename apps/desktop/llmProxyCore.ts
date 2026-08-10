@@ -13,6 +13,12 @@ export interface ProviderInfo {
 }
 
 export const PROVIDERS: Record<string, ProviderDefinition> = {
+  kilo: {
+    keyEnv: 'KILO_API_KEY',
+    keyEnvPrefix: 'KILO_',
+    api: 'https://api.kilo.ai/api/gateway',
+    def: 'kilo-auto/free',
+  },
   groq: {
     keyEnv: 'GROQ_API_KEY',
     keyEnvPrefix: 'GROQ_',

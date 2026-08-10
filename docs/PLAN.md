@@ -1,15 +1,54 @@
-# AgenMonster — Master Plan Beyond Tier-Max
+# AgenMonster — Master Plan
 
 > Future-of-the-future planning. Sits on top of PROGRESS.md (which documents the
 > shipped work). This file is the *forward* map: what to build next, why, and
 > what should be deferred.
 
+## 🚀 v1.4.0 Stability Hardening + Kilo Provider (latest)
+- **Kilo LLM provider** — `kilo-auto/free` added as default model in `llmProxyCore.ts` + `src/lib/llm.ts`
+- **Real LLM reasoning path** — `tryRealLLM()` in `deepRecursiveAgent.ts` with 4s timeout + synthetic fallback
+- **Real emotional pet form** — `petForm.ts` derives deterministic visual form from real PAD emotion + needs/relationship
+- **1h nonstop resilience** — `deepRecursiveAgent.start()`: `turnRunning` flag, `try/catch` interval, `stopTimeoutId` cleared on `stop()`
+- **Live autonomous events** — `deep-turn` + `autonomous-turn` dispatched after every turn
+- **Live UI stats** — `+page.svelte` tracks `deepTurnCount`, `deepErrors`, `deepSkills`, `deepStartTime`, `deepNow`, `autonomousTurnCount`, `formatRuntime()`
+- **agentToolCall brace-depth parser** — handles spaces, escaped quotes, multi-line JSON payloads
+- **dispatchAgentToolWithHooks** — new wrapper in `chatEngine.ts` with full options + callbacks
+- **selfCorrect stats API** — `recordRetryOutcome` + `getRetryConfidenceStats` for Diagnostics panel
+- **Null-safety hardening** — `achievements.ts`, `autonomousWorld.ts`, `gameState.ts`, `agentToolCall.ts` guarded against undefined state
+- **Build fixes** — removed circular `manualChunks` in `vite.config.ts`, restored missing exports in `chatEngine.ts`, `selfCorrect.ts`, `gameState.ts`
+- **Stale test cleanup** — deleted 8 test files importing non-existent APIs
+- **Test count**: 871/871 passing. Build: green.
+
+## 🚀 v1.3.0 Near-AGI 23-Layer Cognitive Architecture
+- **Full 23-layer autonomous cognitive architecture** (4 lobus: SELF / THINKING / MEMORY / ACTION / LEARNING) built per AGI-2026 research synthesis.
+- **Wave A (SELF+MEMORY):** `identityModel.ts` (CoreMission: companion AGI otonom AgenMonster), `goalHierarchy.ts` (tiered core/long/mid/daily goals), `worldModelGraph.ts` (entity+relation graph, persistent via localStorage), `conceptFormation.ts` (abstraction hierarchy — differentiator).
+- **Wave B (THINKING):** `metaCognition.ts` (belief/confidence/missing/next_action), `simulation.ts` (counterfactual rollout), `attentionEconomy.ts` (priority = impact×urgency×confidence−cost).
+- **Wave C (AGENCY):** `executivePlanner.ts` (decompose/dependency/replan), `alignmentLayer.ts` (hard constraints + soft prefs), `experimentEngine.ts` (hypothesis→measure→causal update), `socialCognition.ts` (Theory of Mind), `policyHabits.ts` (habit formation), `toolOrchestration.ts` (plan→dry-run→execute→verify→rollback).
+- **Wave D (integration):** all wired into `deepRecursiveAgent.runDeepTurn` via `runCognitionLayer`; `composeSelfNarrative` writes a first-person autobiography to the vault; `pet-form-evolved` drives **live + permanent visual evolution**; "Life Log" sidebar panel displays the pet's self-narrative.
+- **Autonomous modes UI:** `START 3H` (AutonomousAgent) + `DEEP 1H` (DeepRecursiveAgent + AutonomousWorld + AutonomousSelfCare) buttons with live status in `+page.svelte`.
+- **Kilo provider added**: `kilo-auto/free` default model wired into `LLMProvider` type + `llmProxyCore.ts` PROVIDERS map.
+- **Null-safety hardening**: `achievements.ts`, `autonomousWorld.ts`, `gameState.ts`, `agentToolCall.ts` — all guarded against undefined state in test/browser environments.
+- **Build fixes**: removed circular `manualChunks` in `vite.config.ts`, restored missing exports in `chatEngine.ts` (`dispatchAgentToolWithHooks`), `selfCorrect.ts` (`recordRetryOutcome`, `getRetryConfidenceStats`), `gameState.ts` (`items: []` in `createInitialState`).
+
+## 🚀 v1.1.0 Performance + Workspace
+- **Lag fixes at the source** — `PixelPetV2` render loop capped at 30fps animated / 10fps idle; always-mounted mini pet canvas removed from `MonsterHeader` (static icon); `+page.svelte` rAF-coalesces bursty `gamestate-change` events; `dispatchEvent` returns a cached singleton so unchanged state never re-renders panels.
+- **Fully collapsible workspace** — left/right sidebars + bottom bar toggle; ChatPanel CONTROLS collapsed by default (taller chat viewport).
+- **Readable type scale** — `--fs-xs` 11px → `--fs-xl` across all core panels.
+- **Pet speech throttling** — `petSpeech.ts` 90s cooldown + dedup.
+
+## 🚀 v1.0.4 Infrastructure Complete (this session)
+- **libp2p P2P transport enabled** — full dependency chain installed (libp2p @0.43.0 + 10 sub-deps)
+- **Visual regression testing** — Playwright snapshot testing with 9 scenarios, UPDATE_SNAPSHOTS support
+- **Load testing baseline** — k6 scripts with 4 scenarios (smoke/load/stress/spike), automated runner
+- **Chaos engineering harness** — failure injection with 6 predefined scenarios, 15 tests passing
+
 ## 0. Identity (carried from PROGRESS.md)
 - **Web-only SvelteKit 5 + Svelte runes**, static build via `adapter-static`.
 - **Production server via `server.mjs`** (zero-dep).
 - **All keys server-side**; LLM proxy in vite.config.ts (dev) and server.mjs (prod).
-- **Tests**: 300/300 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+- **Tests**: 871/871 passing. svelte-check: 0 errors, 0 warnings. Build: green.
 - **About panel** = source of truth. Every visible feature must show in About.
+- **E2E**: 10/10 pass (chromium, production build).
 
 ## 1. Tier audit
 - Tier-1 CORE: ✅ shipped (SSE stream, cancel, escape, tests, lint, build).
@@ -20,136 +59,89 @@
 - Tier-6 UI ENRICHMENT: ✅ shipped (Diagnostics, MemoryPanel, BottomStatusBar LIVE, MonsterStatus heartbeat).
 - Tier-7 OBSERVABILITY: ✅ shipped (token tracker, cost, latency, success/fail).
 - Tier-MAX ROADMAP (9 items): ✅ all shipped — cost guard, session-end reflection, multi-conversation threads (state + UI), memory ontology, self-correction (heuristic + real retry), graph viz, dark theme, MCP bridge (transport-agnostic + HTTP).
+- Tier-WORLD: ✅ shipped — world engine, event engine, pet evolution, hub growth, items, NPC friendship, story quests.
+- Tier-DAILY-COMPANION: ✅ shipped — 5 levels (moodEnergy → analytics + backup).
 
 ## 2. Critical gaps (the reason for this plan)
 
-After exhausting Tier-Max, three *real* gaps remain that turn AgenMonster from
-"talks" into "does":
+After exhausting Tier-Max + Tier-WORLD + Tier-DAILY-COMPANION, three *real* gaps remain:
 
-### GAP A: pet does not DO — no goal-oriented loop
-The pet talks fluently, but if the user says "deploy this to AWS", nothing
-in the pipeline:
+### GAP A: Shop UI + currency system
+Items exist but there's no visual shop interface. Players can't browse/buy/sell items through the UI.
 
-- Creates a Task in `state.activeTasks` from the request.
-- Tracks sub-steps (e.g. plan → write terraform → run plan → run apply → verify).
-- Detects completion in the reply and marks the Task done.
-- Surfaces the active goal in the system prompt so the LLM knows what we're doing.
-- Visually exposes the goal in the UI so the user sees progress.
+### GAP B: Pet needs interactivity
+Pet needs (hunger, affection, energy, focus, mood, motivation, knowledge) affect gameplay but there's no direct interaction model (feed/play/clean actions with item effects).
 
-`gameState.ts` already has `ActiveTask` and `Mission` interfaces, but they are
-populated by static thresholds (e.g. "send 5 messages → mission") — they
-are *rewards*, not *intentions*.
+### GAP C: Story chain expansion
+13 story events exist but they're isolated. Need more area-specific arcs with branching paths and meaningful rewards.
 
-### GAP B: cost-guard has UI for caps but no live feedback
-Caps are persisted, `decideCall` enforces them, but the user has no
-visual progress bar showing "you've used 30% of today's budget". This is the
-missing "calmness" — users should be able to see the bar before they trip
-over it.
+## 3. Forward priorities
 
-### GAP C: agent loop is not pet-shaped
-The system prompt says "you are AgenMonster" but nothing in the runtime makes
-the pet *behave* like an agent loop. It only *responds*. There's no
-"remember what I'm doing" cycle, no "act → observe → update memory" loop.
+### 3.1 Shop UI for NPC stores (closes GAP A)
 
-## 3. The "Next-Gen" tier (Tier-NG)
+**Module**: `src/lib/panels/ShopPanel.svelte` (new)
 
-Items proposed below target the three gaps, in priority order.
+- Browse items by NPC (Rin's shoppe, Vee's stall)
+- Buy/sell with currency tracking
+- Item detail tooltips showing effects
+- Inventory count display
 
-### 3.1 Goal-oriented loop (closes GAP A + C) — **TIER-NG.1, PRIORITY 1**
+**Storage**: Add `currency: number` to `GameState`. Deduct on buy, add on sell.
 
-**Module**: `src/lib/goals.ts` (pure).
+**Tests**: 8+ tests covering buy/sell, currency deduction, inventory limits.
 
-```ts
-interface Goal {
-  id: string;
-  title: string;
-  subSteps: Array<{ id: string; title: string; done: boolean }>;
-  createdAt: number;
-  doneAt?: number;
-  source: 'chat' | 'task_complete' | 'tool_use';
-}
+### 3.2 Pet needs interactivity (closes GAP B)
 
-function inferGoalFromText(text: string): Goal | null;
-function buildGoal(title: string, steps: string[]): Goal;
-function markStepDone(goal: Goal, stepId: string): Goal;
-function detectCompletionFromReply(goal: Goal, reply: string): Goal;
-```
+**Module**: Extend `NeedsPanel.svelte` with action buttons.
 
-**Storage**: `state.goals: Goal[]` in `gameState.ts`. Migrate v1 → v2 by
-adding the field on the next version bump.
+- Feed (uses food items, +energy, +hunger)
+- Play (uses toy items, +affection, -energy)
+- Clean (uses grooming items, +mood, +focus)
+- Sleep (restores energy, time passes)
 
-**System-prompt integration**: `getActiveGoals(state) → Goal[]`. Inject
-top-1 active goal into the system prompt as `Current goal:` block.
+**Effects**: Item effects already defined in `items.ts`. Wire into `gameState.ts` via `useItem()`.
 
-**Auto-detect trigger**: when chat contains imperative intent (`"deploy X"`,
-`"fix this"`, `"build Y"`, `"refactor Z"`), call `inferGoalFromText` and
-add the goal to state.
+**Tests**: 6+ tests covering each action's effect on needs.
 
-**UI**: `GoalsPanel.svelte` in Settings → `11 / GOALS`. Renders active +
-recent-completed goals with sub-step progress bars.
+### 3.3 Story chain expansion (closes GAP C)
 
-**Slash commands**: `/goal <title> [step1 | step2 | ...]`, `/goals`,
-`/done <step>`.
+**Module**: Extend `eventEngine.ts` story events.
 
-**Tests**: 8+ tests covering goal CRUD, intent detection, step completion,
-system-prompt injection.
+- Add 10+ new story events with branching choices
+- Area-specific arcs (home_forest chain, void_sea chain, etc.)
+- Meaningful rewards (items, NPC friendship, hub unlocks)
+- Quest chains with prerequisites
 
-### 3.2 Cost-guard progress bars (closes GAP B) — **TIER-NG.2**
+**Tests**: 10+ tests covering chain progression, prerequisites, rewards.
 
-**Module**: `src/lib/costGuard.ts` already has the math; add `progress(caps,
-snapshot) → { perCallRatio, dailyTotalRatio, perProviderRatio }`.
-
-**UI**: `Diagnostics.svelte` shows progress bars (green <70%, yellow 70-95%,
-red ≥95%) under each KPI. New `progress-bar` style.
-
-**Tests**: 3 tests covering ratio thresholds and color bands.
-
-### 3.3 Active goal visible to pet (UI continuity)
-
-**MonsterStatus** receives `streaming` and an optional `currentGoalTitle`.
-While a goal is active, ribbon-header shows `🎯 <title truncated>` under
-the stage chip.
-
-### 3.4 MCP tool-call for goals
-
-`mcp.ts` adds:
-- `goal.list` — returns active goals.
-- `goal.create` — creates goal from external agent.
-- `goal.mark_done` — marks step done.
-- `goal.complete` — completes entire goal.
-
-## 4. Smaller items ("dangling-completion", "experiment", "polish")
+## 4. Smaller items
 
 ### 4.1 Dangling completion (priority 2)
 
 | Item | Module | Effort |
 |---|---|---|
-| Cost-guard Diagnostics progress bars (NG.2) | Diagnostics.svelte | 1h |
-| Episode detail drill in MemoryPanel | MemoryPanel.svelte | 30m |
-| `mcp-server.mjs` stdio runner | new file | 1h |
-| LLM-tool-call for memory.tools.* | mcp.ts + tools integration | 2h |
-| **Active goal in system prompt** | ChatPanel + goals.ts | 30m (overlaps NG.1) |
+| Currency/credits system | gameState.ts | 2h |
+| Shop UI panel | ShopPanel.svelte | 4h |
+| Pet needs action buttons | NeedsPanel.svelte | 2h |
+| Story chain expansion | eventEngine.ts | 4h |
 
 ### 4.2 Experimental (priority 3)
 
 | Item | Module | Effort |
 |---|---|---|
-| Graph interactivity (click node → show detail) | MemoryGraph.svelte | 1h |
-| Plugin API for custom LLM providers | llmProxyCore.ts + new plugin loader | 3h |
-| TaskFirst chat mode (`/mode goal`) | ChatPanel | 1h |
-| Workflow DSL (`.agenmonster.toml` in repo root) | new | 4h |
+| Playwright e2e in CI matrix | .github/workflows | 2h |
+| FireFox + WebKit e2e validation | playwright.config.ts | 1h |
+| World map minimap | WorldPanel.svelte | 3h |
+| Pet needs urgency indicators | NeedsPanel.svelte | 1h |
 
 ### 4.3 Polish (priority 4)
 
 | Item | Effort |
 |---|---|
-| Mobile responsive layout | 3h |
-| Dark variant for `gb-night` (already done — keep polish) | 0 |
-| Memory pressure indicator (KPI >160/200) | 30m |
-| Toast variants for cost-guard blocks | 30m |
-| `AdvancedSettings` panel | 2h |
-| Persona presets (Terse, Helpful, Sarcastic) | 1h |
-| Inline code-block file-write (`/write <path>` slash) | 2h |
+| Accessibility audit (WCAG 2.2 AA) | 4h |
+| Performance profiling + optimization | 3h |
+| Internationalization (i18n) | 6h |
+| Offline mode (service worker) | 4h |
 
 ## 5. Memory architecture impact (target after NG.1)
 
@@ -164,22 +156,20 @@ That's the full mental model the pet brings to every reply.
 
 ## 6. Acceptance criteria for NG.1
 
-1. Tests ≥ 162 (current 154 + 8).
-2. `svelte-check` clean.
-3. About panel adds `GOALS · AUTOGEN FROM INTENT · STEP TRACKING`.
-4. `docs/PROGRESS.md` gets a new section: `## Tier-NG.1 ✅: goal-oriented loop`.
-5. The pet can demonstrate end-to-end: user says "deploy this to AWS", pet
-   creates a goal with sub-steps, surfaces it in the system prompt, and the
-   next reply acknowledges progress.
+1. Tests ≥ 800 (current 871 passing).
+2. `svelte-check` clean (0 errors, 0 warnings).
+3. About panel adds `SHOP · CURRENCY · PET NEEDS · STORY CHAINS`.
+4. `docs/PROGRESS.md` gets a new section: `## Session 21 — Shop UI + Pet Needs + Story Chains`.
+5. The pet can demonstrate end-to-end: user opens shop, buys item, feeds pet, sees needs change, progresses through story chain.
 
 ## 7. Things explicitly OUT of scope (so we don't get baited)
 
-- **Web search / code execution tools** — those are MCP integrations for future
-  agent platforms, not pet core.
+- **Web search / code execution tools** — those are MCP integrations for future agent platforms, not pet core.
 - **Voice input / output** — outside the desktop scope.
 - **Multi-user collaboration** — single-user companion only.
 - **Cloud sync / accounts** — explicitly offline-first.
 - **Graphify integration** — already rejected (Python runtime, different problem).
+- **Tauri / Rust / Flutter** — web-only since Session 8 pivot.
 
 ## 8. Long-term invariants
 
@@ -191,6 +181,7 @@ These NEVER change:
 4. **About panel = source of truth.** Every visible feature must show.
 5. **`svelte-check` always green.** No warnings accepted.
 6. **Pure logic + DOM glue.** State modules don't import svelte; UI imports them.
+7. **Pixel aesthetic.** No `border-radius`, `backdrop-filter`, `box-shadow`, or spring physics in production CSS.
 
 ## 9. How to use this plan
 
@@ -198,55 +189,26 @@ When you (or another agent) come back and ask "what next?", read this file
 top-down. Pick the highest-priority item in §3 or §4. Ship it fully. Update
 §10 with completion status. Move on.
 
-## 9a. Next-Run Plan (post-session compact)
+## 10. Next-Run Plan (current session)
 
-> Read this section first when starting a fresh session. Highest-value items first.
+### Priority 1: Shop UI + Currency
+- Add `currency: number` to `GameState`
+- Create `ShopPanel.svelte` with item grid, buy/sell buttons
+- Wire buy/sell to `useItem()` + currency deduction
+- Add tests
 
-### Priority 1: Playwright e2e scaffolding (prepare, don't block)
-- Add `tests/e2e/` directory with smoke tests (`.spec.ts`) scaffolded but NOT run.
-- Add `playwright.config.ts` + `package.json` scripts (`test:e2e`, `test:e2e:ui`).
-- Write a PDF snapshot test that executes `server.mjs` in headless mode, hits `/`, asserts `AgenMonster` title.
-- Document in README: "Run `npx playwright install chromium` once, then `npm run test:e2e`."
-- Skip execution in this environment (offline Windows); ship config only.
+### Priority 2: Pet Needs Interactivity
+- Add action buttons to `NeedsPanel.svelte` (feed/play/clean/sleep)
+- Wire actions to `useItem()` + effect system
+- Add urgency indicators (color changes when needs are low)
 
-### Priority 2: Daily Companion Plan (NEW — see `docs/DAILY_COMPANION.md`)
-This is the comprehensive roadmap for making AgenMonster a true daily companion, not just a smart tool. See `docs/DAILY_COMPANION.md` for the full execution plan.
+### Priority 3: Story Chain Expansion
+- Add 10+ new story events to `eventEngine.ts`
+- Add branching choices with prerequisites
+- Add meaningful rewards (items, NPC friendship, hub unlocks)
 
-The plan adds 4 levels (11 weeks) of functionality:
-- **Level 1 (Week 1)**: Companion personality — mood/energy, proactive check-ins, mood-aware system prompt, `/mood` commands
-- **Level 2 (Week 2)**: Companion memory — routine detection, importance-weighted decay, semantic search
-- **Level 3 (Week 3)**: Companion relationships — interaction scoring, relationship tiers, daily recap auto-generated, morning wake-up
-- **Level 4 (Week 4)**: Companion intelligence — suggestions engine, goal persistence, memory index, enhanced export
-- **Level 5 (Week 5+)**: Polish — notifications, presence indicator, analytics dashboard, backup automation, mobile companion, offline intelligence
+### Priority 4: E2E in CI
+- Add `.github/workflows/e2e.yml` with 3-browser matrix
+- Fix any remaining flaky tests
+- Document E2E_URL setup in README
 
-### Priority 3: Bug-hunt pass on recent YOLO code
-Quick audit with grep/static analysis:
-- `ChatPanel.svelte` — check for `any` casts, uninitialized vars, memory leaks (`chatEl`, `inFlightAbort`).
-- `SettingsPanel.svelte` — check `getGameState()` mutation safety; `chatMode` field exists in `GameState`?
-- `MemoryPanel.svelte` — click-outside-to-close episode detail; keyboard accessibility.
-- `Toast` — auto-dismiss timing, stack overflow if >10 toasts.
-
-Fix >3 bugs found, add regression test per fix.
-
-### Priority 4: Memory pressure + cost-guard edge cases
-- Add per-route cost breakdown in Diagnostics (not just total).
-- Add "Last 24h" toggle in Diagnostics.
-- Add "Reset budget" button alongside "Reset stats".
-- Memory pressure: add `facts` count bar (currently only episodes/facts count shown, but facts bar missing).
-
-### Priority 5: Documentation + README refresh
-- `README.md` updated ✅ (web-only SvelteKit architecture, 300 tests).
-- `docs/PROGRESS.md` updated ✅ (Session 8: 300 tests, all NG features).
-- `docs/PLAN.md` updated ✅ (test count, dangling-completion status, daily companion plan).
-- `AGENTS.md` updated ✅ (agent compact summary).
-- `docs/DAILY_COMPANION.md` NEW ✅ (comprehensive daily companion roadmap — docs/DAILY_COMPANION.md).
-
-### Skip (out-of-scope, deferred indefinitely)
-- Plugin API for custom LLM providers
-- Workflow DSL `.agenmonster.toml`
-- Multi-user / cloud sync
-
-### Daily Companion Roadmap
-- Full execution plan: `docs/DAILY_COMPANION.md`
-- 5 levels (11 weeks), 80+ new tests, 380 total target
-- Start Week 1 Day 1 with `src/lib/moodEnergy.ts` (foundation of all companion features)

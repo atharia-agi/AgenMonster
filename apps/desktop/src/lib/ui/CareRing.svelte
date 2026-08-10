@@ -56,7 +56,7 @@
       dominant-baseline="middle"
       class="ring-text"
     >
-      {value}
+      {Math.round(value)}
     </text>
   </svg>
 </div>
@@ -68,13 +68,12 @@
     justify-content: center;
     position: relative;
     flex-shrink: 0;
-    image-rendering: pixelated;
   }
   .care-ring.low .ring-seg.lit {
-    animation: ring-pulse 1s steps(2) infinite;
+    animation: ring-pulse 1s ease-in-out infinite;
   }
   .ring-seg {
-    transition: stroke 0.2s steps(2);
+    transition: stroke 0.2s var(--ease-default);
   }
   .ring-seg.lit {
     filter: drop-shadow(0 0 1px currentColor);
@@ -82,11 +81,11 @@
   .ring-text {
     font-family: var(--font-body);
     font-size: 7px;
-    fill: var(--gb-text, #0f380f);
-    font-weight: bold;
+    fill: var(--text-primary);
+    font-weight: 700;
   }
   @keyframes ring-pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
+    50% { opacity: 0.6; }
   }
 </style>

@@ -33,54 +33,56 @@
   .sidebar-panel {
     display: flex;
     flex-direction: column;
-    border: var(--gb-stroke) solid var(--gb-border);
-    background: var(--gb-bg);
-    border-radius: 0 !important;
+    border: 1px solid var(--border-default);
+    background: var(--bg-surface);
     overflow: hidden;
     flex-shrink: 0;
-    image-rendering: pixelated;
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--sp-2);
   }
 
   .sidebar-toggle {
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 5px 8px;
-    background: var(--gb-panel);
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-elevated);
     border: none;
-    border-bottom: var(--gb-stroke) solid var(--gb-border);
+    border-bottom: 1px solid var(--border-default);
     cursor: pointer;
-    transition: background 0.1s steps(2);
+    transition: all var(--duration-fast) var(--ease-default);
     flex-shrink: 0;
-    image-rendering: pixelated;
     font-family: var(--font-body);
+    width: 100%;
+    text-align: left;
   }
-  .sidebar-toggle:hover { background: var(--gb-border); color: var(--gb-bg); }
+  .sidebar-toggle:hover { background: var(--bg-hover); }
 
-  .toggle-icon { font-size: 10px; color: var(--gb-text); }
+  .toggle-icon { font-size: var(--fs-xs); color: var(--text-secondary); }
   .toggle-title {
     flex: 1;
     text-align: left;
-    font-size: 8px;
-    font-weight: bold;
-    color: var(--gb-text);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    color: var(--text-primary);
     text-transform: uppercase;
-    letter-spacing: 0.3px;
+    letter-spacing: 0.05em;
     font-family: var(--font-body);
   }
   .toggle-arrow {
-    color: var(--gb-dark);
-    transition: transform 0.1s steps(2);
+    color: var(--text-muted);
+    transition: transform var(--duration-fast) var(--ease-default);
     display: flex;
   }
   .toggle-arrow.rotated { transform: rotate(90deg); }
 
   .sidebar-body {
-    padding: 2px 4px 4px;
+    padding: var(--sp-1) var(--sp-2) var(--sp-2);
     overflow-y: auto;
     min-height: 0;
   }
   .sidebar-body::-webkit-scrollbar { width: 6px; }
-  .sidebar-body::-webkit-scrollbar-track { background: var(--gb-bg); border: var(--gb-stroke) solid var(--gb-border); }
-  .sidebar-body::-webkit-scrollbar-thumb { background: var(--gb-border); border-radius: 0; }
+  .sidebar-body::-webkit-scrollbar-track { background: transparent; }
+  .sidebar-body::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  .sidebar-body::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 </style>

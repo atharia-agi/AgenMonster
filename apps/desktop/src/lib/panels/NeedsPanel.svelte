@@ -24,31 +24,34 @@
           <CareRing value={val} max={100} color={low ? '#e85050' : '#0f380f'} size={36} />
         </div>
         <span class="need-label">{need.label}</span>
-        <span class="need-val" class:warn={low}>{val}</span>
+        <span class="need-val" class:warn={low}>{Math.round(val)}</span>
       </div>
     {/each}
   </div>
 </div>
 
 <style>
-  .needs-panel { padding: 2px 0; font-family: var(--font-body); image-rendering: pixelated; }
-  .needs-list { display: flex; flex-direction: column; gap: 2px; }
+  .needs-panel { padding: var(--sp-1) 0; font-family: var(--font-body); }
+  .needs-list { display: flex; flex-direction: column; gap: var(--sp-1); }
   .need-row {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 0;
-    border-bottom: 2px solid var(--gb-dark);
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background var(--duration-fast) var(--ease-default);
   }
-  .need-row.low { animation: pulse 1.5s steps(2) infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+  .need-row.low { animation: pulse 1.5s ease-in-out infinite; background: var(--error-subtle); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
   .ring-wrap { width: 36px; height: 36px; flex-shrink: 0; }
   .need-label {
-    color: var(--gb-text);
-    width: 28px;
-    font-size: 7px;
-    font-family: var(--font-body);
+    color: var(--text-secondary);
+    width: 32px;
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    font-weight: 600;
+    letter-spacing: 0.05em;
   }
-  .need-val { color: var(--gb-text); width: 24px; text-align: right; font-size: 7px; font-family: var(--font-body); }
-  .need-val.warn { color: #e85050; }
+  .need-val { color: var(--text-primary); width: 28px; text-align: right; font-size: var(--fs-sm); font-family: var(--font-mono); font-weight: 600; }
+  .need-val.warn { color: var(--error); }
 </style>

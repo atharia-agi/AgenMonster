@@ -28,8 +28,27 @@
   import { downloadState, pickAndImportState } from '$lib/persistence';
   import { APP_VERSION } from '$lib/version';
   import { exportMemoryJSON } from '$lib/memory';
+  import { deriveForm, type PetForm } from '$lib/petForm';
 
   let gs = $state<GameState>(getGameState());
+  let petForm = $state<PetForm | null>(null);
+  $effect(() => {
+    const moodVal = gs.needs?.mood ?? 50;
+    const energyVal = gs.needs?.energy ?? 50;
+    const focusVal = gs.needs?.focus ?? 50;
+    const pleasure = Math.max(0, Math.min(1, 0.5 + moodVal / 100 * 0.5));
+    const activation = Math.max(0, Math.min(1, energyVal / 100 * 0.6 + focusVal / 100 * 0.4));
+    const dominance = 0.5;
+    const lessonDepth = 0.3;
+    const mastery = gs.skills?.length ? Math.max(...gs.skills.map(s => s.level)) / 100 : 0;
+    const energy = energyVal / 100;
+    const levelKey = typeof gs.relationshipLevel === 'number' ? ['stranger','friend','buddy','best_friend','soul_companion'][Math.min(4, Math.max(0, gs.relationshipLevel))] : String(gs.relationshipLevel);
+    const closeness = levelKey === 'soul_companion' ? 1 : levelKey === 'best_friend' ? 0.8 : levelKey === 'buddy' ? 0.6 : levelKey === 'friend' ? 0.4 : 0.2;
+    petForm = deriveForm({
+      stage: gs.stage || 'egg',
+      pleasure, activation, dominance, lessonDepth, mastery, energy, closeness
+    });
+  });
   let leftOpen = $state(true);
   let rightOpen = $state(true);
   // Persist the active tab so a reload returns to where the user left off.
@@ -330,6 +349,43 @@
     window.addEventListener('agenmonster:chat', onChat as EventListener);
     return () => window.removeEventListener('agenmonster:chat', onChat as EventListener);
   });
+
+  let autonomousActive = $state(false);
+  let autonomousTurnCount = $state(0);
+  let deepActive = $state(false);
+  let deepTurnCount = $state(0);
+  let deepStartTime = $state(0);
+  let deepNow = $state(0);
+  let deepSkills = $state(0);
+  let deepErrors = $state(0);
+
+  function formatRuntime(ms: number): string {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    const h = Math.floor(m / 60);
+    if (h > 0) return `${h}h ${m % 60}m`;
+    if (m > 0) return `${m}m ${s % 60}s`;
+    return `${s}s`;
+  }
+
+  async function startAutonomous() {
+    autonomousActive = true;
+    autonomousTurnCount = 0;
+  }
+  function stopAutonomous() {
+    autonomousActive = false;
+  }
+  async function startDeepRecursive() {
+    deepActive = true;
+    deepStartTime = Date.now();
+    deepTurnCount = 0;
+    deepSkills = 0;
+    deepErrors = 0;
+    deepNow = 0;
+  }
+  function stopDeepRecursive() {
+    deepActive = false;
+  }
 </script>
 
 <div class="app-shell" use:setupIdleTimer use:setupProactivity use:useDailyLife>
@@ -374,7 +430,8 @@
       {/if}
     </aside>
 
-    <main class="center">
+    <main class="center" aria-label="AgenMonster main content">
+  <h1 class="sr-only">AgenMonster</h1>
       <MonsterHeader
         stage={gs.stage}
         mood={gs.mood}
@@ -424,7 +481,7 @@
         </div>
       {:else if activeTab === 'welcome'}
         <div class="tab-content">
-          <WelcomeTab onDismiss={() => activeTab = 'workspace'} />
+          <WelcomeTab onDismiss={() => activeTab = 'workspace'} form={petForm} />
         </div>
 {:else}
         <div class="tab-content empty-tab">
@@ -443,7 +500,7 @@
       {#if rightOpen}
         <div class="sidebar-scroll">
           <SidebarPanel title="Pet" icon="★" open={true}>
-            <MonsterRoom stage={gs.stage} mood={gs.mood} level={gs.level} name={gs.name} externalSpeech={gs._pendingSpeech ?? ''} />
+            <MonsterRoom stage={gs.stage} mood={gs.mood} level={gs.level} name={gs.name} externalSpeech={gs._pendingSpeech ?? ''} form={petForm} />
           </SidebarPanel>
           <SidebarPanel title="Skills" icon="▲" open={true}>
             <ActiveSkills skills={gs.skills} />
@@ -479,19 +536,18 @@
     height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--gb-bg);
+    background: var(--bg-base);
     overflow: hidden;
     font-family: var(--font-body);
-    image-rendering: pixelated;
-  }
+    }
 
   .layout {
     flex: 1;
     display: flex;
     min-height: 0;
     overflow: hidden;
-    border-top: var(--gb-stroke) solid var(--gb-border);
-    border-bottom: var(--gb-stroke) solid var(--gb-border);
+    border-top: 1px solid var(--border-default);
+    border-bottom: 1px solid var(--border-default);
   }
 
   .sidebar {
@@ -499,16 +555,12 @@
     flex-direction: column;
     position: relative;
     min-width: 0;
-    background: var(--gb-panel);
-    transition: width 0.15s steps(3);
-  }
-  .sidebar.left {
-    width: 220px;
-    border-right: var(--gb-stroke) solid var(--gb-border);
+    background: var(--bg-surface);
+    transition: width 0.15s ease-in-out;
   }
   .sidebar.right {
     width: 200px;
-    border-left: var(--gb-stroke) solid var(--gb-border);
+    border-left: 1px solid var(--border-default);
   }
   .sidebar.collapsed {
     width: 0;
@@ -529,27 +581,25 @@
     justify-content: center;
     width: 100%;
     padding: 4px 0;
-    background: var(--gb-bg);
+    background: var(--bg-base);
     border: none;
-    border-bottom: 3px solid var(--gb-border);
-    color: var(--gb-dark);
+    border-bottom: 3px solid var(--border-default);
+    color: var(--text-muted);
     cursor: pointer;
     flex-shrink: 0;
-    image-rendering: pixelated;
     z-index: 10;
     position: relative;
   }
-  .sidebar-toggle-btn:hover { background: var(--gb-border); color: var(--gb-bg); }
+  .sidebar-toggle-btn:hover { background: var(--border-default); color: var(--bg-base); }
   .sidebar-toggle-btn svg {
-    transition: transform 0.1s steps(2);
-    image-rendering: pixelated;
+    transition: transform 0.1s ease-in-out;
   }
   .sidebar-toggle-btn svg.flipped {
     transform: rotate(180deg);
   }
   .right-toggle {
     border-bottom: none;
-    border-top: var(--gb-stroke) solid var(--gb-border);
+    border-top: 1px solid var(--border-default);
   }
 
   .sidebar-scroll {
@@ -562,17 +612,8 @@
     min-height: 0;
   }
   .sidebar-scroll::-webkit-scrollbar { width: 6px; }
-  .sidebar-scroll::-webkit-scrollbar-track { background: var(--gb-panel); }
-  .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--gb-dark); border: 1px solid var(--gb-border); }
-
-  .center {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    background: var(--gb-bg);
-  }
+  .sidebar-scroll::-webkit-scrollbar-track { background: var(--bg-surface); }
+  .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--text-muted); border: 1px solid var(--border-default); }
 
   .tab-content {
     flex: 1;
@@ -584,8 +625,8 @@
     gap: 8px;
   }
   .tab-content::-webkit-scrollbar { width: 8px; }
-  .tab-content::-webkit-scrollbar-track { background: var(--gb-panel); border: 2px solid var(--gb-border); }
-  .tab-content::-webkit-scrollbar-thumb { background: var(--gb-border); }
+  .tab-content::-webkit-scrollbar-track { background: var(--bg-surface); border: 2px solid var(--border-default); }
+  .tab-content::-webkit-scrollbar-thumb { background: var(--border-default); }
 
   .empty-tab {
     display: flex;
@@ -593,7 +634,7 @@
     justify-content: center;
     flex-direction: column;
     gap: 12px;
-    color: var(--gb-dark);
+    color: var(--text-muted);
     font-size: 10px;
   }
   .empty-state {
@@ -602,9 +643,9 @@
     align-items: center;
     gap: 10px;
     padding: 24px;
-    border: var(--gb-stroke) dashed var(--gb-dark);
-    color: var(--gb-dark);
-    background: var(--gb-bg);
+    border: 1px dashed var(--text-muted);
+    color: var(--text-muted);
+    background: var(--bg-base);
     max-width: 360px;
     text-align: center;
   }
@@ -612,7 +653,20 @@
   .inventory-extra {
     margin-top: 8px;
     padding: 4px;
-    background: var(--gb-panel);
-    border: var(--gb-stroke) solid var(--gb-border);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
 </style>
+

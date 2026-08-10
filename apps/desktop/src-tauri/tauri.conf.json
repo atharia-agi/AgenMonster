@@ -48,7 +48,7 @@
       "icons/128x128@2x.png",
       "icons/icon.png"
     ],
-    "targets": ["app", "nsis"],
+    "targets": ["app"],
     "publisher": "AgenMonster Team",
     "copyright": "Copyright (c) 2025 AgenMonster Team",
     "shortDescription": "Your evolving AI monster companion",
@@ -63,20 +63,7 @@
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
       "timestampUrl": "http://timestamp.digicert.com",
-      "wix": null,
-      "nsis": {
-        "license": "../../../LICENSE",
-        "installMode": "currentUser",
-        "languages": ["en-US"],
-        "displayLanguageSelector": false,
-        "headerImage": "icons/128x128.png",
-        "sidebarImage": "icons/128x128.png",
-        "installerIcon": "icons/icon.ico",
-        "uninstallerIcon": "icons/icon.ico",
-        "installerHeader": "icons/icon.bmp",
-        "uninstallDisplayName": "AgenMonster Desktop",
-        "runAfterFinish": true
-      }
+      "wix": null
     }
   },
   "plugins": {

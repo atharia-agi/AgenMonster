@@ -72,6 +72,19 @@ export interface ToolDispatchResult {
   toolNote: string;
   /** Whether a tool call was found and executed. */
   called: boolean;
+  /** Whether the caller should retry with a fallback provider. */
+  needsRetry?: boolean;
+}
+
+export interface DispatchAgentToolOptions {
+  provider?: string;
+  riskTolerance?: number;
+  dailySpend?: number;
+  doomLoopDetector?: any;
+  providerFallback?: () => string;
+  onToolCall?: (call: { name: string }, result?: unknown) => void;
+  onRetry?: (attempt: number, reason: string) => void;
+  onNotification?: (message: string, level: string) => void;
 }
 
 /**
@@ -122,4 +135,13 @@ export async function dispatchAgentTool(reply: string): Promise<ToolDispatchResu
     toolNote = `\n\n⚠️ [tool error: ${toolCall.name}] ${e?.message || 'unknown'}`;
   }
   return { stripped, toolNote, called: true };
+}
+
+export async function dispatchAgentToolWithHooks(reply: string, _opts: DispatchAgentToolOptions = {}): Promise<ToolDispatchResult> {
+  const result = await dispatchAgentTool(reply);
+  if (result.called && _opts.onToolCall) {
+    const toolCall = parseAgentToolCall(reply);
+    if (toolCall) _opts.onToolCall({ name: toolCall.name }, result.toolNote);
+  }
+  return { ...result, needsRetry: false };
 }

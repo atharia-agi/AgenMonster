@@ -10,9 +10,9 @@ import {
   SCHEMA_VERSION,
 } from '../src/lib/gameState.ts';
 
-test('fresh state starts at egg with seeded welcome messages', () => {
+test('fresh state starts at baby with seeded welcome messages', () => {
   const s = createInitialState();
-  assert.equal(s.stage, 'egg');
+  assert.equal(s.stage, 'baby');
   assert.equal(s.level, 1);
   assert.equal(s.version, SCHEMA_VERSION);
   assert.ok(s.chatMessages.length >= 2);
@@ -29,11 +29,10 @@ test('chat event grants XP and records the message', () => {
 });
 
 test('stage evolves once XP threshold is crossed', () => {
-  for (let i = 0; i < 20; i++) dispatchEvent({ type: 'chat', data: { text: 'x' } });
+  for (let i = 0; i < 40; i++) dispatchEvent({ type: 'chat', data: { text: 'x' } });
   const after = getGameState();
-  const totalXp = after.xp + (after.level - 1) * 50;
-  assert.ok(totalXp >= 50, 'should have enough total XP to evolve past egg');
-  assert.notEqual(after.stage, 'egg');
+  assert.ok(after.totalXp >= 150, 'should have enough total XP to evolve past baby');
+  assert.equal(after.stage, 'child');
 });
 
 test('migration fills missing nested fields from an older save', () => {

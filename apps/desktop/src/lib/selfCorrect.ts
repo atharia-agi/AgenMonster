@@ -80,3 +80,24 @@ export function evaluateReply(s: QualitySignals): RetryDecision {
 
   return { verdict: 'none', reason: 'within quality threshold' };
 }
+
+interface RetryRecord {
+  verdict: RetryVerdict;
+  confidence: number;
+  success: boolean;
+}
+
+const _retryRecords: RetryRecord[] = [];
+
+export function recordRetryOutcome(verdict: RetryVerdict, confidence: number, success: boolean): void {
+  _retryRecords.push({ verdict, confidence, success });
+  if (_retryRecords.length > 200) _retryRecords.splice(0, _retryRecords.length - 200);
+}
+
+export function getRetryConfidenceStats(): { total: number; successRate: number; avgConfidence: number } {
+  const total = _retryRecords.length;
+  if (total === 0) return { total: 0, successRate: 0, avgConfidence: 0 };
+  const successes = _retryRecords.filter((r) => r.success).length;
+  const avgConfidence = _retryRecords.reduce((acc, r) => acc + r.confidence, 0) / total;
+  return { total, successRate: successes / total, avgConfidence };
+}

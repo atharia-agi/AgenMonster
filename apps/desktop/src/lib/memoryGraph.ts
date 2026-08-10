@@ -7,6 +7,7 @@
 // topics. No real physics simulation — just positions that look sensible.
 
 import type { MemoryState, Fact, Episode } from './memory.ts';
+import { searchMemory } from './memory.ts';
 
 export type GraphNodeKind = 'fact' | 'tag' | 'episode';
 
@@ -25,6 +26,7 @@ export interface GraphEdge {
   from: string;
   to: string;
   weight: number;
+  label?: string;
 }
 
 export interface MemoryGraph {
@@ -32,6 +34,11 @@ export interface MemoryGraph {
   edges: GraphEdge[];
   width: number;
   height: number;
+}
+
+export interface LegacyMemoryGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }
 
 const COLOR_BY_KIND = {
@@ -126,4 +133,37 @@ export function buildMemoryGraph(
   });
 
   return { nodes, edges, width, height };
+}
+
+export interface SpreadingActivationOptions {
+  depth?: number;
+  temporalDecay?: boolean;
+  lateralInhibition?: boolean;
+  topK?: number;
+}
+
+export interface SpreadingActivationResult {
+  episodes: any[];
+  facts: any[];
+}
+
+export function retrieveBySpreadingActivation(
+  query: string,
+  _opts: SpreadingActivationOptions = {},
+): SpreadingActivationResult {
+  const opts = { depth: 2, temporalDecay: true, lateralInhibition: false, topK: 6, ..._opts };
+  const hits = searchMemory(query);
+  const episodes = hits.episodes.slice(0, opts.topK).map((e) => ({
+    id: e.id,
+    title: e.title,
+    detail: e.detail,
+    confidence: e.confidence,
+    sourceLayer: 'episodic',
+  }));
+  const facts = hits.facts.slice(0, opts.topK).map((f) => ({
+    key: f.key,
+    value: f.value,
+    confidence: f.confidence,
+  }));
+  return { episodes, facts };
 }

@@ -57,6 +57,7 @@
       placeholder={disabled ? 'Generating reply… press STOP to cancel' : 'Message AgenMonster...'}
       rows="1"
       {disabled}
+      aria-label="Chat message input"
     ></textarea>
     {#if disabled && onCancel}
       <button class="stop-btn" onclick={cancel} aria-label="Stop generation">
@@ -86,109 +87,101 @@
 
 <style>
   .chat-input-wrap {
-    padding: 4px;
-    background: var(--gb-panel);
-    border-top: 3px solid var(--gb-border);
-    image-rendering: pixelated;
+    margin-top: auto;
+    padding: var(--sp-2);
+    background: var(--bg-elevated);
+    border-top: 1px solid var(--border-default);
+    flex-shrink: 0;
   }
   .chat-input {
     display: flex;
-    gap: 4px;
-    background: var(--gb-bg);
-    border: 3px solid var(--gb-border);
-    padding: 3px;
-    image-rendering: pixelated;
+    gap: var(--sp-1);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--sp-1);
+    transition: border-color var(--duration-fast) var(--ease-default), box-shadow var(--duration-fast) var(--ease-default);
+  }
+  .chat-input:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-subtle);
   }
   textarea {
     flex: 1;
-    background: var(--gb-bg);
+    background: transparent;
     border: none;
-    color: var(--gb-text);
+    color: var(--text-primary);
     font-family: var(--font-body);
-    font-size: 9px;
-    padding: 4px;
+    font-size: var(--fs-sm);
+    padding: var(--sp-1) var(--sp-2);
     resize: none;
     outline: none;
     min-height: 24px;
-    max-height: 60px;
-    image-rendering: pixelated;
+    max-height: 120px;
+    line-height: 1.5;
   }
-  textarea::placeholder { color: var(--gb-dark); }
-  textarea:disabled { color: var(--gb-dark); }
+  textarea::placeholder { color: var(--text-disabled); }
+  textarea:disabled { color: var(--text-disabled); cursor: not-allowed; }
 
   .send-btn {
-    width: 34px;
-    height: 34px;
-    border: 3px solid var(--gb-text);
-    background: var(--gb-border);
-    color: var(--gb-bg);
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    border-radius: var(--radius-md);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    image-rendering: pixelated;
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .send-btn:hover:not(:disabled) { background: var(--gb-text); }
-  .send-btn:disabled { background: var(--gb-dark); color: var(--gb-panel); cursor: not-allowed; }
+  .send-btn:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
+  .send-btn:active:not(:disabled) { transform: translateY(0); }
+  .send-btn:disabled { background: var(--bg-overlay); color: var(--text-disabled); cursor: not-allowed; opacity: 0.5; }
 
   .stop-btn {
-    width: auto;
-    height: 34px;
-    border: 3px solid var(--gb-text);
-    background: var(--gb-text);
-    color: var(--gb-bg);
+    height: 32px;
+    padding: 0 var(--sp-2);
+    background: var(--error);
+    border: none;
+    color: #fff;
+    border-radius: var(--radius-md);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    padding: 0 8px;
+    gap: var(--sp-1);
     flex-shrink: 0;
-    image-rendering: pixelated;
-    animation: stopPulse 1.2s steps(2) infinite;
-  }
-  .stop-btn:hover { background: #c93030; }
-  .stop-sq {
-    width: 10px;
-    height: 10px;
-    background: var(--gb-bg);
-    border: 1px solid var(--gb-bg);
-    display: inline-block;
-  }
-  .stop-lbl {
+    font-size: var(--fs-xs);
+    font-weight: 600;
     font-family: var(--font-body);
-    font-size: 9px;
-    letter-spacing: 1px;
-    color: var(--gb-bg);
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  @keyframes stopPulse {
-    0%, 100% { background: var(--gb-text); }
-    50% { background: #c93030; }
-  }
+  .stop-btn:hover { background: #dc2626; }
 
   .retry-btn {
-    width: 34px;
-    height: 34px;
-    border: 3px solid var(--gb-text);
-    background: var(--gb-bg);
-    color: var(--gb-text);
+    width: 32px;
+    height: 32px;
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    border-radius: var(--radius-md);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    image-rendering: pixelated;
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .retry-btn:hover { background: var(--gb-border); color: var(--gb-bg); }
-  .retry-btn svg { image-rendering: pixelated; }
+  .retry-btn:hover { background: var(--bg-hover); color: var(--text-primary); border-color: var(--border-strong); }
 
   .input-hint {
     display: flex;
     justify-content: space-between;
-    padding: 2px 4px;
-    font-size: 7px;
-    color: var(--gb-dark);
-    font-family: var(--font-body);
+    padding: var(--sp-1) var(--sp-2) 0;
+    font-size: var(--fs-2xs);
+    color: var(--text-disabled);
   }
 </style>

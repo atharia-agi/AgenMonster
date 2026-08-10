@@ -4,7 +4,7 @@
 // If the proxy is unavailable (e.g. static hosting without it), calls fail loudly
 // instead of leaking a key.
 
-export type LLMProvider = 'groq' | 'mistral' | 'openai' | 'openrouter' | 'nousresearch' | 'custom';
+export type LLMProvider = 'groq' | 'mistral' | 'openai' | 'openrouter' | 'nousresearch' | 'kilo' | 'custom';
 
 export interface LLMConfig {
   provider: LLMProvider;

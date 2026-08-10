@@ -9,19 +9,43 @@
     "preview": "vite preview",
     "start": "node server.mjs",
     "lint": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "node --test --experimental-strip-types tests/*.test.ts",
+    "test": "node --test --experimental-strip-types tests/*.test.ts tests/chaos/*.test.ts",
     "test:e2e": "playwright test",
-    "playwright:install": "playwright install chromium"
+    "test:visual": "playwright test --project=chromium --grep @visual",
+    "test:visual:update": "UPDATE_SNAPSHOTS=1 playwright test --project=chromium --grep @visual",
+    "test:load:smoke": "node ../tests/load/run-load-test.js smoke",
+    "test:load:load": "node ../tests/load/run-load-test.js load",
+    "test:load:stress": "node ../tests/load/run-load-test.js stress",
+    "test:load:spike": "node ../tests/load/run-load-test.js spike",
+    "test:chaos": "node --test --experimental-strip-types tests/chaos/*.test.ts",
+    "playwright:install": "playwright install chromium",
+    "bundle:report": "node scripts/bundle-report.mjs",
+    "bundle:check": "node scripts/bundle-report.mjs --check"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
     "@sveltejs/adapter-static": "^3.0.0",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^26.1.1",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",
     "typescript": "^5.0.0",
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "libp2p": "^0.43.0",
+    "@libp2p/websockets": "^0.16.2",
+    "@libp2p/webrtc": "^1.0.0",
+    "@libp2p/mplex": "^1.0.0",
+    "@libp2p/noise": "^1.0.0",
+    "@libp2p/yamux": "^7.0.4",
+    "@libp2p/kad-dht": "^0.28.7",
+    "@libp2p/mdns": "^0.18.0",
+    "@libp2p/bootstrap": "^0.14.0",
+    "@libp2p/circuit-relay-v2": "^0.0.0",
+    "uint8arrays": "^4.0.0",
+    "multiformats": "^12.1.0"
   }
 }

@@ -5,7 +5,7 @@ import { loadStateNative, saveStateNative, loadMemoryNative, saveMemoryNative, l
 import type { Goal } from "./goals.ts";
 import type { ChatThread } from "./threads.ts";
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export type Mood = 'happy' | 'sad' | 'proud' | 'focused' | 'idle' | 'neutral' | 'excited' | 'sleepy' | 'frustrated' | 'tired' | 'thinking' | 'angry';
 export type Stage = 'egg' | 'hatchling' | 'baby' | 'child' | 'teen' | 'adult' | 'mega';
@@ -29,9 +29,11 @@ export interface GameState {
   level: number;
   xp: number;
   xpToNext: number;
+  totalXp: number;
   needs: Needs;
   missions: Mission[];
   completedMissions: number;
+  completedTasks: number;
   name: string;
   activity: string;
   systemPrompt: string;
@@ -54,7 +56,16 @@ export interface GameState {
   activeTasks: ActiveTask[];
   tools: ToolInfo[];
   chatMessages: ChatMessage[];
-  _accumulatedXP: number;
+  items: string[];
+  currency: number;
+  world: any;
+  petEvolution: any;
+  hub: any;
+  personalityType: string;
+  personalityTraits: Record<string, number>;
+  internalMonologue: string[];
+  selfHealing: any;
+  dailyQuests: any[];
   _totalMessages: number;
   _tutorialCompleted: boolean;
   _firstGuidanceShown: boolean;
@@ -171,13 +182,14 @@ const DEFAULT_SKILLS: Skill[] = [
 export function createInitialState(): GameState {
   return {
     version: SCHEMA_VERSION,
-    stage: 'egg',
+    stage: 'baby',
     mood: 'neutral',
     energy: 0.5,
     focus: 0.5,
     level: 1,
     xp: 0,
     xpToNext: 100,
+    totalXp: 0,
     needs: { hunger: 50, affection: 50, energy: 50, focus: 50, mood: 50, motivation: 50, knowledge: 50 },
     missions: [],
     completedMissions: 0,
@@ -203,7 +215,17 @@ export function createInitialState(): GameState {
     activeTasks: [],
     tools: DEFAULT_TOOLS,
     chatMessages: buildWelcomeMessages(),
-    _accumulatedXP: 0,
+    items: [],
+    currency: 0,
+    world: undefined,
+    petEvolution: undefined,
+    hub: undefined,
+    personalityType: 'calm',
+    personalityTraits: {},
+    internalMonologue: [],
+    selfHealing: undefined,
+    dailyQuests: [],
+    completedTasks: 0,
     _totalMessages: 0,
     _tutorialCompleted: false,
     _firstGuidanceShown: false,
@@ -226,31 +248,23 @@ export function createInitialState(): GameState {
 
 const STAGE_THRESHOLDS: Record<string, number> = {
   egg: 0,
+  hatchling: 25,
   baby: 50,
   child: 150,
   teen: 300,
   adult: 500,
+  mega: 750,
 };
 
-function evolveStage(stage: string, totalXp: number): string {
-  const entries = Object.entries(STAGE_THRESHOLDS);
-  let current = stage;
-  for (const [s, threshold] of entries) {
-    if (totalXp >= threshold) current = s;
-  }
-  return current;
-}
+const STAGE_ORDER = Object.keys(STAGE_THRESHOLDS);
+const stageRank = (s: string) => STAGE_ORDER.indexOf(s);
 
-function addXP(state: GameState, amount: number): GameState {
-  let { xp, level, xpToNext, stage } = state;
-  xp += amount;
-  while (xp >= xpToNext) {
-    xp -= xpToNext;
-    level += 1;
-    xpToNext = Math.floor(xpToNext * 1.2);
-    stage = evolveStage(stage, state.xp + amount + (level - 1) * 50);
+function evolveStage(stage: string, totalXp: number): string {
+  let highest = stage;
+  for (const [s, threshold] of Object.entries(STAGE_THRESHOLDS)) {
+    if (totalXp >= threshold) highest = s;
   }
-  return { ...state, xp, level, xpToNext, stage };
+  return stageRank(highest) >= stageRank(stage) ? highest : stage;
 }
 
 export function migrate(old: any): GameState {
@@ -265,6 +279,7 @@ export function migrate(old: any): GameState {
     level: typeof old.level === 'number' ? old.level : base.level,
     xp: typeof old.xp === 'number' ? old.xp : base.xp,
     xpToNext: typeof old.xpToNext === 'number' ? old.xpToNext : base.xpToNext,
+    totalXp: typeof old.totalXp === 'number' ? old.totalXp : base.totalXp,
     needs: { ...base.needs, ...(old.needs || {}) },
     missions: Array.isArray(old.missions) ? old.missions : base.missions,
     completedMissions: typeof old.completedMissions === 'number' ? old.completedMissions : base.completedMissions,
@@ -290,7 +305,17 @@ export function migrate(old: any): GameState {
     activeTasks: Array.isArray(old.activeTasks) ? old.activeTasks : base.activeTasks,
     tools: Array.isArray(old.tools) && old.tools.length > 0 ? old.tools : base.tools,
     chatMessages: Array.isArray(old.chatMessages) ? old.chatMessages : base.chatMessages,
-    _accumulatedXP: typeof old._accumulatedXP === 'number' ? old._accumulatedXP : base._accumulatedXP,
+    items: Array.isArray(old.items) ? old.items : base.items,
+    currency: typeof old.currency === 'number' ? old.currency : base.currency,
+    world: old.world ?? base.world,
+    petEvolution: old.petEvolution ?? base.petEvolution,
+    hub: old.hub ?? base.hub,
+    personalityType: old.personalityType ?? base.personalityType,
+    personalityTraits: typeof old.personalityTraits === 'object' && old.personalityTraits !== null ? old.personalityTraits : base.personalityTraits,
+    internalMonologue: Array.isArray(old.internalMonologue) ? old.internalMonologue : base.internalMonologue,
+    selfHealing: old.selfHealing ?? base.selfHealing,
+    dailyQuests: Array.isArray(old.dailyQuests) ? old.dailyQuests : base.dailyQuests,
+    completedTasks: typeof old.completedTasks === 'number' ? old.completedTasks : base.completedTasks,
     _totalMessages: typeof old._totalMessages === 'number' ? old._totalMessages : base._totalMessages,
     _tutorialCompleted: !!old._tutorialCompleted,
     _firstGuidanceShown: !!old._firstGuidanceShown,
@@ -528,4 +553,36 @@ export function getAdaptationReport(state: GameState): {
     routineCount: state.activeRoutines.length,
     generation: state.evolution.generation,
   };
+}
+
+export function updateAchievements(state: GameState): { newAchievements: string[]; state: GameState } {
+  return { newAchievements: [], state };
+}
+
+export function setPersonalityType(state: GameState, type: string): GameState {
+  return { ...state, personalityType: type };
+}
+
+export function setPersonalityTraits(state: GameState, traits: Record<string, number>): GameState {
+  return { ...state, personalityTraits: traits };
+}
+
+export function useItemOnPet(state: GameState, itemId: string): GameState {
+  const item = (state.items || []).find((id) => id === itemId);
+  if (!item) return state;
+  const without = { ...state, items: (state.items || []).filter((id) => id !== itemId) };
+  return without;
+}
+
+export function addXP(state: GameState, amount: number): GameState {
+  let { xp, level, xpToNext, stage, totalXp } = state;
+  totalXp += amount;
+  xp += amount;
+  while (xp >= xpToNext) {
+    xp -= xpToNext;
+    level += 1;
+    xpToNext = Math.floor(xpToNext * 1.2);
+  }
+  stage = evolveStage(stage, totalXp);
+  return { ...state, xp, level, xpToNext, stage, totalXp };
 }

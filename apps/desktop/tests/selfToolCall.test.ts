@@ -7,7 +7,7 @@ function fresh() {
   resetMemory();
 }
 
-test('TOOLS list has 19 entries after YOLO sweep', () => {
+test('TOOLS list has 19 entries after goal expansion', () => {
   assert.ok(TOOLS.length >= 19);
   assert.ok(TOOLS.includes('goal.list'));
   assert.ok(TOOLS.includes('goal.create'));
@@ -38,10 +38,11 @@ test('handleTool goal.create parses pipe-separated steps', () => {
   assert.equal((r as any).data.created.steps[0].title, 'write terraform');
 });
 
-test('handleTool goal.markdone marks step by substring', () => {
+test('handleTool goal.markdone marks step by id', () => {
   fresh();
   const created = (handleTool('goal.create', { title: 'do stuff', steps: 'alpha|beta|gamma' }) as any).data.created;
-  const r = handleTool('goal.markdone', { goalId: created.id, stepTitle: 'be' });
+  const stepId = created.steps[1].id;
+  const r = handleTool('goal.markdone', { goalId: created.id, stepId });
   assert.equal(r.ok, true);
   assert.equal((r as any).data.goal.steps[1].done, true);
 });
@@ -66,11 +67,12 @@ test('handleTool goal.list returns progress ratios', () => {
 test("handleTool goal.markdone is idempotent — marking done step again keeps done", () => {
   fresh();
   const created = (handleTool('goal.create', { title: 'idem test', steps: 'alpha|beta' }) as any).data.created;
-  handleTool('goal.markdone', { goalId: created.id, stepTitle: 'alpha' });
+  const stepId = created.steps[0].id;
+  handleTool('goal.markdone', { goalId: created.id, stepId });
   const afterFirst = (handleTool('goal.list', {}) as any).data;
   const goal = afterFirst.goals.find((g: any) => g.id === created.id);
   assert.equal(goal.progress.done, 1);
-  handleTool('goal.markdone', { goalId: created.id, stepTitle: 'alpha' });
+  handleTool('goal.markdone', { goalId: created.id, stepId });
   const afterSecond = (handleTool('goal.list', {}) as any).data;
   const goal2 = afterSecond.goals.find((g: any) => g.id === created.id);
   assert.equal(goal2.progress.done, 1);

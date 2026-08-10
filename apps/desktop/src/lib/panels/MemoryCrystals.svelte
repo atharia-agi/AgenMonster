@@ -26,46 +26,50 @@
 </div>
 
 <style>
-  .crystals-panel { padding: 2px 0; font-family: var(--font-body); image-rendering: pixelated; }
+  .crystals-panel { padding: var(--sp-1) 0; font-family: var(--font-body); }
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
-    border-bottom: 3px solid var(--gb-border);
-    padding-bottom: 4px;
+    margin-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: var(--sp-1);
   }
-  .panel-title { font-size: 8px; color: var(--gb-text); text-transform: uppercase; letter-spacing: 0.5px; }
-  .count { font-size: 8px; color: var(--gb-dark); }
+  .panel-title { font-size: var(--fs-xs); color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+  .count { font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); font-weight: 600; }
   .crystals-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 3px;
+    gap: var(--sp-1);
   }
   .crystal {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 2px;
+    gap: var(--sp-1);
+    padding: var(--sp-1);
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast) var(--ease-default);
   }
+  .crystal:hover { background: var(--bg-hover); }
   .crystal-shape {
-    width: 14px;
-    height: 16px;
-    border: 3px solid var(--gb-text);
-    background: var(--gb-border);
-    image-rendering: pixelated;
+    width: 18px;
+    height: 20px;
+    border: 1px solid var(--accent);
+    background: var(--accent-subtle);
+    border-radius: var(--radius-sm);
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .empty-shape { border-color: var(--gb-dark); background: var(--gb-panel); }
+  .empty-shape { border-color: var(--border-default); background: var(--bg-overlay); }
   .crystal-label {
-    font-size: 6px;
-    color: var(--gb-text);
+    font-size: var(--fs-2xs);
+    color: var(--text-secondary);
     text-align: center;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 48px;
-    font-family: var(--font-body);
+    font-family: var(--font-mono);
   }
-  .crystal.empty { opacity: 0.4; }
+  .crystal.empty { opacity: 0.3; }
 </style>

@@ -89,70 +89,71 @@
   .status-bar {
     display: flex;
     align-items: center;
-    background: var(--gb-panel);
-    border-top: var(--gb-stroke) solid var(--gb-border);
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border-default);
     flex-shrink: 0;
-    height: 32px;
+    height: 36px;
     font-family: var(--font-body);
-    image-rendering: pixelated;
   }
 
   .status-tabs {
     display: flex;
-    border-right: var(--gb-stroke) solid var(--gb-border);
+    border-right: 1px solid var(--border-default);
     height: 100%;
   }
   .tab {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 8px;
-    font-size: 7px;
-    color: var(--gb-dark);
-    background: var(--gb-bg);
+    gap: var(--sp-1);
+    padding: 0 var(--sp-2);
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+    background: var(--bg-overlay);
     border: none;
-    border-right: var(--gb-stroke) solid var(--gb-border);
+    border-right: 1px solid var(--border-default);
     cursor: pointer;
     font-family: var(--font-body);
     white-space: nowrap;
-    image-rendering: pixelated;
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .tab:hover { background: var(--gb-border); color: var(--gb-bg); }
-  .tab.active { background: var(--gb-border); color: var(--gb-bg); }
+  .tab:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .tab.active { background: var(--accent-subtle); color: var(--accent); font-weight: 600; }
 
-  .tab-icon { font-size: 9px; }
+  .tab-icon { font-size: var(--fs-xs); }
   .badge {
-    background: var(--gb-bg);
-    color: var(--gb-text);
-    font-size: 6px;
-    padding: 0 3px;
-    border: var(--gb-stroke) solid var(--gb-border);
-    font-family: var(--font-body);
+    background: var(--bg-overlay);
+    color: var(--text-primary);
+    font-size: var(--fs-2xs);
+    padding: 1px var(--sp-1);
+    border: 1px solid var(--border-default);
+    font-family: var(--font-mono);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
   }
   .tab-dot {
-    width: 5px;
-    height: 5px;
-    background: var(--gb-dark);
-    border: var(--gb-stroke) solid var(--gb-border);
-    image-rendering: pixelated;
+    width: 6px;
+    height: 6px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    flex-shrink: 0;
   }
-  .tab-dot.online { background: var(--gb-border); }
+  .tab-dot.online { background: var(--success); box-shadow: 0 0 4px rgba(16, 185, 129, 0.4); }
 
   .status-content {
     flex: 1;
-    padding: 0 8px;
+    padding: 0 var(--sp-2);
     display: flex;
     align-items: center;
     min-width: 0;
     overflow: hidden;
-    font-size: 7px;
-    color: var(--gb-text);
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
   }
 
   .task-list, .tool-list, .console-log {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: var(--sp-1);
     align-items: center;
     width: 100%;
   }
@@ -160,66 +161,71 @@
   .task-chip, .tool-chip {
     display: flex;
     align-items: center;
-    gap: 3px;
-    padding: 2px 6px;
-    background: var(--gb-bg);
-    border: var(--gb-stroke) solid var(--gb-border);
-    color: var(--gb-text);
-    font-size: 7px;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+    font-size: var(--fs-xs);
     font-family: var(--font-body);
+    border-radius: var(--radius-sm);
+    transition: all var(--duration-fast) var(--ease-default);
   }
   .task-dot, .tool-dot {
     width: 5px;
     height: 5px;
-    background: var(--gb-border);
-    image-rendering: pixelated;
+    background: var(--text-muted);
+    border-radius: 50%;
+    flex-shrink: 0;
   }
-  .task-chip.running { background: var(--gb-border); color: var(--gb-bg); }
-  .task-chip.pending { background: var(--gb-panel); color: var(--gb-dark); }
+  .task-chip.running { background: var(--accent-subtle); color: var(--accent); border-color: rgba(99, 102, 241, 0.2); }
+  .task-chip.pending { background: var(--bg-overlay); color: var(--text-muted); border-style: dashed; }
 
   .console-line {
     display: flex;
-    gap: 4px;
-    font-size: 7px;
-    font-family: var(--font-body);
-    color: var(--gb-dark);
+    gap: var(--sp-1);
+    font-size: var(--fs-xs);
+    font-family: var(--font-mono);
+    color: var(--text-muted);
   }
-  .console-role { color: var(--gb-text); min-width: 20px; }
-  .console-text { color: var(--gb-dark); }
+  .console-role { color: var(--text-primary); font-weight: 600; min-width: 24px; }
+  .console-text { color: var(--text-muted); }
 
   .empty-text {
-    font-size: 7px;
-    color: var(--gb-dark);
+    font-size: var(--fs-xs);
+    color: var(--text-disabled);
     font-family: var(--font-body);
+    font-style: italic;
   }
 
   .pet-indicator {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 0 8px;
-    border-left: var(--gb-stroke) solid var(--gb-border);
+    gap: var(--sp-2);
+    padding: 0 var(--sp-2);
+    border-left: 1px solid var(--border-default);
     height: 100%;
-    font-size: 7px;
-    color: var(--gb-text);
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+    font-family: var(--font-mono);
   }
   .stage-badge, .level-badge, .mood-badge {
-    font-size: 7px;
-    color: var(--gb-text);
-    font-family: var(--font-body);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
   }
-  .stage-badge { color: var(--gb-dark); }
   .stream-badge {
-    font-size: 7px;
-    padding: 1px 5px;
-    background: var(--gb-text);
-    color: var(--gb-bg);
-    border: 2px solid var(--gb-border);
-    animation: streamPulse 1.2s steps(2) infinite;
-    image-rendering: pixelated;
+    font-size: var(--fs-xs);
+    padding: 1px var(--sp-1);
+    background: var(--success);
+    color: #fff;
+    border: 1px solid var(--success);
+    border-radius: var(--radius-sm);
+    animation: streamPulse 1.2s ease-in-out infinite;
+    font-weight: 700;
   }
   @keyframes streamPulse {
-    0%, 100% { background: var(--gb-text); }
-    50% { background: #c93030; }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
   }
 </style>

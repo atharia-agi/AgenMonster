@@ -49,7 +49,7 @@ function syncGoalsToState(goals: Goal[]): void {
   } catch {}
 }
 
-export type GoalSource = 'chat' | 'manual' | 'tool';
+export type GoalSource = 'chat' | 'manual' | 'tool' | 'self';
 
 export interface GoalStep {
   id: string;

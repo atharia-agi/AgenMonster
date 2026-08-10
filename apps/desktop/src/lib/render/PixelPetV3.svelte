@@ -814,11 +814,11 @@
   width={width}
   height={height}
   use:setupCanvas
-  on:mousedown={(e) => onPetHold(e.clientY)}
-  on:mouseup={onPetRelease}
-  on:mouseleave={onPetRelease}
-  on:touchstart={(e) => onPetHold(e.touches[0].clientY)}
-  on:touchend={onPetRelease}
-  on:touchcancel={onPetRelease}
+  onmousedown={(e) => onPetHold(e.clientY)}
+  onmouseup={onPetRelease}
+  onmouseleave={onPetRelease}
+  ontouchstart={(e) => onPetHold(e.touches[0].clientY)}
+  ontouchend={onPetRelease}
+  ontouchcancel={onPetRelease}
   style="display: block; touch-action: none;"
-/>
+></canvas>

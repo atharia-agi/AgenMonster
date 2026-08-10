@@ -22,42 +22,44 @@
 
 <style>
   .tasks-panel {
-    padding: 6px;
+    padding: var(--sp-2);
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-1);
     height: 100%;
     font-family: var(--font-body);
-    image-rendering: pixelated;
   }
   .panel-title {
-    font-size: 8px;
-    color: var(--gb-text);
-    border-bottom: 3px solid var(--gb-border);
-    padding-bottom: 4px;
-    margin-bottom: 4px;
+    font-size: var(--fs-xs);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: var(--sp-1);
+    margin-bottom: var(--sp-1);
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
+    font-weight: 700;
   }
   .tasks-list {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: var(--sp-1);
     flex: 1;
     overflow-y: auto;
   }
   .task-row {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 3px 0;
-    border-bottom: 2px solid var(--gb-dark);
-    font-size: 7px;
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: var(--fs-xs);
+    transition: background var(--duration-fast) var(--ease-default);
+    border-radius: var(--radius-sm);
   }
-  .task-status { font-size: 8px; min-width: 48px; flex-shrink: 0; color: var(--gb-dark); }
-  .task-status.running { color: var(--gb-text); background: var(--gb-border); padding: 1px 4px; border: 2px solid var(--gb-text); }
-  .task-status.pending { color: var(--gb-text); }
-  .task-status.queued { color: var(--gb-dark); }
-  .task-title { color: var(--gb-text); text-transform: uppercase; }
-  .empty-text { font-size: 7px; color: var(--gb-dark); }
+  .task-status { font-size: var(--fs-2xs); min-width: 56px; flex-shrink: 0; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em; }
+  .task-status.running { color: var(--success); background: var(--success-subtle); padding: 2px var(--sp-1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: var(--radius-sm); }
+  .task-status.pending { color: var(--text-secondary); }
+  .task-status.queued { color: var(--text-muted); }
+  .task-title { color: var(--text-secondary); text-transform: uppercase; font-size: var(--fs-2xs); letter-spacing: 0.02em; }
+  .empty-text { font-size: var(--fs-xs); color: var(--text-disabled); font-style: italic; }
 </style>

@@ -3,231 +3,301 @@
 Welcome — you're going to add a subsystem to AgenMonster. This guide
 walks through the principles and conventions.
 
-## The 5 rules
+## The 6 rules
 
-1. **Bus-first.** No crate crosses dependencies except through
-   `monster-bus::Bus`. Crates receive their bus handle at boot.
-
-2. **Stream-only LLMs.** `monster-llm` produces streaming events. The
-   agent loop consumes them token-by-token and may dispatch tools
-   mid-stream.
-
-3. **Append-only memory.** No truncation. Decay, never delete.
-
-4. **Cost-capped evolution.** Self-evolution will refuse to run past
-   daily budgets and requires user consent for stage changes.
-
-5. **One runtime.** All crates share one `tokio::runtime::Runtime`. This
-   is what makes "1 brain, 2 bodies" work — desktop and mobile share
-   state via FFI rather than spawning separate processes.
+1. **Pure logic + DOM glue.** State modules don't import Svelte; UI imports them. Keep `src/lib/*.ts` free of framework coupling.
+2. **Server-side keys only.** All LLM calls go through `vite.config.ts` (dev) or `server.mjs` (prod). Never add a direct provider call from the browser.
+3. **Tests grow monotonically.** Never delete a test when shipping. Add ≥1 test per new feature.
+4. **`svelte-check` always green.** No warnings accepted. Fix them before committing.
+5. **State persistence versioned.** Every `GameState` schema change needs a migration path in `gameState.ts`.
+6. **About panel = source of truth.** Every visible feature must appear in the About section.
 
 ## CLI Commands
 
 ```bash
-# Start the pet
-cargo run -p monster-cli -- run [--stage <stage>]
+# Start dev server (LLM proxy + HMR)
+npm run dev
 
 # Health checks
-cargo run -p monster-cli -- doctor
+npm run lint         # svelte-check (0 errors, 0 warnings)
 
-# Show detected API keys
-cargo run -p monster-cli -- keys
+# Run tests
+npm test             # 518 unit tests (node --test, no deps)
+npm run test:e2e     # Playwright e2e (10/10 pass, needs preview server)
 
-# List available models + auto-selection
-cargo run -p monster-cli -- models
-
-# Quick LLM chat test (streaming)
-cargo run -p monster-cli -- chat "Hello, what are you?"
-
-# Quick web search test
-cargo run -p monster-cli -- search "what is rust programming"
-
-# Full runtime state dump
-cargo run -p monster-cli -- status
-
-# Manually trigger evolution
-cargo run -p monster-cli -- evolve
-
-# Run benchmarks
-cargo run -p monster-cli -- bench
-
-# Export SFX files
-cargo run -p monster-cli -- sfx [--output static/ogg]
+# Build
+npm run build        # static SPA to build/
+npm run preview      # preview production build
+npm run start        # zero-dep Node server (built SPA + LLM proxy)
 ```
 
-## API Key Configuration
+## Environment Variables
 
 Create a `.env` file in the project root:
 
 ```env
-# Groq (free tier, 11 keys for rotation)
+# LLM Providers
 GROQ_API_KEY=gsk_...
-GROQ_API_KEY_1=gsk_...
-# ... up to GROQ_API_KEY_10
-
-# Mistral (10 keys)
-MISTRAL_API_KEY_1=...
-# ... up to MISTRAL_API_KEY_10
-
-# Other providers (optional)
+MISTRAL_API_KEY=...
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
 GEMINI_API_KEY=...
+NOUS_API_KEY=...
 
-# Search APIs
+# Search APIs (optional)
 TAVILY_API_KEY=tvly-...
 BRAVE_API_KEY=BSA...
+
+# Custom provider (optional)
+CUSTOM_ENDPOINT=https://your-proxy/v1
+CUSTOM_API_KEY=...
 ```
 
-Keys are auto-loaded via `dotenvy` at startup. The ModelSelector detects
-which providers are available and picks the best model per task.
+Keys are loaded via `dotenv` in `vite.config.ts` (dev) and `server.mjs` (prod).
+The browser never sees these keys.
 
-## Model Selection
+## Building a new feature
 
-The `ModelSelector` picks models based on task type:
+### 1. Pure logic module (`src/lib/`)
+Add a new `.ts` file with no Svelte imports. Export pure functions and types.
 
-| Task Type | Selection Logic |
-|-----------|----------------|
-| `chat` | Balanced quality + cost |
-| `code` | Prefers code-specialized models |
-| `creative` | Flagship models |
-| `vision` | Only vision-capable models |
-| `fast` | Ultra-fast providers |
-| `summarize` | Cost-effective for large context |
-| `analyze` | Large context + high quality |
-
-## Building a new tool
-
-Add a new tool in `crates/monster-tools/src/`. Use the `Tool` trait:
-
-```rust
-use crate::registry::{Tool, ToolInput, ToolOutput, ToolKind, ToolRegistry};
-
-pub struct MyTool;
-#[async_trait::async_trait]
-impl Tool for MyTool {
-    fn kind(&self) -> ToolKind { ToolKind::Browser }
-    fn name(&self) -> &'static str { "my.tool" }
-    fn description(&self) -> &'static str { "What it does, semantically clear." }
-    fn permission(&self) -> Permission { Permission::Safe }
-    async fn run(&self, input: ToolInput) -> ToolOutput {
-        ToolOutput::ok(serde_json::json!({}))
-    }
+```ts
+// src/lib/myFeature.ts
+export interface MyState {
+  count: number;
+  lastUpdate: number;
 }
 
-pub fn register(reg: &ToolRegistry) {
-    reg.register(MyTool);
+export function createInitial(): MyState {
+  return { count: 0, lastUpdate: Date.now() };
+}
+
+export function increment(state: MyState): MyState {
+  return { ...state, count: state.count + 1, lastUpdate: Date.now() };
 }
 ```
 
-Then call `register` from `bootstrap_global()` in `Cargo.toml::web`.
+### 2. Tests (`tests/`)
+Add a corresponding `.test.ts` file. Use `node --test` (built-in test runner).
 
-### Safety
+```ts
+// tests/myFeature.test.ts
+import { test } from 'node:test';
+import { assert } from 'node:assert';
+import { createInitial, increment } from '../src/lib/myFeature';
 
-- `Permission::Safe` — no consent prompt
-- `Permission::LocalFile` — single confirmation if first time today
-- `Permission::SandboxedCode` — runs in subprocess; requires user OK
-- `Permission::OsControl` — needs user OK EACH call
-
-## Building a new skill
-
-Skills live as `SKILL.md` files under `/skills/<topic>/`. Format:
-
-```markdown
----
-name: <kebab-case>
-description: <pushy, full-sentence, ≥40 chars>
----
-# Title
-
-## Workflow
-1. step
-2. step
-
-## Examples
-**Example 1:**
-Input: ...
-Output: ...
+test('increment increases count', () => {
+  const state = createInitial();
+  const next = increment(state);
+  assert.equal(next.count, 1);
+});
 ```
 
-After authoring, run `cargo run -p monster-cli -- skills validate`.
+### 3. UI component (`src/lib/panels/`)
+Import the pure module and wire it to `GameState`.
 
-## Building a new game-stage
+```svelte
+<!-- src/lib/panels/MyPanel.svelte -->
+<script lang="ts">
+  import { createInitial, increment } from '$lib/myFeature';
+  import type { GameState } from '$lib/gameState';
 
-Stages are defined in `stages.json` and drive:
+  let { state }: { state: GameState } = $props();
+  let local = $state(createInitial());
+</script>
+```
 
-- Palette (7 colors, strict NES/SNES discipline)
-- Sprite personality (eye style, tail, wings, accent)
-- Tile background pattern
-- Energy stats (cap, regen, max skills)
-- Personality description
-- Dream text templates
+### 4. Wire into `+page.svelte`
+Add a new tab in `TopNav` and a corresponding `{:else if activeTab === 'mytab'}` block.
 
-## Token-Driven Evolution
+## Building a new slash command
 
-Every API call feeds XP to the monster:
+Add to `src/lib/commands/slashCommands.ts`:
 
-```rust
-// In your agent loop after an LLM call:
-let response = router.route_stream(prompt, task, |chunk| {}).await?;
-runtime.feed_tokens(response.total_tokens);
-
-// Check if evolution happened
-if let Some(new_stage) = runtime.try_evolve() {
-    // Monster evolved! Trigger cutscene, update render, etc.
+```ts
+export function handleSlashCommand(input: string, gs: GameState): string {
+  if (input.startsWith('/mycommand')) {
+    // ... logic
+    return 'Result message';
+  }
 }
 ```
 
-## Running Tests
+## Building a new MCP tool
 
-```bash
-# Run all 134 tests
-cargo test --workspace
+Add to `src/lib/mcp.ts`:
 
-# Check for warnings
-cargo check --workspace
+```ts
+export async function handleTool(name: string, params: any): Promise<{ok: boolean; data?: any; error?: string}> {
+  if (name === 'my.tool') {
+    return { ok: true, data: { result: 'done' } };
+  }
+}
+```
 
-# Run specific crate tests
-cargo test -p monster-llm
-cargo test -p monster-runtime
-cargo test -p monster-tools
+Then expose via HTTP in `server.mjs` (`POST /api/mcp`) and/or stdio in `src/mcp-server.mjs`.
+
+## Building a new world area
+
+Add to `src/lib/worldEngine.ts`:
+
+```ts
+export const AREAS: Area[] = [
+  // ... existing areas
+  {
+    id: 'new_area',
+    name: 'New Area',
+    minLevel: 10,
+    encounterTable: [...],
+    weatherChances: { clear: 0.5, rain: 0.3, fog: 0.2 },
+    npcs: [],
+    decorations: [],
+  },
+];
 ```
 
 ## Project Structure
 
 ```
 agenmonster/
-├── crates/
-│   ├── monster-bus/        # Typed event bus
-│   ├── monster-core/       # Common types
-│   ├── monster-llm/        # LLM routing + ModelSelector
-│   ├── monster-memory/     # SQLite memory
-│   ├── monster-tools/      # 15+ tools
-│   ├── monster-agent/      # Agent loop
-│   ├── monster-evolve/     # Skill library
-│   ├── monster-pixel/      # Pixel art engine
-│   ├── monster-audio/      # Chiptune synth
-│   ├── monster-tile/       # Tile patterns
-│   ├── monster-render/     # Render subsystem
-│   ├── monster-runtime/    # System boot
-│   ├── monster-cli/        # CLI interface
-│   ├── monster-ffi/        # C ABI
-│   ├── monster-sync/       # libp2p sync
-│   ├── monster-a11y/       # Accessibility
-│   ├── monster-bench/      # Benchmarks
-│   ├── monster-scheduler/  # Cron jobs
-│   ├── monster-telemetry/  # Metrics
-│   ├── monster-skills/     # Skill registry
-│   ├── monster-asset/      # Asset pipeline
-│   ├── monster-optim/      # Optimizations
-│   ├── monster-tests/      # Integration tests
-│   └── marketplace-registry/ # HTTP server
-├── skills/                 # Shipped skills
 ├── apps/
-│   ├── desktop/            # Tauri + Svelte
-│   └── mobile/             # Flutter
+│   └── desktop/                # SvelteKit 5 web app
+│       ├── src/
+│       │   ├── lib/
+│       │   │   ├── gameState.ts      # GameState interface + persistence
+│       │   │   ├── worldEngine.ts    # World areas, weather, seasons
+│       │   │   ├── eventEngine.ts    # NPCs, encounters, story events
+│       │   │   ├── petEvolution.ts   # Forms, paths, evolution logic
+│       │   │   ├── hubGrowth.ts      # Services, quests, decorations
+│       │   │   ├── items.ts          # Item definitions, effects, shop helpers
+│       │   │   ├── exploration.ts    # Movement, AI, interactions
+│       │   │   ├── gameLoop.ts       # 30s tick for world/evolution/hub
+│       │   │   ├── panels/           # Svelte UI components
+│       │   │   ├── commands/         # Slash command handlers
+│       │   │   └── render/           # Canvas renderers (PixelPetV2)
+│       │   └── routes/               # SvelteKit routes
+│       ├── tests/
+│       │   ├── *.test.ts             # Unit tests (node --test)
+│       │   └── e2e/                  # Playwright e2e tests
+│       ├── server.mjs                # Production server (zero-dep)
+│       └── vite.config.ts            # Dev server + LLM proxy
 ├── docs/
-│   ├── rfcs/               # Architecture RFCs
-│   └── design/             # Design docs
-└── .env                    # API keys (not committed)
+│   ├── PLAN.md                      # Forward plan
+│   ├── DAILY_COMPANION.md           # Daily companion roadmap
+│   └── changelog/                   # Historical changelogs
+├── .env                             # API keys (not committed)
+└── README.md                        # Project overview
 ```
+
+## Running Tests
+
+```bash
+# Unit tests (871 passing)
+npm test
+
+# Lint (0 errors, 0 warnings)
+npm run lint
+
+# Build (green)
+npm run build
+
+# E2E (10/10 pass, needs preview server)
+# Terminal 1: npm run preview -- --port 4173
+# Terminal 2: E2E_URL=http://localhost:4173 npx playwright test
+```
+
+## Conventions
+
+- **No `as any` casts.** Use proper types or `unknown` + type guards.
+- **No `border-radius`, `backdrop-filter`, `box-shadow`.** Pixel aesthetic only.
+- **No transitions >250ms.** Use `steps()` for pixel animations.
+- **All colors from CSS variables.** `--gb-bg`, `--gb-panel`, `--gb-border`, `--gb-text`, `--gb-stroke`.
+- **Fonts**: Inter for body, Plus Jakarta Sans for headings. 14px base.
+- **Mobile**: media queries at 768px and 480px.
+- **Accessibility**: `role`, `tabindex`, `onkeydown` for interactive elements.
+
+## Svelte 5 Runes Cheat Sheet
+
+AgenMonster uses Svelte 5 runes for reactivity. No more `let` + `$:` for reactive declarations.
+
+### `$state` — reactive variable
+
+```svelte
+<script lang="ts">
+  let count = $state(0);
+  let user = $state({ name: 'Monster', level: 1 });
+</script>
+
+<button onclick={() => count++}>Count: {count}</button>
+<p>{user.name} — Lv{user.level}</p>
+```
+
+Rules:
+- Mutate properties directly: `user.level = 2` (no spread needed)
+- Arrays: `items.push('new')` or `items = [...items, 'new']`
+- Objects: assign the whole object to trigger reactivity
+
+### `$derived` — computed value
+
+```svelte
+<script lang="ts">
+  let count = $state(0);
+  let doubled = $derived(count * 2);
+</script>
+
+<p>Count: {count}, Doubled: {doubled}</p>
+```
+
+### `$effect` — side effect
+
+```svelte
+<script lang="ts">
+  let count = $state(0);
+  
+  $effect(() => {
+    console.log('Count changed to', count);
+    return () => console.log('Cleanup');
+  });
+</script>
+```
+
+### `$props` — component props
+
+```svelte
+<script lang="ts">
+  let { name, age = 18 }: { name: string; age?: number } = $props();
+</script>
+
+<p>{name} is {age} years old</p>
+```
+
+### `$bindable` — two-way binding prop
+
+```svelte
+<script lang="ts">
+  let { value = $bindable('') }: { value: string } = $props();
+</script>
+
+<input bind:value />
+```
+
+### Component patterns
+
+```svelte
+<!-- Event forwarding -->
+<button onclick={() => dispatch('select', item.id)}>Select</button>
+
+<!-- Slot -->
+<div class="panel"><slot /></div>
+
+{#if condition}
+  <Child />
+{/if}
+```
+
+### Anti-patterns to avoid
+
+- DON'T use `$:` for reactive declarations — use `$derived`
+- DON'T use `export let` for props — use `$props()`
+- DON'T use `on:click` — use `onclick`
+- DON'T use `<script context="module">` — not supported in Svelte 5

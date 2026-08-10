@@ -13,6 +13,7 @@ import { existsSync } from 'node:fs';
 import { readFile as readFileP, stat as statP } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
 import { availableProviders, prepareUpstreamRequest, readBody } from './llmProxyCore.ts';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
@@ -43,6 +44,123 @@ async function loadEnv() {
 }
 
 const ENV = await loadEnv();
+
+// ── External tool bridge (secondbrain.* / browseros.*) ──
+// Mirrors the SvelteKit /api/mcp route so the agent loop reaches SecondBrain
+// and BrowserOS tools in production as well as in dev.
+const OM_MCP = 'K:\\SecondBrain\\.claude\\scripts\\om-mcp.mjs';
+const OM_CWD = 'K:\\SecondBrain\\.mcp';
+const OM_TIMEOUT = 15000;
+const BROWSEROS_URL = 'http://127.0.0.1:9001/mcp';
+const BROWSEROS_TIMEOUT = 30000;
+
+async function callBrowserOS(name, params) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), BROWSEROS_TIMEOUT);
+  try {
+    const resp = await fetch(BROWSEROS_URL, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name, arguments: params },
+      }),
+      signal: controller.signal,
+    });
+    const data = await resp.json();
+    return { content: data?.result?.content ?? [] };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function callSecondBrain(name, params) {
+  return new Promise((resolve, reject) => {
+    const child = spawn('node', [OM_MCP], {
+      cwd: OM_CWD,
+      env: { ...process.env, OBSIDIAN_VAULT: 'K:\\SecondBrain\\Monster_Brain' },
+    });
+    let collected = '';
+    let msgId;
+    try {
+      msgId = Date.now();
+    } catch {
+      msgId = 1;
+    }
+    const msg = JSON.stringify({
+      jsonrpc: '2.0',
+      id: msgId,
+      method: 'tools/call',
+      params: { name, arguments: params },
+    });
+    const timer = setTimeout(() => {
+      try { child.kill(); } catch {}
+      reject(new Error('secondbrain timeout'));
+    }, OM_TIMEOUT);
+    child.stdout.on('data', (chunk) => {
+      collected += chunk.toString();
+      let idx;
+      while ((idx = collected.indexOf('\n')) >= 0) {
+        const line = collected.slice(0, idx).trim();
+        collected = collected.slice(idx + 1);
+        if (!line.startsWith('{"jsonrpc"')) continue;
+        try {
+          const resp = JSON.parse(line);
+          if (resp.id === msgId) {
+            clearTimeout(timer);
+            try { child.kill(); } catch {}
+            resolve(resp.result);
+            return;
+          }
+        } catch {}
+      }
+    });
+    child.stderr.on('data', () => {});
+    child.on('error', (e) => {
+      clearTimeout(timer);
+      reject(e);
+    });
+    try {
+      child.stdin.write(msg + '\n');
+    } catch (e) {
+      clearTimeout(timer);
+      reject(new Error('secondbrain write failed: ' + (e instanceof Error ? e.message : String(e))));
+    }
+  });
+}
+
+async function routeMcpTool(handleTool, name, params) {
+  if (typeof name !== 'string' || !name) return { ok: false, error: 'missing name' };
+  const localNames = await import('./mcp.ts').then((m) => m.TOOLS).catch(() => []);
+  if (localNames.includes(name)) return handleTool(name, params);
+  if (name.startsWith('secondbrain.')) {
+    const sbName = name.slice('secondbrain.'.length);
+    const result = await callSecondBrain(sbName, params);
+    const text = result?.content?.[0]?.text ?? '';
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { text };
+    }
+    return { ok: true, data };
+  }
+  if (name.startsWith('browseros.')) {
+    const boName = name.slice('browseros.'.length);
+    const result = await callBrowserOS(boName, params);
+    const text = result?.content?.[0]?.text ?? '';
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { text };
+    }
+    return { ok: true, data };
+  }
+  return { ok: false, error: `Unknown tool: ${name}` };
+}
 
 const SYNC_MESSAGES = [];
 const SYNC_MAX_MESSAGES = 1000;
@@ -147,6 +265,9 @@ const server = createServer(async (req, res) => {
     // ── MCP-style tool bridge: dispatch `handleTool(name, params)`. Returns
     // JSON. Stateful tools (memory.*, chat.budget.set, chat.theme) mutate
     // server-side modules that are also imported by the SPA bundle on dev.
+    // External tools (secondbrain.* / browseros.*) bridge to the SecondBrain
+    // om-mcp process and the BrowserOS MCP endpoint, matching the SvelteKit
+    // /api/mcp route so chat's agent loop reaches them in production too.
     if (req.method === 'POST' && pathname === '/api/mcp') {
       if (!checkRateLimit(req)) {
         const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress || 'unknown';
@@ -172,7 +293,7 @@ const server = createServer(async (req, res) => {
         }
         const name = String(body?.name || '');
         const params = body?.params || {};
-        const result = handleTool(name, params);
+        const result = await routeMcpTool(handleTool, name, params);
         writeJson(res, result.ok ? 200 : 400, result);
       } catch (e) {
         writeJson(res, 500, { ok: false, error: e?.message || 'mcp error' });
@@ -199,11 +320,20 @@ const server = createServer(async (req, res) => {
         return;
       }
       const raw = (await readBody(req)) || '{}';
+      if (raw.length > 65536) {
+        writeJson(res, 413, { ok: false, error: 'message too large' });
+        return;
+      }
       let msg;
       try {
         msg = JSON.parse(raw);
       } catch {
         writeJson(res, 400, { ok: false, error: 'invalid JSON body' });
+        return;
+      }
+      if (typeof msg !== 'object' || msg === null || Array.isArray(msg)
+        || typeof msg.deviceId !== 'string' || !msg.deviceId || msg.deviceId.length > 100) {
+        writeJson(res, 400, { ok: false, error: 'missing or invalid deviceId' });
         return;
       }
       msg._receivedAt = Date.now();

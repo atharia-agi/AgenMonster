@@ -21,9 +21,7 @@
 </script>
 
 <div class="bond-panel">
-  <div class="level-name" style="color:var(--gb-text)">
-    {levelLabels[levelKey] || levelKey.toUpperCase()}
-  </div>
+  <div class="level-name">{levelLabels[levelKey] || levelKey.toUpperCase()}</div>
   <div class="hearts-row">
     {#each hearts() as filled}
       <span class="heart" class:filled>{filled ? '♥' : '♡'}</span>
@@ -38,23 +36,24 @@
 </div>
 
 <style>
-  .bond-panel { padding: 4px 0; text-align: center; font-family: var(--font-body); image-rendering: pixelated; }
-  .level-name { font-size: 8px; margin-bottom: 2px; }
+  .bond-panel { padding: var(--sp-2) 0; text-align: center; font-family: var(--font-body); }
+  .level-name { font-size: var(--fs-xs); font-weight: 700; margin-bottom: var(--sp-1); color: var(--text-primary); letter-spacing: 0.05em; }
   .hearts-row {
     display: flex;
     justify-content: center;
-    gap: 3px;
-    margin-bottom: 4px;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-1);
   }
   .heart {
-    font-size: 10px;
-    color: var(--gb-panel);
-    border: 2px solid var(--gb-border);
-    image-rendering: pixelated;
+    font-size: var(--fs-sm);
+    color: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .heart.filled { color: var(--gb-text); background: var(--gb-border); }
-  .xp-row { display: flex; align-items: center; gap: 4px; }
-  .bar { flex: 1; height: 10px; background: var(--gb-bg); overflow: hidden; border: var(--gb-stroke) solid var(--gb-border); image-rendering: pixelated; }
-  .fill { height: 100%; transition: width 0.3s steps(8); }
-  .val { font-size: 7px; color: var(--gb-dark); white-space: nowrap; font-family: var(--font-body); }
+  .heart.filled { color: var(--error); background: var(--error-subtle); border-color: rgba(239, 68, 68, 0.3); }
+  .xp-row { display: flex; align-items: center; gap: var(--sp-1); }
+  .bar { flex: 1; height: 8px; background: var(--bg-overlay); overflow: hidden; border: 1px solid var(--border-default); border-radius: 4px; }
+  .fill { height: 100%; background: var(--error); transition: width 0.3s var(--ease-default); border-radius: 4px; }
+  .val { font-size: var(--fs-2xs); color: var(--text-muted); white-space: nowrap; font-family: var(--font-mono); font-weight: 600; }
 </style>

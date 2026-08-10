@@ -102,9 +102,7 @@ pub fn get_memory_stats(state: State<AppState>) -> String {
     serde_json::json!({
         "total_blocks": rt.tick_count,
         "memory_initialized": agent.memory_initialized,
-        "db_path": dirs::data_local_dir()
-            .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join("agenmonster").join("memory.db").to_string_lossy(),
+        "db_path": app_data_dir().join("memory.db").to_string_lossy(),
     })
     .to_string()
 }
@@ -314,9 +312,11 @@ pub fn unequip_item(state: State<AppState>, slot: String) -> String {
 }
 
 fn app_data_dir() -> std::path::PathBuf {
-    dirs::data_local_dir()
+    std::env::current_exe()
+        .ok()
+        .and_then(|p| p.parent().map(|p| p.to_path_buf()))
         .unwrap_or_else(|| std::path::PathBuf::from("."))
-        .join("agenmonster")
+        .join("workspace")
 }
 
 fn ensure_app_dir() {

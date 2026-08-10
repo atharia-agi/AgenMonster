@@ -24,31 +24,34 @@
 </div>
 
 <style>
-  .skills-panel { padding: 2px 0; font-family: var(--font-body); image-rendering: pixelated; }
-  .skills-list { display: flex; flex-direction: column; gap: 2px; }
+  .skills-panel { padding: var(--sp-1) 0; font-family: var(--font-body); }
+  .skills-list { display: flex; flex-direction: column; gap: var(--sp-1); }
   .skill-row {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 0;
-    border-bottom: 2px solid var(--gb-dark);
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background var(--duration-fast) var(--ease-default);
+    border-radius: var(--radius-sm);
   }
-  .skill-info { flex: 1; min-width: 0; display: flex; gap: 4px; align-items: baseline; }
-  .skill-name { font-size: 7px; color: var(--gb-text); }
-  .skill-level { font-size: 6px; color: var(--gb-dark); }
+  .skill-info { flex: 1; min-width: 0; display: flex; gap: var(--sp-1); align-items: baseline; }
+  .skill-name { font-size: var(--fs-xs); color: var(--text-primary); font-weight: 600; letter-spacing: 0.02em; }
+  .skill-level { font-size: var(--fs-2xs); color: var(--text-muted); font-family: var(--font-mono); }
   .skill-bar {
-    width: 36px;
-    height: 8px;
-    background: var(--gb-bg);
+    width: 48px;
+    height: 6px;
+    background: var(--bg-overlay);
     overflow: hidden;
-    border: 3px solid var(--gb-border);
-    image-rendering: pixelated;
+    border: 1px solid var(--border-default);
+    border-radius: 3px;
   }
   .fill {
     height: 100%;
-    background: var(--gb-border);
-    transition: width 0.3s steps(8);
+    background: var(--accent);
+    transition: width 0.3s var(--ease-default);
+    border-radius: 3px;
   }
-  .skill-pct { font-size: 6px; color: var(--gb-dark); min-width: 20px; text-align: right; }
-  .empty { font-size: 7px; color: var(--gb-dark); }
+  .skill-pct { font-size: var(--fs-2xs); color: var(--text-muted); min-width: 28px; text-align: right; font-family: var(--font-mono); font-weight: 600; }
+  .empty { font-size: var(--fs-xs); color: var(--text-disabled); font-style: italic; }
 </style>

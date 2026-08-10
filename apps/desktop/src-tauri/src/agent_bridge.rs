@@ -21,9 +21,11 @@ impl AgentBridge {
         if self.memory_initialized {
             return;
         }
-        let db_path = dirs::data_local_dir()
+        let db_path = std::env::current_exe()
+            .ok()
+            .and_then(|p| p.parent().map(|p| p.to_path_buf()))
             .unwrap_or_else(|| std::path::PathBuf::from("."))
-            .join("agenmonster")
+            .join("workspace")
             .join("memory.db");
         std::fs::create_dir_all(db_path.parent().unwrap()).ok();
 

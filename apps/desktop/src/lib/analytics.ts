@@ -56,7 +56,7 @@ export function computeAnalytics(gs: GameState): AnalyticsSummary {
     relationshipLevel: String(gs.relationshipLevel),
     currentStage: gs.stage,
     currentLevel: gs.level,
-    totalXP: gs.xp + _accumulatedXP(gs),
+    totalXP: gs.totalXp,
     uptimeMs,
     moodDistribution: moodDist,
   };
@@ -73,14 +73,3 @@ function _getEpisodes(): Array<{ kind: string }> {
   }
 }
 
-function _accumulatedXP(gs: GameState): number {
-  let total = gs.xp;
-  for (let i = 1; i < gs.level; i++) {
-    total += xpForLevel(i);
-  }
-  return total;
-}
-
-function xpForLevel(level: number): number {
-  return Math.floor(50 * Math.pow(1.3, level - 1));
-}

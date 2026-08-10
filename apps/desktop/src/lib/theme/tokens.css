@@ -1,0 +1,981 @@
+/* ============================================================
+   AGENMONSTER DESIGN TOKENS — CSS Custom Properties
+   Auto-generated from DesignTokens.json
+   Bandai Namco AAA Visual Standards
+   ============================================================ */
+
+:root {
+  /* ============================================================
+     STAGE COLOR PALETTES
+     ============================================================ */
+
+  /* ---- EGG ---- */
+  --stage-egg-base: #1a0a2e;
+  --stage-egg-base-light: #2d1b4e;
+  --stage-egg-base-dark: #0d0517;
+  --stage-egg-accent: #c084fc;
+  --stage-egg-accent-light: #d8b4fe;
+  --stage-egg-accent-dark: #a855f7;
+  --stage-egg-glow: #a855f7;
+  --stage-egg-glow-strong: #c084fc;
+  --stage-egg-outline: #1e1b3a;
+  --stage-egg-surface: rgba(26, 10, 46, 0.95);
+  --stage-egg-surface-elevated: rgba(45, 27, 78, 0.95);
+
+  /* ---- HATCHLING ---- */
+  --stage-hatchling-base: #052e16;
+  --stage-hatchling-base-light: #0a4d26;
+  --stage-hatchling-base-dark: #031a0b;
+  --stage-hatchling-accent: #22d3ee;
+  --stage-hatchling-accent-light: #67e8f9;
+  --stage-hatchling-accent-dark: #06b6d4;
+  --stage-hatchling-glow: #06b6d4;
+  --stage-hatchling-glow-strong: #22d3ee;
+  --stage-hatchling-outline: #064d1f;
+  --stage-hatchling-surface: rgba(5, 46, 22, 0.95);
+  --stage-hatchling-surface-elevated: rgba(10, 77, 38, 0.95);
+
+  /* ---- BABY ---- */
+  --stage-baby-base: #0c1a3a;
+  --stage-baby-base-light: #162d5e;
+  --stage-baby-base-dark: #060d1d;
+  --stage-baby-accent: #38bdf8;
+  --stage-baby-accent-light: #7dd3fc;
+  --stage-baby-accent-dark: #0ea5e9;
+  --stage-baby-glow: #0ea5e9;
+  --stage-baby-glow-strong: #38bdf8;
+  --stage-baby-outline: #153462;
+  --stage-baby-surface: rgba(12, 26, 58, 0.95);
+  --stage-baby-surface-elevated: rgba(22, 45, 94, 0.95);
+
+  /* ---- CHILD ---- */
+  --stage-child-base: #2d1b4e;
+  --stage-child-base-light: #3d2a6e;
+  --stage-child-base-dark: #1a102f;
+  --stage-child-accent: #a78bfa;
+  --stage-child-accent-light: #c4b5fd;
+  --stage-child-accent-dark: #8b5cf6;
+  --stage-child-glow: #8b5cf6;
+  --stage-child-glow-strong: #a78bfa;
+  --stage-child-outline: #3d256e;
+  --stage-child-surface: rgba(45, 27, 78, 0.95);
+  --stage-child-surface-elevated: rgba(61, 42, 110, 0.95);
+
+  /* ---- TEEN ---- */
+  --stage-teen-base: #4c0a1f;
+  --stage-teen-base-light: #6b152e;
+  --stage-teen-base-dark: #2d0610;
+  --stage-teen-accent: #fb7185;
+  --stage-teen-accent-light: #fda4af;
+  --stage-teen-accent-dark: #f43f5e;
+  --stage-teen-glow: #f43f5e;
+  --stage-teen-glow-strong: #fb7185;
+  --stage-teen-outline: #7c1530;
+  --stage-teen-surface: rgba(76, 10, 31, 0.95);
+  --stage-teen-surface-elevated: rgba(107, 21, 46, 0.95);
+
+  /* ---- ADULT ---- */
+  --stage-adult-base: #1e1b3a;
+  --stage-adult-base-light: #2d2854;
+  --stage-adult-base-dark: #0f0e1d;
+  --stage-adult-accent: #c084fc;
+  --stage-adult-accent-light: #d8b4fe;
+  --stage-adult-accent-dark: #a855f7;
+  --stage-adult-glow: #a855f7;
+  --stage-adult-glow-strong: #c084fc;
+  --stage-adult-outline: #2d2854;
+  --stage-adult-surface: rgba(30, 27, 58, 0.95);
+  --stage-adult-surface-elevated: rgba(45, 40, 84, 0.95);
+
+  /* ---- MEGA ---- */
+  --stage-mega-base: #0f172a;
+  --stage-mega-base-light: #1e293b;
+  --stage-mega-base-dark: #08101a;
+  --stage-mega-accent: #fbbf24;
+  --stage-mega-accent-light: #fcd34d;
+  --stage-mega-accent-dark: #f59e0b;
+  --stage-mega-glow: #f59e0b;
+  --stage-mega-glow-strong: #fbbf24;
+  --stage-mega-outline: #1e293b;
+  --stage-mega-surface: rgba(15, 23, 42, 0.98);
+  --stage-mega-surface-elevated: rgba(30, 41, 59, 0.98);
+
+  /* ============================================================
+     MOOD COLOR MODIFIERS
+     ============================================================ */
+
+  --mood-happy-tint: #fde047;
+  --mood-happy-tint-strong: #facc15;
+  --mood-happy-saturation: 1.15;
+  --mood-happy-exposure: 1.05;
+  --mood-happy-warmth: 10;
+  --mood-happy-bloom: 1.2;
+  --mood-happy-ui-tint: rgba(253, 224, 71, 0.15);
+
+  --mood-excited-tint: #fb923c;
+  --mood-excited-tint-strong: #f97316;
+  --mood-excited-saturation: 1.25;
+  --mood-excited-exposure: 1.08;
+  --mood-excited-warmth: 20;
+  --mood-excited-bloom: 1.5;
+  --mood-excited-shake: 0.5;
+  --mood-excited-ui-tint: rgba(251, 146, 60, 0.18);
+
+  --mood-proud-tint: #c084fc;
+  --mood-proud-tint-strong: #a855f7;
+  --mood-proud-saturation: 1.1;
+  --mood-proud-exposure: 1.06;
+  --mood-proud-coolness: 10;
+  --mood-proud-bloom: 1.3;
+  --mood-proud-pulse: true;
+  --mood-proud-ui-tint: rgba(192, 132, 252, 0.15);
+
+  --mood-sad-tint: #60a5fa;
+  --mood-sad-tint-strong: #3b82f6;
+  --mood-sad-saturation: 0.8;
+  --mood-sad-exposure: 0.9;
+  --mood-sad-coolness: 20;
+  --mood-sad-bloom: 0.8;
+  --mood-sad-vignette: 0.3;
+  --mood-sad-ui-tint: rgba(96, 165, 250, 0.12);
+
+  --mood-angry-tint: #f87171;
+  --mood-angry-tint-strong: #ef4444;
+  --mood-angry-saturation: 1.3;
+  --mood-angry-exposure: 0.95;
+  --mood-angry-warmth: 30;
+  --mood-angry-bloom: 1.8;
+  --mood-angry-chromatic-aberration: 0.02;
+  --mood-angry-ui-tint: rgba(248, 113, 113, 0.18);
+
+  --mood-frustrated-tint: #f97316;
+  --mood-frustrated-tint-strong: #ea580c;
+  --mood-frustrated-saturation: 1.2;
+  --mood-frustrated-exposure: 0.92;
+  --mood-frustrated-warmth: 25;
+  --mood-frustrated-bloom: 1.4;
+  --mood-frustrated-ui-tint: rgba(249, 115, 22, 0.15);
+
+  --mood-sleepy-tint: #94a3b8;
+  --mood-sleepy-tint-strong: #64748b;
+  --mood-sleepy-saturation: 0.7;
+  --mood-sleepy-exposure: 0.95;
+  --mood-sleepy-bloom: 0.5;
+  --mood-sleepy-blur: 0.3;
+  --mood-sleepy-ui-tint: rgba(148, 163, 184, 0.1);
+
+  --mood-tired-tint: #78716c;
+  --mood-tired-tint-strong: #57534e;
+  --mood-tired-saturation: 0.65;
+  --mood-tired-exposure: 0.9;
+  --mood-tired-bloom: 0.4;
+  --mood-tired-blur: 0.4;
+  --mood-tired-ui-tint: rgba(120, 113, 108, 0.12);
+
+  --mood-focused-tint: #38bdf8;
+  --mood-focused-tint-strong: #0ea5e9;
+  --mood-focused-saturation: 1.05;
+  --mood-focused-exposure: 1.02;
+  --mood-focused-coolness: 15;
+  --mood-focused-bloom: 1.1;
+  --mood-focused-ui-tint: rgba(56, 189, 248, 0.12);
+
+  --mood-thinking-tint: #c084fc;
+  --mood-thinking-tint-strong: #a855f7;
+  --mood-thinking-saturation: 1.0;
+  --mood-thinking-exposure: 1.0;
+  --mood-thinking-coolness: 10;
+  --mood-thinking-bloom: 1.0;
+  --mood-thinking-ui-tint: rgba(192, 132, 252, 0.1);
+
+  --mood-idle-tint: transparent;
+  --mood-idle-saturation: 1.0;
+  --mood-idle-exposure: 1.0;
+  --mood-idle-bloom: 1.0;
+
+  /* ============================================================
+     UI SURFACES & BORDERS
+     ============================================================ */
+
+  --ui-surface-1: rgba(15, 15, 25, 0.9);
+  --ui-surface-2: rgba(20, 20, 35, 0.95);
+  --ui-surface-3: rgba(25, 25, 45, 1);
+  --ui-surface-glass: rgba(30, 30, 50, 0.7);
+  --ui-surface-glass-strong: rgba(40, 40, 70, 0.85);
+
+  --ui-border-subtle: rgba(100, 100, 150, 0.3);
+  --ui-border-default: rgba(130, 130, 180, 0.5);
+  --ui-border-strong: rgba(150, 150, 200, 0.7);
+  --ui-border-glow: rgba(192, 132, 252, 0.8);
+  --ui-border-glow-strong: rgba(251, 146, 60, 0.9);
+  --ui-border-focus: rgba(192, 132, 252, 1);
+
+  /* ============================================================
+     UI TEXT COLORS
+     ============================================================ */
+
+  --ui-text-primary: #f8fafc;
+  --ui-text-secondary: #94a3b8;
+  --ui-text-muted: #64748b;
+  --ui-text-accent: #c084fc;
+  --ui-text-accent-warm: #fbbf24;
+  --ui-text-accent-cool: #22d3ee;
+  --ui-text-accent-hot: #fb7185;
+  --ui-text-inverse: #0f172a;
+  --ui-text-on-accent: #0f172a;
+
+  /* ============================================================
+     SEMANTIC COLORS
+     ============================================================ */
+
+  --semantic-success-base: #22c55e;
+  --semantic-success-light: #4ade80;
+  --semantic-success-dark: #16a34a;
+  --semantic-success-bg: rgba(34, 197, 94, 0.15);
+  --semantic-success-border: #22c55e;
+
+  --semantic-warning-base: #fbbf24;
+  --semantic-warning-light: #fcd34d;
+  --semantic-warning-dark: #f59e0b;
+  --semantic-warning-bg: rgba(251, 191, 36, 0.15);
+  --semantic-warning-border: #fbbf24;
+
+  --semantic-error-base: #ef4444;
+  --semantic-error-light: #f87171;
+  --semantic-error-dark: #dc2626;
+  --semantic-error-bg: rgba(239, 68, 68, 0.15);
+  --semantic-error-border: #ef4444;
+
+  --semantic-info-base: #3b82f6;
+  --semantic-info-light: #60a5fa;
+  --semantic-info-dark: #2563eb;
+  --semantic-info-bg: rgba(59, 130, 246, 0.15);
+  --semantic-info-border: #3b82f6;
+
+  /* ============================================================
+     TYPOGRAPHY
+     ============================================================ */
+
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-ui: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+
+  --font-size-xs: 0.6875rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-base: 0.9375rem;
+  --font-size-lg: 1.0625rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5625rem;
+  --font-size-3xl: 2rem;
+  --font-size-4xl: 2.5rem;
+  --font-size-5xl: 3.5rem;
+  --font-size-6xl: 5rem;
+
+  --line-height-tight: 1.1;
+  --line-height-snug: 1.3;
+  --line-height-normal: 1.6;
+  --line-height-relaxed: 1.8;
+  --line-height-loose: 2.0;
+
+  --letter-spacing-tight: -0.02em;
+  --letter-spacing-normal: 0;
+  --letter-spacing-wide: 0.02em;
+  --letter-spacing-wider: 0.04em;
+  --letter-spacing-widest: 0.1em;
+
+  /* Typography Scale */
+  --text-display-size: 3.5rem;
+  --text-display-weight: 800;
+  --text-display-line-height: 1.1;
+  --text-display-tracking: -0.02em;
+
+  --text-h1-size: 2.5rem;
+  --text-h1-weight: 700;
+  --text-h1-line-height: 1.15;
+  --text-h1-tracking: -0.01em;
+
+  --text-h2-size: 2rem;
+  --text-h2-weight: 700;
+  --text-h2-line-height: 1.2;
+  --text-h2-tracking: -0.01em;
+
+  --text-h3-size: 1.5625rem;
+  --text-h3-weight: 700;
+  --text-h3-line-height: 1.25;
+  --text-h3-tracking: 0;
+
+  --text-h4-size: 1.25rem;
+  --text-h4-weight: 600;
+  --text-h4-line-height: 1.25;
+  --text-h4-tracking: 0;
+
+  --text-h5-size: 1.0625rem;
+  --text-h5-weight: 600;
+  --text-h5-line-height: 1.3;
+  --text-h5-tracking: 0;
+
+  --text-h6-size: 0.9375rem;
+  --text-h6-weight: 600;
+  --text-h6-line-height: 1.4;
+  --text-h6-tracking: 0;
+
+  --text-body-lg-size: 1.0625rem;
+  --text-body-lg-weight: 400;
+  --text-body-lg-line-height: 1.7;
+
+  --text-body-size: 0.9375rem;
+  --text-body-weight: 400;
+  --text-body-line-height: 1.7;
+
+  --text-body-sm-size: 0.8125rem;
+  --text-body-sm-weight: 400;
+  --text-body-sm-line-height: 1.6;
+
+  --text-caption-size: 0.75rem;
+  --text-caption-weight: 400;
+  --text-caption-line-height: 1.5;
+  --text-caption-tracking: 0.01em;
+
+  --text-overline-size: 0.6875rem;
+  --text-overline-weight: 600;
+  --text-overline-line-height: 1.5;
+  --text-overline-tracking: 0.1em;
+  --text-overline-transform: uppercase;
+
+  --text-mono-sm-size: 0.75rem;
+  --text-mono-sm-weight: 400;
+  --text-mono-sm-line-height: 1.6;
+
+  --text-mono-base-size: 0.875rem;
+  --text-mono-base-weight: 400;
+  --text-mono-base-line-height: 1.6;
+
+  --text-mono-lg-size: 1rem;
+  --text-mono-lg-weight: 400;
+  --text-mono-lg-line-height: 1.6;
+
+  /* ============================================================
+     SPACING
+     ============================================================ */
+
+  --spacing-base: 4px;
+  --spacing-0: 0;
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+  --spacing-16: 64px;
+  --spacing-20: 80px;
+  --spacing-24: 96px;
+  --spacing-32: 128px;
+
+  /* Fluid Spacing */
+  --spacing-fluid-xs: clamp(0.25rem, 0.5vw + 0.125rem, 0.5rem);
+  --spacing-fluid-sm: clamp(0.5rem, 1vw + 0.25rem, 1rem);
+  --spacing-fluid-md: clamp(1rem, 2vw + 0.5rem, 2rem);
+  --spacing-fluid-lg: clamp(2rem, 4vw + 1rem, 4rem);
+  --spacing-fluid-xl: clamp(4rem, 8vw + 2rem, 8rem);
+
+  /* ============================================================
+     BORDER RADIUS
+     ============================================================ */
+
+  --radius-none: 0;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+  --radius-full: 9999px;
+  --radius-organic: 12px 16px 8px 20px;
+  --radius-organic-lg: 20px 28px 12px 32px;
+
+  /* ============================================================
+     SHADOWS & ELEVATION
+     ============================================================ */
+
+  --shadow-elevation-1: 0 1px 2px rgba(0,0,0,0.4), 0 1px 1px rgba(0,0,0,0.3);
+  --shadow-elevation-2: 0 4px 8px rgba(0,0,0,0.5), 0 2px 4px rgba(0,0,0,0.4);
+  --shadow-elevation-3: 0 12px 24px rgba(0,0,0,0.5), 0 6px 12px rgba(0,0,0,0.4);
+  --shadow-elevation-4: 0 24px 48px rgba(0,0,0,0.6), 0 12px 24px rgba(0,0,0,0.5);
+  --shadow-glow: 0 0 24px rgba(192,132,252,0.5), 0 0 48px rgba(192,132,252,0.25);
+  --shadow-glow-warm: 0 0 24px rgba(251,191,36,0.5), 0 0 48px rgba(251,191,36,0.25);
+  --shadow-glow-hot: 0 0 24px rgba(251,113,133,0.5), 0 0 48px rgba(251,113,133,0.25);
+  --shadow-inset: inset 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-inner-glow: inset 0 0 16px rgba(192,132,252,0.3);
+
+  /* ============================================================
+     ANIMATION TOKENS
+     ============================================================ */
+
+  --duration-instant: 0ms;
+  --duration-fast: 100ms;
+  --duration-normal: 200ms;
+  --duration-slow: 300ms;
+  --duration-cinematic: 500ms;
+  --duration-epic: 1000ms;
+
+  --easing-linear: linear;
+  --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
+  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  --easing-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --easing-spring-soft: cubic-bezier(0.5, 1.8, 0.5, 1);
+  --easing-anticipate: cubic-bezier(0.6, -0.4, 0.4, 1.4);
+
+  --stagger-base: 30ms;
+  --stagger-tight: 15ms;
+  --stagger-loose: 60ms;
+
+  /* ============================================================
+     BREAKPOINTS
+     ============================================================ */
+
+  --bp-xs: 320px;
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --bp-2xl: 1536px;
+  --bp-3xl: 1920px;
+
+  /* ============================================================
+     Z-INDEX SCALE
+     ============================================================ */
+
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+  --z-maximum: 9999;
+
+  /* ============================================================
+     QUALITY TIERS
+     ============================================================ */
+
+  --quality-low-particles: 20;
+  --quality-low-shadows: false;
+  --quality-low-blur: false;
+  --quality-low-post-process: false;
+  --quality-low-target-fps: 30;
+
+  --quality-medium-particles: 60;
+  --quality-medium-shadows: true;
+  --quality-medium-blur: true;
+  --quality-medium-post-process: false;
+  --quality-medium-target-fps: 60;
+
+  --quality-high-particles: 150;
+  --quality-high-shadows: true;
+  --quality-high-blur: true;
+  --quality-high-post-process: true;
+  --quality-high-target-fps: 60;
+
+  --quality-ultra-particles: 300;
+  --quality-ultra-shadows: true;
+  --quality-ultra-blur: true;
+  --quality-ultra-post-process: true;
+  --quality-ultra-ray-traced: true;
+  --quality-ultra-target-fps: 120;
+
+  /* ============================================================
+     COLOR BLIND PALETTES
+     ============================================================ */
+
+  --cb-protanopia-hue-shift: -15;
+  --cb-protanopia-saturation: 0.85;
+  --cb-deuteranopia-hue-shift: 15;
+  --cb-deuteranopia-saturation: 0.85;
+  --cb-tritanopia-hue-shift: 90;
+  --cb-tritanopia-saturation: 0.8;
+  --cb-achromatopsia-saturation: 0;
+  --cb-achromatopsia-contrast: 1.3;
+  --cb-protanomaly-hue-shift: -8;
+  --cb-protanomaly-saturation: 0.92;
+  --cb-deuteranomaly-hue-shift: 8;
+  --cb-deuteranomaly-saturation: 0.92;
+  --cb-tritanomaly-hue-shift: 45;
+  --cb-tritanomaly-saturation: 0.9;
+  --cb-cone-monochromacy-saturation: 0.1;
+  --cb-cone-monochromacy-contrast: 1.2;
+}
+
+/* ============================================================
+   THEME VARIANTS
+   ============================================================ */
+
+/* Cinematic - Full Bandai Experience (Default) */
+html[data-theme="cinematic"] {
+  --theme-bg: var(--stage-adult-base);
+  --theme-surface: var(--stage-adult-surface);
+  --theme-accent: var(--stage-adult-accent);
+  --theme-glow: var(--stage-adult-glow);
+  --theme-border: var(--stage-adult-outline);
+  --theme-text: var(--ui-text-primary);
+  --theme-text-muted: var(--ui-text-muted);
+  --theme-bloom: 1;
+  --theme-particle-mult: 1;
+  --theme-shadow: var(--shadow-glow);
+}
+
+/* Cinematic Dim - Reduced Motion/Brightness */
+html[data-theme="cinematic-dim"] {
+  --theme-bg: var(--stage-adult-base-dark);
+  --theme-surface: var(--stage-adult-surface);
+  --theme-accent: var(--stage-adult-accent);
+  --theme-glow: var(--stage-adult-glow);
+  --theme-border: var(--stage-adult-outline);
+  --theme-text: var(--ui-text-primary);
+  --theme-text-muted: var(--ui-text-muted);
+  --theme-bloom: 0.7;
+  --theme-particle-mult: 0.6;
+  --theme-shadow: var(--shadow-elevation-2);
+  --animation-duration-mult: 0.5;
+}
+
+/* Competitive - High Contrast, Minimal FX */
+html[data-theme="competitive"] {
+  --theme-bg: #0a0a0f;
+  --theme-surface: #12121a;
+  --theme-accent: #00ff88;
+  --theme-glow: #00ff88;
+  --theme-border: #00ff88;
+  --theme-text: #ffffff;
+  --theme-text-muted: #a0a0a0;
+  --theme-bloom: 0;
+  --theme-particle-mult: 0;
+  --theme-shadow: none;
+  --animation-duration-mult: 0.2;
+}
+
+/* Accessibility - WCAG 2.2 AAA */
+html[data-theme="accessibility"] {
+  --theme-bg: #0d0d12;
+  --theme-surface: #15151f;
+  --theme-accent: #00d4aa;
+  --theme-glow: #00d4aa;
+  --theme-border: #00d4aa;
+  --theme-text: #ffffff;
+  --theme-text-muted: #cccccc;
+  --theme-bloom: 0;
+  --theme-particle-mult: 0.3;
+  --theme-shadow: 0 0 0 3px #00d4aa;
+  --focus-outline: 3px solid #00d4aa;
+}
+
+/* Retro - GBA Pixel Mode (Legacy) */
+html[data-theme="retro"] {
+  --theme-bg: #f8f4e8;
+  --theme-surface: #f0ece0;
+  --theme-accent: #e8607c;
+  --theme-glow: #e8607c;
+  --theme-border: #2d2b55;
+  --theme-text: #2d2b55;
+  --theme-text-muted: #8a7a9a;
+  --theme-bloom: 0;
+  --theme-particle-mult: 0;
+  --theme-shadow: 3px 3px 0 #2d2b55;
+  --font-body: "VT323", "Press Start 2P", monospace;
+  --font-heading: "VT323", "Press Start 2P", monospace;
+}
+
+/* Minimal - Clean, No Atmospheric FX */
+html[data-theme="minimal"] {
+  --theme-bg: #ffffff;
+  --theme-surface: #fafafa;
+  --theme-accent: #6366f1;
+  --theme-glow: #6366f1;
+  --theme-border: #e5e7eb;
+  --theme-text: #111827;
+  --theme-text-muted: #6b7280;
+  --theme-bloom: 0;
+  --theme-particle-mult: 0;
+  --theme-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Streamer - OBS Friendly */
+html[data-theme="streamer"] {
+  --theme-bg: #0d0d12;
+  --theme-surface: #15151f;
+  --theme-accent: #c084fc;
+  --theme-glow: #c084fc;
+  --theme-border: #2d2854;
+  --theme-text: #f8fafc;
+  --theme-text-muted: #94a3b8;
+  --theme-bloom: 0.5;
+  --theme-particle-mult: 0.5;
+  --theme-shadow: var(--shadow-elevation-2);
+  --animation-duration-mult: 0.7;
+}
+
+/* ============================================================
+   STAGE-SPECIFIC THEME OVERRIDES
+   ============================================================ */
+
+html[data-stage="egg"][data-theme="cinematic"] {
+  --theme-bg: var(--stage-egg-base);
+  --theme-surface: var(--stage-egg-surface);
+  --theme-accent: var(--stage-egg-accent);
+  --theme-glow: var(--stage-egg-glow);
+  --theme-border: var(--stage-egg-outline);
+}
+
+html[data-stage="hatchling"][data-theme="cinematic"] {
+  --theme-bg: var(--stage-hatchling-base);
+  --theme-surface: var(--stage-hatchling-surface);
+  --theme-accent: var(--stage-hatchling-accent);
+  --theme-glow: var(--stage-hatchling-glow);
+  --theme-border: var(--stage-hatchling-outline);
+}
+
+html[data-stage="baby"][data-theme="cinematic"] {
+  --theme-bg: var(--stage-baby-base);
+  --theme-surface: var(--stage-baby-surface);
+  --theme-accent: var(--stage-baby-accent);
+  --theme-glow: var(--stage-baby-glow);
+  --theme-border: var(--stage-baby-outline);
+}
+
+html[data-stage="child"][data-theme="cinematic"] {
+  --theme-bg: var(--stage-child-base);
+  --theme-surface: var(--stage-child-surface);
+  --theme-accent: var(--stage-child-accent);
+  --theme-glow: var(--stage-child-glow);
+  --theme-border: var(--stage-child-outline);
+}
+
+html[data-stage="teen"][data-theme="cinematic"] {
+  --theme-bg: var(--stage-teen-base);
+  --theme-surface: var(--stage-teen-surface);
+  --theme-accent: var(--stage-teen-accent);
+  --theme-glow: var(--stage-teen-glow);
+  --theme-border: var(--stage-teen-outline);
+}
+
+html[data-stage="adult"][data-theme="cinematic"] {
+  --theme-bg: var(--stage-adult-base);
+  --theme-surface: var(--stage-adult-surface);
+  --theme-accent: var(--stage-adult-accent);
+  --theme-glow: var(--stage-adult-glow);
+  --theme-border: var(--stage-adult-outline);
+}
+
+html[data-stage="mega"][data-theme="cinematic"] {
+  --theme-bg: var(--stage-mega-base);
+  --theme-surface: var(--stage-mega-surface);
+  --theme-accent: var(--stage-mega-accent);
+  --theme-glow: var(--stage-mega-glow);
+  --theme-border: var(--stage-mega-outline);
+}
+
+/* ============================================================
+   MOOD OVERRIDES (Applied on top of stage/theme)
+   ============================================================ */
+
+html[data-mood="happy"] {
+  --mood-tint: var(--mood-happy-tint);
+  --mood-saturation: var(--mood-happy-saturation);
+  --mood-exposure: var(--mood-happy-exposure);
+  --mood-bloom-mult: var(--mood-happy-bloom);
+  --mood-ui-tint: var(--mood-happy-ui-tint);
+}
+
+html[data-mood="excited"] {
+  --mood-tint: var(--mood-excited-tint);
+  --mood-saturation: var(--mood-excited-saturation);
+  --mood-exposure: var(--mood-excited-exposure);
+  --mood-bloom-mult: var(--mood-excited-bloom);
+  --mood-shake: var(--mood-excited-shake);
+  --mood-ui-tint: var(--mood-excited-ui-tint);
+}
+
+html[data-mood="proud"] {
+  --mood-tint: var(--mood-proud-tint);
+  --mood-saturation: var(--mood-proud-saturation);
+  --mood-exposure: var(--mood-proud-exposure);
+  --mood-bloom-mult: var(--mood-proud-bloom);
+  --mood-pulse: var(--mood-proud-pulse);
+  --mood-ui-tint: var(--mood-proud-ui-tint);
+}
+
+html[data-mood="sad"] {
+  --mood-tint: var(--mood-sad-tint);
+  --mood-saturation: var(--mood-sad-saturation);
+  --mood-exposure: var(--mood-sad-exposure);
+  --mood-bloom-mult: var(--mood-sad-bloom);
+  --mood-vignette: var(--mood-sad-vignette);
+  --mood-ui-tint: var(--mood-sad-ui-tint);
+}
+
+html[data-mood="angry"] {
+  --mood-tint: var(--mood-angry-tint);
+  --mood-saturation: var(--mood-angry-saturation);
+  --mood-exposure: var(--mood-angry-exposure);
+  --mood-bloom-mult: var(--mood-angry-bloom);
+  --mood-chromatic-aberration: var(--mood-angry-chromatic-aberration);
+  --mood-ui-tint: var(--mood-angry-ui-tint);
+}
+
+html[data-mood="frustrated"] {
+  --mood-tint: var(--mood-frustrated-tint);
+  --mood-saturation: var(--mood-frustrated-saturation);
+  --mood-exposure: var(--mood-frustrated-exposure);
+  --mood-bloom-mult: var(--mood-frustrated-bloom);
+  --mood-ui-tint: var(--mood-frustrated-ui-tint);
+}
+
+html[data-mood="sleepy"] {
+  --mood-tint: var(--mood-sleepy-tint);
+  --mood-saturation: var(--mood-sleepy-saturation);
+  --mood-exposure: var(--mood-sleepy-exposure);
+  --mood-bloom-mult: var(--mood-sleepy-bloom);
+  --mood-blur: var(--mood-sleepy-blur);
+  --mood-ui-tint: var(--mood-sleepy-ui-tint);
+}
+
+html[data-mood="tired"] {
+  --mood-tint: var(--mood-tired-tint);
+  --mood-saturation: var(--mood-tired-saturation);
+  --mood-exposure: var(--mood-tired-exposure);
+  --mood-bloom-mult: var(--mood-tired-bloom);
+  --mood-blur: var(--mood-tired-blur);
+  --mood-ui-tint: var(--mood-tired-ui-tint);
+}
+
+html[data-mood="focused"] {
+  --mood-tint: var(--mood-focused-tint);
+  --mood-saturation: var(--mood-focused-saturation);
+  --mood-exposure: var(--mood-focused-exposure);
+  --mood-bloom-mult: var(--mood-focused-bloom);
+  --mood-ui-tint: var(--mood-focused-ui-tint);
+}
+
+html[data-mood="thinking"] {
+  --mood-tint: var(--mood-thinking-tint);
+  --mood-saturation: var(--mood-thinking-saturation);
+  --mood-exposure: var(--mood-thinking-exposure);
+  --mood-bloom-mult: var(--mood-thinking-bloom);
+  --mood-ui-tint: var(--mood-thinking-ui-tint);
+}
+
+html[data-mood="idle"] {
+  --mood-tint: transparent;
+  --mood-saturation: 1;
+  --mood-exposure: 1;
+  --mood-bloom-mult: 1;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-theme="competitive"]) {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-cinematic: 0ms;
+    --duration-epic: 0ms;
+    --animation-duration-mult: 0;
+  }
+  
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* ============================================================
+   HIGH CONTRAST MODE
+   ============================================================ */
+
+@media (prefers-contrast: high) {
+  html[data-theme="cinematic"] {
+    --theme-border: var(--theme-accent);
+    --theme-border-glow: none;
+    --ui-border-subtle: var(--theme-accent);
+    --ui-border-default: var(--theme-accent);
+    --shadow-glow: 0 0 0 2px var(--theme-accent);
+  }
+}
+
+/* ============================================================
+   COLOR SCHEME
+   ============================================================ */
+
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) {
+    color-scheme: dark;
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  html[data-theme="minimal"] {
+    color-scheme: light;
+  }
+}
+
+/* ============================================================
+   FOCUS STYLES
+   ============================================================ */
+
+:focus-visible {
+  outline: 3px solid var(--ui-border-focus);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+html[data-theme="accessibility"] :focus-visible {
+  outline: 3px solid #00d4aa;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(0, 212, 170, 0.3);
+}
+
+/* ============================================================
+   SELECTION STYLES
+   ============================================================ */
+
+::selection {
+  background: var(--theme-accent);
+  color: var(--ui-text-on-accent);
+}
+
+::-moz-selection {
+  background: var(--theme-accent);
+  color: var(--ui-text-on-accent);
+}
+
+/* ============================================================
+   SCROLLBAR STYLES
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--theme-surface);
+  border: 2px solid var(--theme-border);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-border);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--theme-surface);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-accent);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--theme-surface);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--theme-border) var(--theme-surface);
+}
+
+/* ============================================================
+   UTILITY CLASSES
+   ============================================================ */
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--theme-accent), var(--theme-glow));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.glass {
+  background: var(--ui-surface-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--ui-border-subtle);
+}
+
+.glass-strong {
+  background: var(--ui-surface-glass-strong);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--ui-border-default);
+}
+
+.glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.glow-warm {
+  box-shadow: var(--shadow-glow-warm);
+}
+
+.glow-hot {
+  box-shadow: var(--shadow-glow-hot);
+}
+
+.elevation-1 { box-shadow: var(--shadow-elevation-1); }
+.elevation-2 { box-shadow: var(--shadow-elevation-2); }
+.elevation-3 { box-shadow: var(--shadow-elevation-3); }
+.elevation-4 { box-shadow: var(--shadow-elevation-4); }
+
+.animate-fade-in { animation: fadeIn var(--duration-normal) var(--easing-standard); }
+.animate-fade-out { animation: fadeOut var(--duration-normal) var(--easing-standard); }
+.animate-slide-up { animation: slideUp var(--duration-normal) var(--easing-emphasized); }
+.animate-slide-down { animation: slideDown var(--duration-normal) var(--easing-emphasized); }
+.animate-scale-in { animation: scaleIn var(--duration-fast) var(--easing-spring); }
+.animate-pulse { animation: pulse 2s var(--easing-spring) infinite; }
+.animate-breathe { animation: breathe 3s var(--easing-standard) infinite; }
+.animate-shake { animation: shake 0.5s var(--easing-anticipate); }
+.animate-wobble { animation: wobble 1s var(--easing-spring-soft) infinite; }
+.animate-orbit { animation: orbit 8s linear infinite; }
+
+/* Keyframes */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@keyframes slideDown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes scaleIn { from { transform: scale(0.9); } to { transform: scale(1); } }
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+@keyframes breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+@keyframes wobble { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(-3deg); } 75% { transform: rotate(3deg); } }
+@keyframes orbit { from { transform: rotate(0deg) translateX(20px) rotate(0deg); } to { transform: rotate(360deg) translateX(20px) rotate(-360deg); } }
+
+/* ============================================================
+   PRINT STYLES
+   ============================================================ */
+
+@media print {
+  * { background: transparent !important; color: #000 !important; box-shadow: none !important; }
+  a { text-decoration: underline; }
+  .no-print { display: none !important; }
+}

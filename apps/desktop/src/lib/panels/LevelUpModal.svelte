@@ -56,16 +56,15 @@
     justify-content: center;
     pointer-events: none;
     font-family: var(--font-body);
-    image-rendering: pixelated;
   }
   .flash-overlay {
     position: absolute;
     inset: 0;
-    background: var(--gb-bg);
+    background: var(--bg-base);
     opacity: 0;
   }
   .modal-layer.flash .flash-overlay {
-    animation: evo-flash 0.9s steps(2) forwards;
+    animation: evo-flash 0.9s ease-out forwards;
   }
   @keyframes evo-flash {
     0% { opacity: 1; }
@@ -76,21 +75,23 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
-    animation: evo-pop 0.4s steps(3) forwards;
+    gap: var(--sp-3);
+    animation: evo-pop 0.4s var(--ease-default) forwards;
   }
   .evo-label {
-    font-size: 14px;
-    color: var(--gb-text);
-    letter-spacing: 4px;
+    font-size: var(--fs-xl);
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.2em;
   }
   .evo-stage {
-    font-size: 24px;
-    color: var(--gb-border);
-    animation: evo-bounce 0.6s steps(4) forwards;
+    font-size: var(--fs-2xl);
+    font-weight: 800;
+    color: var(--accent);
+    animation: evo-bounce 0.6s var(--ease-default) forwards;
   }
   @keyframes evo-pop {
-    from { opacity: 0; transform: scale(0.6); }
+    from { opacity: 0; transform: scale(0.8); }
     to { opacity: 1; transform: scale(1); }
   }
   @keyframes evo-bounce {
@@ -103,30 +104,33 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
-    padding: 20px 32px;
-    background: var(--gb-bg);
-    border: var(--gb-stroke) solid var(--gb-border);
-    outline: 4px solid var(--gb-border);
-    outline-offset: -10px;
-    animation: evo-card-in 0.5s steps(3) forwards;
+    gap: var(--sp-2);
+    padding: var(--sp-6) var(--sp-8);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    box-shadow: 0 0 0 1px var(--accent-subtle), 0 8px 32px rgba(0, 0, 0, 0.2);
+    animation: evo-card-in 0.5s var(--ease-default) forwards;
   }
   .evo-rank {
-    font-size: 11px;
-    color: var(--gb-dark);
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-weight: 600;
   }
   .evo-name {
-    font-size: 20px;
-    color: var(--gb-text);
-    letter-spacing: 3px;
+    font-size: var(--fs-2xl);
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: 0.1em;
   }
   .evo-next {
-    font-size: 8px;
-    color: var(--gb-dark);
-    letter-spacing: 0.5px;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    font-family: var(--font-mono);
   }
   @keyframes evo-card-in {
-    from { opacity: 0; transform: scale(0.8) translateY(20px); }
+    from { opacity: 0; transform: scale(0.9) translateY(20px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
   }
 </style>

@@ -325,3 +325,19 @@ export function evolvePersonality(
 export function getEvolvedPersonality(stage: string, topics: Array<{ topic: string; count: number }> = []): EvolvedPersonality {
   return evolvePersonality(stage, topics);
 }
+
+export function getPersonalityDialogue(
+  personality: PersonalityProfile,
+  dialogue: Record<string, string>,
+  category: string,
+): string {
+  return dialogue[category] ?? '';
+}
+
+export function setPersonalityType(state: any, type: string): any {
+  return { ...state, personalityType: type };
+}
+
+export function setPersonalityTraits(state: any, traits: Record<string, number>): any {
+  return { ...state, personalityTraits: traits };
+}

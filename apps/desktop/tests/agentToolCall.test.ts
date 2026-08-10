@@ -86,3 +86,43 @@ test('parseAgentToolCall returns null when params JSON has top-level string valu
 test('parseAgentToolCall rejects empty action name', () => {
   assert.equal(parseAgentToolCall('__AGENT_MCP__:|{}'), null);
 });
+
+test('parseAgentToolCall parses JSON values containing spaces', () => {
+  const r = parseAgentToolCall('__AGENT_MCP__:goal.create|{"title":"Deploy app","steps":"build|test|deploy"}');
+  assert.ok(r);
+  assert.equal(r.name, 'goal.create');
+  assert.equal(r.params.title, 'Deploy app');
+  assert.equal(r.params.steps, 'build|test|deploy');
+});
+
+test('parseAgentToolCall parses JSON containing escaped quotes', () => {
+  const r = parseAgentToolCall('__AGENT_MCP__:memory.recall|{"query":"say \\"hi\\" there","limit":2}');
+  assert.ok(r);
+  assert.equal(r.params.query, 'say "hi" there');
+});
+
+test('parseAgentToolCall handles multi-line JSON payloads', () => {
+  const r = parseAgentToolCall('__AGENT_MCP__:goal.create|{\n  "title": "Multi line",\n  "steps": ["a"]\n}');
+  assert.ok(r);
+  assert.equal(r.params.title, 'Multi line');
+  assert.ok(Array.isArray(r.params.steps));
+  assert.equal((r.params.steps as unknown[]).length, 1);
+});
+
+test('parseAgentToolCall does not stop at } inside a string', () => {
+  const r = parseAgentToolCall('__AGENT_MCP__:memory.recall|{"query":"use } bracket","limit":1}');
+  assert.ok(r);
+  assert.equal(r.params.query, 'use } bracket');
+});
+
+test('parseAgentToolCall returns null for non-string input', () => {
+  assert.equal(parseAgentToolCall(undefined as unknown as string), null);
+  assert.equal(parseAgentToolCall(42 as unknown as string), null);
+});
+
+test('parseAgentToolCall returns the last valid marker when earlier one is malformed', () => {
+  const r = parseAgentToolCall('__AGENT_MCP__:memory.recall|{broken}\n__AGENT_MCP__:goal.list|{"ok":true}');
+  assert.ok(r);
+  assert.equal(r.name, 'goal.list');
+  assert.equal(r.params.ok, true);
+});

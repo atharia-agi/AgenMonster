@@ -48,7 +48,7 @@ export default defineConfig({
     { name: 'iPhone 14 Pro (chromium)', use: { ...devices['iPhone 14 Pro'] } },
     { name: 'Pixel 5 (chromium)', use: { ...devices['Pixel 5'] } },
     { name: 'Pixel 7 (chromium)', use: { ...devices['Pixel 7'] } },
-    { name: 'Galaxy S23 (chromium)', use: { ...devices['Galaxy S23'] } },
+    { name: 'Galaxy S24 (chromium)', use: { ...devices['Galaxy S24'] } },
     { name: 'iPhone 14 Pro Max (chromium)', use: { ...devices['iPhone 14 Pro Max'] } },
     { name: 'Pixel 7 Pro (chromium)', use: { ...devices['Pixel 7 Pro'] } },
 
@@ -57,7 +57,7 @@ export default defineConfig({
     { name: 'iPhone 13 (webkit)', use: { ...devices['iPhone 13'] } },
 
     { name: 'iPad Pro 11 (chromium)', use: { ...devices['iPad Pro 11'] } },
-    { name: 'iPad Pro 12.9 (chromium)', use: { ...devices['iPad Pro 12.9'] } },
+    { name: 'iPad (gen 7) (chromium)', use: { ...devices['iPad (gen 7)'] } },
     { name: 'Galaxy Tab S9 (chromium)', use: { ...devices['Galaxy Tab S9'] } },
 
     { name: 'iPad Pro 11 (webkit)', use: { ...devices['iPad Pro 11'] } },

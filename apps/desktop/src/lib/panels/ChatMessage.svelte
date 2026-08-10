@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { renderMarkdownLite, escape, type Segment } from '$lib/markdown';
+  import { renderMarkdownLite, type Segment } from '$lib/markdown';
   let { message, onReport }: { message: { id: string; role: string; content: string; timestamp: number; xpEarned?: number }; onReport?: (m: any) => void } = $props();
 
   function formatTime(ts: number): string {
@@ -68,20 +68,20 @@
 {#snippet segRendered(segs: Segment[])}
   {#each segs as seg, idx}
     {#if seg.type === 'text'}
-      {escape(seg.value)}
+      {seg.value}
     {:else if seg.type === 'pre'}
       <div class="pre-wrap">
-        <pre class="md-pre">{escape(seg.value)}</pre>
+        <pre class="md-pre">{seg.value}</pre>
         <button class="copy-btn" class:copied={copiedIdx === idx} onclick={() => copyPre(idx, seg.value)}>
           {copiedIdx === idx ? 'COPIED!' : 'COPY'}
         </button>
       </div>
     {:else if seg.type === 'code'}
-      <code class="md-inline">{escape(seg.value)}</code>
+      <code class="md-inline">{seg.value}</code>
     {:else if seg.type === 'bold'}
-      <strong class="md-strong">{escape(seg.value)}</strong>
+      <strong class="md-strong">{seg.value}</strong>
     {:else if seg.type === 'italic'}
-      <em class="md-em">{escape(seg.value)}</em>
+      <em class="md-em">{seg.value}</em>
     {/if}
   {/each}
 {/snippet}
@@ -89,107 +89,128 @@
 <style>
   .chat-msg {
     display: flex;
-    gap: 6px;
-    padding: 4px 8px;
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
     max-width: 100%;
-    image-rendering: pixelated;
   }
   .chat-msg.user { flex-direction: row-reverse; }
-  .chat-msg.system { justify-content: center; padding: 4px 8px; }
+  .chat-msg.system { justify-content: center; padding: var(--sp-2) var(--sp-3); }
   .chat-msg.system .bubble {
-    background: var(--gb-panel);
-    border: 2px solid var(--gb-dark);
-    padding: 2px 8px;
-    font-size: 8px;
-    color: var(--gb-dark);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    padding: var(--sp-2) var(--sp-3);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
     text-align: center;
-    font-style: normal;
     font-family: var(--font-body);
+    border-radius: var(--radius-md);
   }
 
   .avatar {
-    width: 22px;
-    height: 22px;
-    border: 3px solid var(--gb-border);
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border-default);
     display: flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    background: var(--gb-panel);
-    image-rendering: pixelated;
+    background: var(--bg-overlay);
+    border-radius: var(--radius-md);
   }
-  .pet-icon { width: 14px; height: 14px; }
-  .user-icon { font-size: 10px; color: var(--gb-border); font-family: var(--font-body); }
-  .user-avatar { background: var(--gb-bg); border-color: var(--gb-border); }
+  .pet-icon { width: 16px; height: 16px; }
+  .user-icon { font-size: 11px; color: var(--text-secondary); font-family: var(--font-body); font-weight: 700; }
+  .user-avatar { background: var(--bg-overlay); border-color: var(--border-default); }
 
   .bubble {
     max-width: 75%;
-    padding: 6px 8px;
-    border: 3px solid var(--gb-border);
-    font-size: 9px;
-    line-height: 1.8;
-    color: var(--gb-text);
-    background: var(--gb-panel);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--border-default);
+    font-size: var(--fs-sm);
+    line-height: 1.6;
+    color: var(--text-primary);
+    background: var(--bg-elevated);
     font-family: var(--font-body);
-    image-rendering: pixelated;
+    border-radius: var(--radius-lg);
   }
   .user .bubble {
-    background: var(--gb-border);
-    border-color: var(--gb-text);
-    color: var(--gb-bg);
+    background: var(--accent-subtle);
+    border-color: rgba(99, 102, 241, 0.2);
+    color: var(--text-primary);
   }
 
   .sender {
     display: flex;
     align-items: center;
-    gap: 6px;
-    margin-bottom: 3px;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-1);
   }
-  .name { font-size: 8px; color: var(--gb-text); text-transform: uppercase; }
-  .time { font-size: 7px; color: var(--gb-dark); margin-left: auto; font-family: var(--font-body); }
+  .name { font-size: var(--fs-xs); color: var(--text-primary); font-weight: 600; }
+  .time { font-size: var(--fs-2xs); color: var(--text-muted); margin-left: auto; font-family: var(--font-body); }
   .xp-badge {
-    font-size: 7px;
-    color: var(--gb-bg);
-    background: var(--gb-border);
-    padding: 1px 4px;
-    border: 2px solid var(--gb-text);
+    font-size: var(--fs-2xs);
+    color: var(--success);
+    background: var(--success-subtle);
+    padding: 1px var(--sp-1);
+    border: 1px solid rgba(16, 185, 129, 0.2);
     font-family: var(--font-body);
+    border-radius: var(--radius-sm);
+    font-weight: 600;
   }
   .report-btn {
     margin-left: auto;
-    font-size: 8px;
-    padding: 0 4px;
-    background: var(--gb-bg);
-    border: 2px solid var(--gb-border);
-    color: var(--gb-dark);
+    font-size: var(--fs-2xs);
+    padding: var(--sp-1) var(--sp-1);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    color: var(--text-muted);
     cursor: pointer;
     font-family: var(--font-body);
-    image-rendering: pixelated;
+    border-radius: var(--radius-sm);
     opacity: 0.6;
-    transition: opacity 0.1s steps(2), color 0.1s steps(2);
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .report-btn:hover { opacity: 1; color: #e85050; }
-  .report-btn.reported { opacity: 1; color: var(--gb-text); background: var(--gb-border); }
+  .report-btn:hover { opacity: 1; color: var(--error); border-color: rgba(239, 68, 68, 0.3); }
+  .report-btn.reported { opacity: 1; color: var(--success); background: var(--success-subtle); border-color: rgba(16, 185, 129, 0.2); }
 
-  .content { white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: 9px; line-height: 1.8; }
+  .content { white-space: pre-wrap; word-break: break-word; font-family: var(--font-body); font-size: var(--fs-sm); line-height: 1.6; color: var(--text-primary); }
   .pre-wrap { position: relative; }
-  .md-pre { display: block; margin: 4px 0; padding: 4px 6px; background: var(--gb-bg); border: 2px solid var(--gb-dark); font-family: var(--font-body); font-size: 8px; white-space: pre-wrap; word-break: break-all; image-rendering: pixelated; }
+  .md-pre {
+    display: block;
+    margin: var(--sp-2) 0;
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    white-space: pre-wrap;
+    word-break: break-all;
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+  }
   .copy-btn {
     position: absolute;
-    top: 2px;
-    right: 2px;
+    top: var(--sp-1);
+    right: var(--sp-1);
     font-family: var(--font-body);
-    font-size: 6px;
-    padding: 1px 4px;
-    background: var(--gb-panel);
-    border: 2px solid var(--gb-border);
-    color: var(--gb-dark);
+    font-size: var(--fs-2xs);
+    padding: var(--sp-1) var(--sp-2);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
     cursor: pointer;
-    image-rendering: pixelated;
+    border-radius: var(--radius-sm);
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .copy-btn:hover { background: var(--gb-border); color: var(--gb-bg); }
-  .copy-btn.copied { background: var(--gb-text); color: var(--gb-bg); border-color: var(--gb-text); }
-  .md-inline { background: var(--gb-bg); border: 2px solid var(--gb-dark); padding: 0 3px; font-family: var(--font-body); font-size: 8px; image-rendering: pixelated; }
-  .md-strong { color: var(--gb-text); font-weight: bold; letter-spacing: 0.3px; }
-  .md-em { font-style: italic; color: var(--gb-dark); }
+  .copy-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
+  .copy-btn.copied { background: var(--accent-subtle); color: var(--accent); border-color: rgba(99, 102, 241, 0.2); }
+  .md-inline {
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    padding: 1px var(--sp-1);
+    font-family: var(--font-mono);
+    font-size: var(--fs-xs);
+    border-radius: var(--radius-sm);
+  }
+  .md-strong { color: var(--text-primary); font-weight: 700; }
+  .md-em { font-style: italic; color: var(--text-secondary); }
 </style>

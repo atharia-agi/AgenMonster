@@ -136,6 +136,15 @@ export default {
     emptyOutDir: true,
     target: 'esnext',
     minify: 'esbuild',
+      rollupOptions: {
+        output: {
+          manualChunks: (id: string) => {
+            if (id.includes('node_modules')) return 'vendor';
+            if (id.includes('/tauri.ts')) return 'tauri-core';
+            if (id.includes('/llm.ts') || id.includes('/llmProxyCore.ts')) return 'llm-core';
+          },
+        },
+      },
   },
   css: {
     transformer: 'esbuild',

@@ -29,60 +29,60 @@
     right: 12px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: var(--sp-2);
     z-index: 9998;
     pointer-events: none;
     font-family: var(--font-body);
-    image-rendering: pixelated;
   }
   .toast {
     display: flex;
     align-items: stretch;
     min-width: 220px;
     max-width: 320px;
-    background: var(--gb-bg);
-    border: var(--gb-stroke) solid var(--gb-border);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
     pointer-events: auto;
-    animation: toast-in 0.15s steps(2) forwards;
+    animation: toast-in 0.2s var(--ease-default) forwards;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   }
   @keyframes toast-in {
     from { opacity: 0; transform: translateX(20px); }
     to { opacity: 1; transform: translateX(0); }
   }
   .toast-bar {
-    width: 6px;
+    width: 4px;
     flex-shrink: 0;
-    image-rendering: pixelated;
+    border-radius: var(--radius-md) 0 0 var(--radius-md);
   }
   .toast-body {
     flex: 1;
-    padding: 6px 8px;
+    padding: var(--sp-2) var(--sp-3);
   }
   .toast-title {
-    font-size: 8px;
-    color: var(--gb-text);
-    letter-spacing: 0.5px;
-    margin-bottom: 2px;
+    font-size: var(--fs-xs);
+    color: var(--text-primary);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    margin-bottom: var(--sp-1);
   }
   .toast-msg {
-    font-size: 7px;
-    color: var(--gb-dark);
-    line-height: 1.6;
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
+    line-height: 1.5;
   }
   .toast-x {
-    background: var(--gb-panel);
+    background: var(--bg-overlay);
     border: none;
-    border-left: var(--gb-stroke) solid var(--gb-border);
-    width: 20px;
+    border-left: 1px solid var(--border-default);
+    width: 28px;
     cursor: pointer;
     font-family: var(--font-body);
-    font-size: 10px;
-    color: var(--gb-text);
+    font-size: var(--fs-lg);
+    color: var(--text-muted);
     padding: 0;
     line-height: 1;
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .toast-x:hover {
-    background: var(--gb-text);
-    color: var(--gb-bg);
-  }
+  .toast-x:hover { background: var(--bg-hover); color: var(--text-primary); }
 </style>

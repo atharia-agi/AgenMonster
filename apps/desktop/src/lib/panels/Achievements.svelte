@@ -61,140 +61,156 @@
   .achievements-panel {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    padding: 10px;
-    background: var(--gb-bg);
-    border: var(--gb-stroke) solid var(--gb-border);
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
     font-family: var(--font-body);
-    image-rendering: pixelated;
+    border-radius: var(--radius-lg);
   }
 
   .ach-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 6px;
-    border-bottom: var(--gb-stroke) solid var(--gb-border);
+    gap: var(--sp-3);
+    padding-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--border-default);
   }
   .ach-title {
-    font-size: 11px;
-    color: var(--gb-text);
-    letter-spacing: 1px;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
     display: block;
-    margin-bottom: 4px;
+    margin-bottom: var(--sp-1);
   }
   .ach-sub {
-    font-size: 7px;
-    color: var(--gb-dark);
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    letter-spacing: 0.05em;
   }
   .ach-progress {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--sp-2);
     flex: 1;
     max-width: 220px;
   }
   .progress-track {
     flex: 1;
-    height: 12px;
-    background: var(--gb-panel);
-    border: var(--gb-stroke) solid var(--gb-border);
+    height: 8px;
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
     overflow: hidden;
+    border-radius: 4px;
   }
   .progress-fill {
     height: 100%;
-    background: var(--gb-border);
-    transition: width 0.3s steps(8);
+    background: var(--accent);
+    transition: width 0.3s var(--ease-default);
+    border-radius: 4px;
   }
   .progress-pct {
-    font-size: 8px;
-    color: var(--gb-text);
+    font-size: var(--fs-xs);
+    color: var(--text-primary);
     min-width: 32px;
     text-align: right;
+    font-family: var(--font-mono);
+    font-weight: 600;
   }
 
   .ach-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 6px;
+    gap: var(--sp-2);
   }
   .badge {
     position: relative;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    background: var(--gb-panel);
-    border: var(--gb-stroke) solid var(--gb-border);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast) var(--ease-default);
   }
   .badge.locked {
     opacity: 0.45;
     filter: grayscale(0.5);
   }
   .badge.earned {
-    animation: badge-pop 0.2s steps(2) forwards;
+    animation: badge-pop 0.2s ease-out forwards;
+    border-color: rgba(16, 185, 129, 0.3);
+    background: var(--success-subtle);
   }
   @keyframes badge-pop {
-    from { transform: scale(0.95); }
+    from { transform: scale(0.98); }
     to { transform: scale(1); }
   }
   .badge-icon {
-    font-size: 16px;
+    font-size: 18px;
     flex-shrink: 0;
-    width: 28px;
+    width: 32px;
     text-align: center;
   }
   .badge-body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-1);
     min-width: 0;
   }
   .badge-title {
-    font-size: 8px;
-    color: var(--gb-text);
-    letter-spacing: 0.5px;
+    font-size: var(--fs-xs);
+    color: var(--text-primary);
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
   .badge-desc {
-    font-size: 6px;
-    color: var(--gb-dark);
-    line-height: 1.6;
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    line-height: 1.5;
   }
   .badge-check {
     position: absolute;
-    top: 4px;
-    right: 6px;
-    font-size: 9px;
-    color: var(--gb-bg);
-    background: var(--gb-text);
-    width: 14px;
-    height: 14px;
+    top: var(--sp-1);
+    right: var(--sp-1);
+    font-size: var(--fs-xs);
+    color: #fff;
+    background: var(--success);
+    width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border-radius: 50%;
+    font-weight: 700;
   }
   .badge-lock {
     position: absolute;
-    top: 4px;
-    right: 6px;
-    font-size: 9px;
-    width: 14px;
-    height: 14px;
+    top: var(--sp-1);
+    right: var(--sp-1);
+    font-size: var(--fs-xs);
+    width: 18px;
+    height: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
+    opacity: 0.5;
   }
 
   .ach-footer {
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 2px dashed var(--gb-dark);
+    margin-top: var(--sp-2);
+    padding-top: var(--sp-2);
+    border-top: 1px dashed var(--border-default);
   }
   .footer-text {
-    font-size: 6px;
-    color: var(--gb-dark);
-    letter-spacing: 0.5px;
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    font-family: var(--font-mono);
   }
 </style>

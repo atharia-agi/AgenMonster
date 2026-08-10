@@ -1,14 +1,128 @@
-# Session 15 — Daily Companion Level 5 (Analytics + Backup + Presence + Docs)
-- Created `src/lib/analytics.ts` — `computeAnalytics()` with daysActive, totalMessages, goalsCompleted, relationshipLevel, totalXP, uptimeMs, moodDistribution
-- Created `tests/analytics.test.ts` — 5 tests (daysActive, totalMessages, relationshipLevel, uptimeMs, stage/level)
-- Added `lastActivityTs` field to `GameState` in `gameState.ts` — initialized in `createInitialState()`, updated in handleChat, handleToolUse, handleTaskComplete, handleError, handleScheduleTick
-- Added analytics section (Section 11 / ANALYTICS) to SettingsPanel.svelte — shows daysActive, totalMessages, goals completed, relationship, stage, totalXP
-- Added backup automation to +page.svelte — setInterval checks midnight, exports memory JSON with context to localStorage under `agenmonster_backup`
-- Presence indicator already in MonsterStatus.svelte — refactored from `{@const}` to `$:` reactive declarations for Svelte 5 runes compatibility, then to script-level `getPresence()` function
-- Updated README.md, AGENTS.md, PROGRESS.md with 389 test count
-- Test count: 384 → **389** (+5 analytics tests)
-- svelte-check: 0 errors, 0 warnings. Build: green.
-- DAILY COMPANION GATE: FULLY SHIPPED ✅ All 5 levels complete.
+# Session 23 — Professional Dark Theme + Dithering Fix + Timer Consolidation
+- **app.css completely rewritten** — GBA pixel toy theme (#f8f4e8 cream, 3px borders, `image-rendering: pixelated`) replaced with professional dark design system (#0a0a0f base, #12121a surfaces, 1px borders, 6px radii, Inter font, smooth cubic-bezier transitions). Legacy CSS variable aliases map old names to new tokens.
+- **PixelPetV2 dithering eliminated** — `ditheredRect` per-pixel `fillRect` loop (43,200+ calls/frame) replaced with pre-rendered 8×8 dither pattern canvas + `CanvasPattern` fill with per-color/intensity cache. `drawDitheredBand` replaced with gradient band fills. THE #1 lag source fixed.
+- **NeedsPanel action fix** — `handleAction` now calls `feedPet`/`playWithPet`/`cleanPet`/`sleepPet` instead of dispatching empty `gamestate-change` events. Actions actually modify pet state now.
+- **Unified background scheduler** — 3 separate `setInterval` timers (idle 30s, clock 10s, dream 60s) consolidated into single 10s tick `setupBackgroundScheduler` with modulo gating. Reduces timer overhead + localStorage write frequency.
+- **NeedsPanel CSS modernized** — action buttons, need bars, item chips all use design tokens, rounded corners, smooth hover transitions.
+- Test count: 871 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+- Documentation updated: AGENTS.md, CHANGELOG.md, PROGRESS.md
+
+# Session 22 — Lag Fixes at the Source + Collapsible Workspace + Docs
+- **Adaptive render loop** (`PixelPetV2.svelte`): capped at 30fps animated / 10fps idle (was unlimited 60fps `requestAnimationFrame` that pinned the main thread and made typing lag)
+- **Mini pet canvas removed from `MonsterHeader`**: replaced with a static stage icon; only the collapsible `MonsterRoom` (right sidebar) keeps a canvas
+- **rAF-coalesced gamestate re-render** (`+page.svelte`): bursty `gamestate-change` events collapse to one reactive assignment per frame
+- **`dispatchEvent` returns cached singleton**: unchanged state never re-renders panels
+- **Fully collapsible workspace**: left/right sidebars + bottom bar toggle, persisted to `agenmonster_workspace` / `agenmonster_focus_mode`
+- **ChatPanel CONTROLS collapsed by default**: thread bar + controls toggle, provider/mode/skill/steer/compaction/healing bars hidden until expanded → taller chat viewport
+- **Readable type scale**: `--fs-xs` 11px → `--fs-xl` across ChatPanel/ChatInput/ChatMessage/TopNav/BottomStatusBar/MonsterHeader/NeedsPanel/ActiveTasks/MemoryCrystals/TodaysMissions
+- **Pet speech throttling** (`petSpeech.ts`): 90s cooldown + dedup gates autonomous pet-initiated chats
+- Test count: 871 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+- Documentation updated: README.md, CHANGELOG.md, AGENTS.md, apps/desktop/README.md, apps/desktop/CHANGELOG.md, apps/desktop/docs/NEXT_PLAN.md
+
+# Session 21 — Needs Decay + Personality + Crafting + Achievements + Daily Quests + Docs
+- **Needs decay system** (`gameLoop.ts`): 7 needs decay every 30s tick (hunger, energy, focus, mood, affection, motivation, knowledge)
+- **Personality traits** (`gameState.ts`): `personalityTraits` field with decay multipliers per need
+- **Personality assignment UI** (`PersonalityPanel.svelte`): 10 personalities, trait stats display, PERSONA tab
+- **Pet mood indicator** (`WorldPanel.svelte`): emoji bubble above pet (😊/😐/😟/😢)
+- **Seasonal decorations** (`WorldPanel.svelte`): spring/summer/autumn/winter parallax layers
+- **Mood effects** (`WorldPanel.svelte`): mood affects encounter chance and win chance
+- **Crafting system** (`items.ts` + `CraftingPanel.svelte`): 8 recipes (HP Potion, SP Potion, Revive, Memory Boost, Glitch Key, Super HP, Data Map, Storm Crystal)
+- **Achievement system** (`achievements.ts`): 21 achievements across 5 categories, auto-tracking from world + game state
+- **Achievements panel** (`Achievements.svelte`): category-grouped display with progress tracking
+- **Cross-area story chains**: The Lost Artifact (5 steps, 3 areas) and The Glitch Cure (5 steps, 3 areas)
+- **Seasonal story chains**: Dark Frost (winter), Festival of Bloom (spring), Neon Rave (summer), Harvest Festival (autumn)
+- **Daily quest system** (`dailyQuests.ts`): 6 quest definitions, 3 rotate daily with XP/currency/item rewards
+- **DailyQuestsPanel** (`DailyQuestsPanel.svelte`): quest cards with progress bars, claim buttons, auto-refresh at midnight
+- **QUESTS tab** in TopNav
+- **Achievement tracking**: `achievements` field in GameState, `updateAchievements()` helper
+- **CI pipeline** (`.github/workflows/ci.yml`): chromium/firefox/webkit matrix + lint + unit tests
+- `requiredAreas` and `season` requirement types in `EventRequirement`
+- `meetsRequirements` exported from `eventEngine.ts`
+- `getMoodMultiplier()`, `getEnergySpeedMult()`, `getPersonalityTraits()`, `setPersonalityType()` helpers
+- `getNeedsDecayPerTick()` in `gameLoop.ts`
+- Test count: 593 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+- Story events: 30+ (13 original + 10 area-specific + 4 seasonal + 10 cross-area + 3 new)
+- TopNav tabs: 15 tabs (added CRAFT, PERSONA, QUESTS)
+- Documentation updated: README.md, CHANGELOG.md, PROGRESS.md, apps/desktop/README.md
+
+# Session 20 — World Engine + Items + E2E Fix + Doc Refresh
+- **World engine** (`worldEngine.ts`): 6 areas, weather, seasons, travel, questFlags, npcFriendship, npcMet
+- **Event engine** (`eventEngine.ts`): 5 NPCs with schedules/dialogue/requests, 8 wild encounters, 6 environmental events, 3 legendary encounters, 13 story events with chained quests
+- **Pet evolution** (`petEvolution.ts`): 4 forms, 4 paths (balanced/offensive/defensive/speed), SP regen, care/battle/exploration gates
+- **Hub growth** (`hubGrowth.ts`): 6 services, 7 quests, 6 decorations, NPC visits, daily XP, leveling
+- **Exploration** (`exploration.ts`): side-scroll player, NPC AI patrol, interaction detection, area transitions
+- **Items system** (`items.ts`): 12 items with effects, buy/sell/use helpers, shop mapping for Rin + Vee
+- **WorldPanel**: arrow-key movement, weather particles (rain/fog/starry), area decorations, NPC sprites, transitions, encounters, evolve trigger, parallax backgrounds
+- **EventPanel**: active events list, event log with timestamps
+- **EvolutionPanel**: form display, SP bar, stats, path selection
+- **HubPanel**: level bar, visitors, services, quests, decorations
+- **GameLoop** (`gameLoop.ts`): 30s tick for world/evolution/hub state updates
+- **NPC friendship persistence**: `npcFriendship` + `npcMet` in WorldState, dialogue tiers based on friendship level
+- **Story quest rewards**: `choice.effect(world)` + `onComplete(world)` wired into WorldPanel
+- **Pet mood/energy gameplay**: movement speed, encounter chance, win rate scale with energy level
+- **World event narration** (`worldEventNarration.ts`): 90 tests, 10 personalities × 9 event contexts
+- **Focus mode persistence**: localStorage-backed, restored on app startup
+- **E2E fixes**: 10/10 pass (5 smoke + 5 features, chromium, production build)
+  - `networkidle` → `domcontentloaded` (Vite HMR)
+  - `addInitScript` for pre-navigation localStorage setup
+  - JS-dispatched interactions via `page.evaluate()`
+  - LLM provider API mock via `page.route('/api/llm/providers', ...)`
+  - focusMode isolation via `addInitScript` + post-nav cleanup
+  - Retries disabled (`retries: 0`) due to CDP instability after `page.reload()`
+  - Production build used (`E2E_URL=http://localhost:4173`)
+- **Font modernization**: Inter/Plus Jakarta Sans, 14px base, removed pixelated rendering from UI
+- **SecondBrain MCP bridge**: `/api/mcp` route, `om-mcp.mjs` spawned with `OBSIDIAN_VAULT`
+- **BrowserOS MCP proxy**: 64 tools via HTTP to `http://127.0.0.1:9001/mcp`
+- **NousResearch default provider**: `stepfun/step-3.7-flash:free` with custom provider UI
+- Test count: 518 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+- MCP tools: 106 (19 local + 23 secondbrain + 64 browseros)
+- E2E: 10/10 pass (chromium, production build)
+
+# Session 19 — Items System + NPC Friendship + Story Quests
+- Created `src/lib/items.ts` — 12 item definitions (potions, materials, keys, equipment) with effects
+- Created `tests/items.test.ts` — 12 tests (add/remove/has/count/use/buy/sell/getShopItems)
+- Added `items: string[]` to `GameState` in `gameState.ts`
+- Shop items mapped for `merchant_rin` and `hacker_vee`
+- Item effects modify `needs.energy`, `petEvolution.sp`, `memoryIndex`
+- NPC friendship persistence: `npcFriendship: Record<string, number>` + `npcMet: Record<string, boolean>` in `WorldState`
+- `createNPCEvent` uses persisted friendship to determine dialogue tier
+- Effects: Talk (+1), Help (+5), Leave (+0 or +1 if first meeting)
+- `createInitialWorldState` seeds empty NPC records
+- Story quest rewards wired: `choice.effect(world)` + `currentEvent.def.onComplete(world)` in WorldPanel
+- `questFlags`, `npcFriendship`, `npcMet` persisted in WorldState
+- Test count: 518 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+
+# Session 18 — World Engine Core + Pet Evolution + Hub Growth
+- Created `src/lib/worldEngine.ts` — 6 areas (home_forest→void_sea), unlock levels, encounter tables, weather chances
+- Created `src/lib/eventEngine.ts` — 5 NPCs with schedules/dialogue/requests, 8 wild encounters, 6 environmental events, 3 legendary encounters, 13 story events
+- Created `src/lib/petEvolution.ts` — 4 forms, SP regen, 4 paths (balanced/offensive/defensive/speed), care/battle/exploration gates
+- Created `src/lib/hubGrowth.ts` — 6 services, 7 quests, 6 decorations, NPC visits, daily XP, leveling
+- Created `src/lib/exploration.ts` — side-scroll player, NPC AI patrol, interaction detection, area transitions
+- Created `src/lib/gameLoop.ts` — 30s tick for world/evolution/hub state updates
+- Created `src/lib/panels/WorldPanel.svelte` — arrow-key movement, weather particles, parallax backgrounds
+- Created `src/lib/panels/EventPanel.svelte` — active events list, event log with timestamps
+- Created `src/lib/panels/EvolutionPanel.svelte` — form display, SP bar, stats, path selection
+- Created `src/lib/panels/HubPanel.svelte` — level bar, visitors, services, quests, decorations
+- All wired into `+page.svelte` tab routing and `TopNav`
+- World events → chat immersion via `worldEventNarration.ts` (90 new tests, 10 personalities × 9 event contexts)
+- Test count: 518 passing. svelte-check: 0 errors, 0 warnings. Build: green.
+
+# Session 17 — Shipping-Grade Refactor (Phase 2–4)
+- **ChatPanel decomposition** (1041→647 lines): 22 slash commands → `src/lib/commands/slashCommands.ts` (pure dispatcher); cost-guard/transient-error/tool-dispatch → `src/lib/chatEngine.ts` (+12 tests).
+- **GameState full typing**: 9 `any[]` → `Mission`/`ChatMessage`/`ToolInfo`/`MemoryItem` + enriched `Skill`/`MemoryCrystal`/`ActiveTask`; panels import shared types (one source of truth). Surfaced + fixed 3 latent mismatches.
+- **Repo hygiene**: −277MB binaries/dumps/junk; 15 tracked junk files removed; 10 one-off py scripts deleted; 5 dead components deleted; 85 generated `.svelte-kit/output` files untracked; 6 fragmented CHANGELOGs → `docs/changelog/`.
+- **Design audit**: zero banned CSS (`border-radius`/`backdrop-filter`/`box-shadow`/blur), zero transitions >250ms; global reset already enforces anti-slop.
+- Verification: 439/439 tests, svelte-check 0 errors/0 warnings, build green.
+
+# Session 16 — UX Polish: Chat Freeze, Fonts, Sprite, Theme, SettingsPanel
+- **Chat freeze fix**: `memory.ts` mutators now defer `persist()`/`notify()` via `schedulePersist()`/`scheduleNotify()`. `getMemoriesForPrompt` reconsolidation inlined synchronously with deferred persist. Eliminates main-thread blocking during chat send.
+- **Font readability**: base `font-size` 10px → 12px, added `font-weight: 600` in `app.css`.
+- **Monster sprite**: proportions tweaked in `PixelPetV2.svelte` (head 5px, body 5px, legs 4px, arms closer to torso).
+- **Theme system repair**: `+layout.svelte` now calls `applyTheme(loadTheme())` on startup so saved theme persists.
+- **SettingsPanel theme selector**: wired dead `<select>` to real theme switching (`gb`/`gb-night`/`gb-dawn`) via `setTheme()` → `saveTheme()` + `applyTheme()`.
+- **SettingsPanel style unification**: rewrote 230 lines of CSS from hardcoded modern glassmorphism (`rgba`, `backdrop-filter`, gradients, `border-radius`) to GBA pixel-theme variables (`--gb-bg`, `--gb-panel`, `--gb-border`, `--gb-text`, `--gb-stroke`, `--font-body`).
+- **gameState.ts save safety**: `saveState` reverted from deferred scheduler to direct `localStorage.setItem` to prevent state desync.
+- Test count: 427 passing, 0 failures. svelte-check: 0 errors, 0 warnings. Build: green.
 
 # Session 14 - Daily Companion Gate reached (380 tests)
 - Created src/lib/memoryIndex.ts (extractKeywords, keywordOverlap)
@@ -459,8 +573,22 @@
 - **gameState.ts save safety**: `saveState` reverted from deferred scheduler to direct `localStorage.setItem` to prevent state desync.
 - Test count: **427 passing**, 0 failures. svelte-check: 0 errors, 0 warnings. Build: green.
 
+# Session 18 — Deep Recursive Agent + 23-Layer Cognition Architecture
+- **Near-AGI 23-layer architecture** — 4 lobus (SELF / THINKING / MEMORY / ACTION / LEARNING) with 12 new modules: `identityModel.ts`, `goalHierarchy.ts`, `metaCognition.ts`, `simulation.ts`, `attentionEconomy.ts`, `executivePlanner.ts`, `alignmentLayer.ts`, `experimentEngine.ts`, `socialCognition.ts`, `policyHabits.ts`, `toolOrchestration.ts`, `conceptFormation.ts`.
+- **runCognitionLayer** — wired into `deepRecursiveAgent.runDeepTurn`; runs identity scoring, world-graph concept formation, meta-cognition, attention gating, executive planning, alignment each turn; summary injected into system prompt.
+- **composeSelfNarrative** — writes first-person autobiography to vault each turn (`kind: 'self-narrative'`); displayed in "Life Log" sidebar panel.
+- **Persistent world graph** — `worldModelGraph.ts` entity+relation graph persists across sessions via `persistWorldGraph`/`loadWorldGraph`.
+- **Persistent pet form evolution** — `petForm.ts` derives deterministic visual form from internal state (PAD emotion, mastery, lesson depth, energy, closeness); persists via `persistPetForm`/`loadPetForm`.
+- **Autonomous modes UI** — `START 3H` (AutonomousAgent, continuous multi-turn loop with dream cycle + emotion + pet speech) + `DEEP 1H` (DeepRecursiveAgent + AutonomousWorld + AutonomousSelfCare) with live status in `+page.svelte`.
+- **Live autonomous events** — `deep-turn` dispatched after every turn; `+page.svelte` tracks `deepTurnCount`, `deepErrors`, `deepSkills`, runtime stats.
+- **Verification**: 871/871 tests passing, svelte-check 0 errors/0 warnings, build green.
 
-
-
+# Session 19 — Docs Refresh + Deep Recursive Enhancements
+- **Documentation updated** — README.md, CHANGELOG.md, PROGRESS.md updated to reflect current state (886/886 tests, deep recursive agent, cognition layer, autonomous modes).
+- **Deep recursive enhancements** — 1h nonstop resilience (`turnRunning` flag, try/catch wrapper, `stopTimeoutId` cleanup), real LLM reasoning path (`tryRealLLM` with 4s timeout), real emotional pet form from PAD state.
+- **agentToolCall brace-depth parser** — handles spaces, escaped quotes, multi-line JSON payloads.
+- **dispatchAgentToolWithHooks** — wrapper in `chatEngine.ts` with `DispatchAgentToolOptions` for provider, riskTolerance, dailySpend, doomLoopDetector, callbacks.
+- **selfCorrect stats API** — `recordRetryOutcome` + `getRetryConfidenceStats` for Diagnostics panel.
+- **Verification**: 886/886 tests passing, svelte-check 0 errors/0 warnings, build green.
 
 

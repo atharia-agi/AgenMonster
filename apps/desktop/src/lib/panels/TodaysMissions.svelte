@@ -30,37 +30,39 @@
 </div>
 
 <style>
-  .missions-panel { padding: 2px 0; font-family: var(--font-body); image-rendering: pixelated; }
+  .missions-panel { padding: var(--sp-1) 0; font-family: var(--font-body); }
   .panel-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 2px;
-    border-bottom: 3px solid var(--gb-border);
-    padding-bottom: 4px;
+    margin-bottom: var(--sp-1);
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: var(--sp-1);
   }
-  .panel-title { font-size: 8px; color: var(--gb-text); text-transform: uppercase; letter-spacing: 0.5px; }
-  .count { font-size: 8px; color: var(--gb-dark); }
-  .missions-list { display: flex; flex-direction: column; gap: 2px; }
+  .panel-title { font-size: var(--fs-xs); color: var(--text-primary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+  .count { font-size: var(--fs-xs); color: var(--text-muted); font-family: var(--font-mono); font-weight: 600; }
+  .missions-list { display: flex; flex-direction: column; gap: var(--sp-1); }
   .mission-row {
     display: flex;
     align-items: center;
-    gap: 4px;
-    padding: 2px 0;
-    border-bottom: 2px solid var(--gb-dark);
+    gap: var(--sp-2);
+    padding: var(--sp-1) var(--sp-2);
+    border-bottom: 1px solid var(--border-subtle);
+    transition: all var(--duration-fast) var(--ease-default);
+    border-radius: var(--radius-sm);
   }
-  .mission-row.done { opacity: 0.3; }
-  .check { font-size: 10px; color: var(--gb-dark); width: 12px; text-align: center; }
-  .mission-row.done .check { color: var(--gb-text); }
+  .mission-row.done { opacity: 0.4; }
+  .check { font-size: var(--fs-sm); color: var(--text-muted); width: 16px; text-align: center; font-weight: 700; }
+  .mission-row.done .check { color: var(--success); }
   .mission-info { flex: 1; min-width: 0; }
-  .mission-title { font-size: 7px; color: var(--gb-text); }
+  .mission-title { font-size: var(--fs-xs); color: var(--text-secondary); letter-spacing: 0.02em; }
   .mission-bar {
-    width: 36px;
-    height: 10px;
-    background: var(--gb-bg);
+    width: 48px;
+    height: 6px;
+    background: var(--bg-overlay);
     overflow: hidden;
-    border: 3px solid var(--gb-border);
-    image-rendering: pixelated;
+    border: 1px solid var(--border-default);
+    border-radius: 3px;
   }
-  .fill { height: 100%; background: var(--gb-border); transition: width 0.3s steps(8); }
+  .fill { height: 100%; background: var(--accent); transition: width 0.3s var(--ease-default); border-radius: 3px; }
 </style>

@@ -5,7 +5,7 @@
   import { soundPlayer } from '$lib/audio';
   import PixelPetV2 from '$lib/render/PixelPetV2.svelte';
 
-  let { onDismiss } = $props<{ onDismiss?: () => void }>();
+  let { onDismiss, form = undefined } = $props<{ onDismiss?: () => void; form?: any }>();
 
   const gs = getGameState();
   const stage = gs.stage || 'egg';
@@ -34,7 +34,7 @@
 <div class="welcome-panel" class:intro={isFirstLaunch}>
   <div class="welcome-header">
     <div class="welcome-pet">
-      <PixelPetV2 width={140} height={90} mood={gs.mood} {stage} facing="left" externalSpeech={isFirstLaunch ? 'hi!' : ''} />
+      <PixelPetV2 width={140} height={90} mood={gs.mood} {stage} facing="left" externalSpeech={isFirstLaunch ? 'hi!' : ''} {form} />
     </div>
     <div class="welcome-titles">
       <span class="welcome-label">AGENMONSTER</span>
@@ -72,120 +72,136 @@
   .welcome-panel {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 10px;
-    background: var(--gb-bg);
-    border: var(--gb-stroke) solid var(--gb-border);
+    gap: var(--sp-3);
+    padding: var(--sp-3);
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
     font-family: var(--font-body);
-    image-rendering: pixelated;
+    border-radius: var(--radius-lg);
   }
   .welcome-panel.intro {
-    border-color: var(--gb-text);
-    outline: var(--gb-stroke) solid var(--gb-panel);
-    outline-offset: -8px;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent-subtle);
   }
 
   .welcome-header {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding-bottom: 8px;
-    border-bottom: var(--gb-stroke) dashed var(--gb-dark);
+    gap: var(--sp-3);
+    padding-bottom: var(--sp-2);
+    border-bottom: 1px dashed var(--border-default);
   }
   .welcome-pet {
-    background: var(--gb-panel);
-    border: var(--gb-stroke) solid var(--gb-border);
-    padding: 2px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    padding: var(--sp-1);
     flex-shrink: 0;
+    border-radius: var(--radius-md);
   }
   .welcome-titles {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: var(--sp-1);
     flex: 1;
     min-width: 0;
   }
   .welcome-label {
-    font-size: 11px;
-    color: var(--gb-text);
-    letter-spacing: 1px;
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
   }
   .welcome-stage {
-    font-size: 7px;
-    color: var(--gb-dark);
-    background: var(--gb-panel);
-    border: var(--gb-stroke) solid var(--gb-border);
-    padding: 1px 4px;
+    font-size: var(--fs-2xs);
+    color: var(--text-secondary);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    padding: 2px var(--sp-1);
     align-self: flex-start;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-weight: 600;
   }
   .welcome-personality {
-    font-size: 8px;
-    color: var(--gb-text);
+    font-size: var(--fs-xs);
+    color: var(--text-primary);
+    font-weight: 600;
   }
   .welcome-desc {
-    font-size: 7px;
-    color: var(--gb-dark);
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
     line-height: 1.6;
   }
 
   .welcome-steps {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 6px;
+    gap: var(--sp-2);
   }
   .step {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    background: var(--gb-panel);
-    border: var(--gb-stroke) solid var(--gb-border);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    transition: all var(--duration-fast) var(--ease-default);
   }
+  .step:hover { background: var(--bg-hover); border-color: var(--border-strong); }
   .step-num {
-    font-size: 11px;
-    color: var(--gb-text);
-    background: var(--gb-bg);
-    border: 2px solid var(--gb-border);
-    padding: 4px 6px;
-    min-width: 24px;
+    font-size: var(--fs-sm);
+    color: var(--text-primary);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    padding: var(--sp-1) var(--sp-2);
+    min-width: 28px;
     text-align: center;
     flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-weight: 700;
   }
   .step-body {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--sp-1);
     min-width: 0;
   }
   .step-title {
-    font-size: 8px;
-    color: var(--gb-text);
-    letter-spacing: 0.5px;
+    font-size: var(--fs-xs);
+    color: var(--text-primary);
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
   .step-desc {
-    font-size: 6px;
-    color: var(--gb-dark);
+    font-size: var(--fs-2xs);
+    color: var(--text-muted);
     line-height: 1.6;
   }
 
   .welcome-tip {
     display: flex;
     align-items: flex-start;
-    gap: 8px;
-    padding: 6px 8px;
-    background: var(--gb-panel);
-    border: 2px solid var(--gb-border);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
   }
   .tip-label {
-    font-size: 7px;
-    color: var(--gb-bg);
-    background: var(--gb-text);
-    padding: 2px 4px;
+    font-size: var(--fs-2xs);
+    color: #fff;
+    background: var(--accent);
+    padding: 2px var(--sp-1);
     flex-shrink: 0;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    letter-spacing: 0.05em;
   }
   .tip-text {
-    font-size: 7px;
-    color: var(--gb-dark);
+    font-size: var(--fs-xs);
+    color: var(--text-secondary);
     line-height: 1.6;
   }
 
@@ -194,17 +210,17 @@
     justify-content: flex-end;
   }
   .dismiss-btn {
-    background: var(--gb-border);
-    color: var(--gb-bg);
-    border: var(--gb-stroke) solid var(--gb-text);
-    padding: 6px 12px;
+    background: var(--accent);
+    color: #fff;
+    border: 1px solid var(--accent);
+    padding: var(--sp-2) var(--sp-3);
     font-family: var(--font-body);
-    font-size: 9px;
+    font-size: var(--fs-sm);
     cursor: pointer;
-    letter-spacing: 1px;
-    transition: background 0.1s steps(2);
+    letter-spacing: 0.05em;
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    transition: all var(--duration-fast) var(--ease-default);
   }
-  .dismiss-btn:hover {
-    background: var(--gb-text);
-  }
+  .dismiss-btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px); }
 </style>

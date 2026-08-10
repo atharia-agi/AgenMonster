@@ -2,11 +2,14 @@
   import { SpriteAnimator, type SpritePose, type Mood } from './animator';
   import EvolutionCutscene from './EvolutionCutscene.svelte';
   import { getVisual, type StageVisual } from './stageVisuals';
+  import type { PetForm } from '$lib/petForm.ts';
+  import { playSfx } from './sfx';
 
-  let { width = 160, height = 120, mood = 'idle', stage = 'egg', facing = 'left', externalSpeech = '' } = $props<{
+  let { width = 160, height = 120, mood = 'idle', stage = 'egg', facing = 'left', externalSpeech = '', form = undefined } = $props<{
     width?: number; height?: number; mood?: string; stage?: string;
     facing?: 'left' | 'right';
     externalSpeech?: string;
+    form?: PetForm | undefined;
   }>();
 
   let canvas: HTMLCanvasElement;
@@ -26,6 +29,9 @@
   let petHoldTimer: number | null = null;
   let petHoldStart = 0;
   const PET_HOLD_MS = 800;
+  let evolveFlash = $state(0);
+  let lastFormHue = -1;
+  let clickBounce = $state(0);
 
   function onCanvas(el: HTMLCanvasElement) {
     canvas = el;
@@ -46,8 +52,10 @@
           const cx = Math.round(el.width / 2);
           const cy = Math.round(el.height / 2);
           const pal = getColors();
-          burstParticles(cx + (Math.random() - 0.5) * 20, cy - 10, pal.accent, 10);
-          burstParticles(cx + (Math.random() - 0.5) * 20, cy - 10, pal.body[7], 6);
+          const formPal = form ? getFormPalette(pal, form) : pal;
+          burstParticles(cx + (Math.random() - 0.5) * 20, cy - 10, formPal.accent, 10);
+          burstParticles(cx + (Math.random() - 0.5) * 20, cy - 10, formPal.body[7], 6);
+          try { playSfx('levelup'); } catch {}
         }
       }, 50);
     };
@@ -59,8 +67,11 @@
         const x = clientX - rect.left;
         const y = clientY - rect.top;
         const pal = getColors();
-        burstParticles(x, y, pal.accent, 6);
-        burstParticles(x, y, pal.body[Math.min(6, pal.body.length - 1)], 4);
+        const formPal = form ? getFormPalette(pal, form) : pal;
+        burstParticles(x, y, formPal.accent, 6);
+        burstParticles(x, y, formPal.body[Math.min(6, formPal.body.length - 1)], 4);
+        try { playSfx('click'); } catch {}
+        clickBounce = 1.0;
       }
     };
 
@@ -79,6 +90,17 @@
   }
 
   const animator = new SpriteAnimator();
+
+  $effect(() => {
+    if (stage && stage !== lastStage) {
+      evolveFlash = 1.0;
+      lastStage = stage;
+      try { playSfx('evolve'); } catch {}
+    }
+    if (form && form.hue !== lastFormHue) {
+      lastFormHue = form.hue;
+    }
+  });
 
   // ===== AAA PIXEL PALETTE: 8-color scientific progression =====
   // Design: 2 hues (primary + accent) + neutral scales + outline
@@ -155,8 +177,121 @@
     return darken(hex, factor);
   }
   function withAlpha(hex: string, a: number) {
+    if (!hex || typeof hex !== 'string' || hex[0] !== '#') return `rgba(128,128,128,${a})`;
     const r = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return `rgba(128,128,128,${a})`;
     return `rgba(${r},${g},${b},${a})`;
+  }
+
+  // ===== FORM-AWARE PALETTE =====
+  function rotateHue(hex: string, hueDeg: number): string {
+    const [h, s, l] = hexToHsl(hex);
+    const nh = (h + hueDeg + 360) % 360;
+    return hslToHex(nh, s, l);
+  }
+  function getFormPalette(basePal: ReturnType<typeof getColors>, form?: PetForm | undefined): ReturnType<typeof getColors> {
+    if (!form) return basePal;
+    const hueShift = ((form.hue % 360) - 180);
+    const boosted = hueShift * 0.35;
+    const body = basePal.body.map(c => rotateHue(c, boosted));
+    const outline = basePal.outline.map(c => rotateHue(c, boosted));
+    const eye = basePal.eye.map(c => rotateHue(c, boosted));
+    const accent = rotateHue(basePal.accent, boosted + 15);
+    return { body, outline, eye, accent } as ReturnType<typeof getColors>;
+  }
+  function drawFormAura(pal: ReturnType<typeof getColors>, form?: PetForm | undefined) {
+    if (!form) return;
+    const cx = Math.round(width / 2);
+    const cy = Math.round(height / 2);
+    const auraR = Math.max(1, Math.min(width, height) * 0.42);
+    const grad = ctx.createRadialGradient(cx, cy, auraR * 0.2, cx, cy, auraR);
+    const rawAura = form.palette?.aura;
+    const auraColor = (typeof rawAura === 'string' && rawAura[0] === '#') ? rawAura : pal.accent;
+    const pulse = 0.85 + Math.sin(frame * 0.04) * 0.15;
+    const baseAlpha = 0.12 + (form.luminosity || 0) * 0.15;
+    grad.addColorStop(0, withAlpha(auraColor, 0.0));
+    grad.addColorStop(0.5, withAlpha(auraColor, baseAlpha * pulse));
+    grad.addColorStop(1, withAlpha(auraColor, 0));
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+  function drawFormMarkers(pal: ReturnType<typeof getColors>, form?: PetForm | undefined) {
+    if (!form || !form.markers?.length) return;
+    const cx = Math.round(width / 2);
+    const cy = Math.round(height / 2);
+    const px2 = Math.max(3, Math.floor(Math.min(width, height) / 20));
+    ctx.save();
+    const speed = 0.02 + (form.elaboration || 0) * 0.03;
+    form.markers.forEach((marker, i) => {
+      const angle = (i / form.markers.length) * Math.PI * 2 + frame * speed;
+      const r = px2 * 5.5 + Math.sin(frame * 0.03 + i) * px2 * 0.8;
+      const mx = Math.round(cx + Math.cos(angle) * r);
+      const my = Math.round(cy + Math.sin(angle) * r * 0.7);
+      ctx.globalAlpha = 0.25 + Math.sin(frame * 0.05 + i) * 0.15;
+      ctx.fillStyle = pal.accent;
+      ctx.fillRect(mx - 2, my - 2, 5, 5);
+      ctx.globalAlpha = 0.7 + Math.sin(frame * 0.05 + i) * 0.3;
+      ctx.fillStyle = pal.body[7];
+      if (marker === 'growth-rings') {
+        ctx.fillRect(mx - 1, my - 1, 3, 3);
+        ctx.fillRect(mx, my, 1, 1);
+      } else if (marker === 'skill-glyphs') {
+        ctx.fillRect(mx - 1, my, 3, 1);
+        ctx.fillRect(mx, my - 1, 1, 3);
+      } else if (marker === 'companion-bond') {
+        ctx.fillRect(mx, my - 1, 1, 3);
+        ctx.fillRect(mx - 1, my, 3, 1);
+        ctx.fillRect(mx, my + 1, 1, 1);
+      } else if (marker === 'slumber-bloom') {
+        ctx.fillRect(mx - 1, my - 1, 1, 1);
+        ctx.fillRect(mx + 1, my - 1, 1, 1);
+        ctx.fillRect(mx - 1, my + 1, 1, 1);
+        ctx.fillRect(mx + 1, my + 1, 1, 1);
+      }
+    });
+    ctx.restore();
+  }
+
+  function drawIdleTrail(pal: ReturnType<typeof getColors>, form?: PetForm | undefined, extraScale = 1) {
+    const cx = Math.round(width / 2);
+    const cy = Math.round(height / 2);
+    const px2 = Math.max(3, Math.floor(Math.min(width, height) / 20));
+    const groundY = Math.round(cy + px2 * 6.5 * extraScale);
+    const trailColor = form ? (form.palette?.accent || pal.accent) : pal.accent;
+    const count = form ? Math.floor(2 + (form.luminosity || 0) * 3) : 2;
+    ctx.save();
+    for (let i = 0; i < count; i++) {
+      const t = (frame * 0.03 + i * 0.8) % 1;
+      const x = cx + Math.sin(frame * 0.02 + i * 1.3) * px2 * 3;
+      const y = groundY + t * px2 * 4;
+      const alpha = (1 - t) * 0.35;
+      ctx.globalAlpha = alpha;
+      ctx.fillStyle = trailColor;
+      const size = Math.max(1, Math.round(px2 * 0.6 * (1 - t * 0.5)));
+      ctx.fillRect(Math.round(x - size / 2), Math.round(y - size / 2), size, size);
+    }
+    ctx.restore();
+  }
+
+  function drawIdleBreathGlow(pal: ReturnType<typeof getColors>, form?: PetForm | undefined) {
+    if (!form || stage === 'egg') return;
+    const cx = Math.round(width / 2);
+    const cy = Math.round(height / 2);
+    const px2 = Math.max(3, Math.floor(Math.min(width, height) / 20));
+    const breathR = px2 * 4 + Math.sin(frame * 0.04) * px2 * 0.5;
+    const glowAlpha = 0.03 + (form.luminosity || 0) * 0.04;
+    const rawAura = form.palette?.aura;
+    const auraColor = (typeof rawAura === 'string' && rawAura[0] === '#') ? rawAura : pal.accent;
+    ctx.save();
+    ctx.globalAlpha = glowAlpha;
+    ctx.fillStyle = auraColor;
+    ctx.beginPath();
+    ctx.arc(cx, cy, Math.max(1, breathR), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
   // ===== DITHERING PATTERNS =====
@@ -179,6 +314,7 @@
   function ditheredRect(x: number, y: number, w: number, h: number, colorA: string, colorB: string, intensity = 0.5): void {
     const useA = Math.floor(intensity * 16);
     ctx.save();
+    ctx.filter = 'none';
     for (let py = Math.round(y); py < Math.round(y + h); py++) {
       for (let px = Math.round(x); px < Math.round(x + w); px++) {
         const d = hashPixel(px, py);
@@ -200,6 +336,7 @@
 
   function drawDitheredBand(x: number, y: number, w: number, h: number, colorTop: string, colorBot: string): void {
     ctx.save();
+    ctx.filter = 'none';
     for (let py = Math.round(y); py < Math.round(y + h); py++) {
       const t = (py - y) / Math.max(1, h - 1);
       const col = lerpColor(colorTop, colorBot, t);
@@ -251,6 +388,7 @@
     const lx = cx - px * 1 + (i === 0 ? -dir * px * 3 : dir * px * 3);
     ctx.fillRect(Math.round(lx), Math.round(legY + 3), legW, 3 * px);
   }
+  ctx.restore();
   ctx.restore();
   ctx.globalAlpha = 1;
 }
@@ -357,7 +495,7 @@
        ctx.shadowBlur = 0;
        ctx.shadowOffsetX = 0;
        ctx.shadowOffsetY = 0;
-       ditheredRect(shadowCx - shadowRx, shadowCy - shadowRy, shadowRx * 2, shadowRy * 2, shadowColor, 'rgba(8,4,16,', shadowAlpha);
+       ditheredRect(shadowCx - shadowRx, shadowCy - shadowRy, shadowRx * 2, shadowRy * 2, shadowColor, 'rgba(8,4,16,0.25)', shadowAlpha);
 
        drawGroundReflection(pal, groundY, cx, facing, px, bodyBob, outline);
 
@@ -807,8 +945,59 @@
        const s = Math.max(1, Math.round(p.size));
        ctx.fillRect(cx + ox - Math.round(s / 2), cy + oy - Math.round(s / 2), s, s);
      }
-     ctx.restore();
-   }
+    ctx.restore();
+  }
+
+  function applyFormPosture(pose: SpritePose, form?: PetForm | undefined): SpritePose {
+    if (!form) return pose;
+    const p = { ...pose, idleFidget: { ...pose.idleFidget } };
+    switch (form.posture) {
+      case 'fierce': {
+        const shake = Math.sin(frame * 0.025) * 0.9;
+        p.bodyBob = (pose.bodyBob || 0) + Math.round(shake);
+        p.headBob = (pose.headBob || 0) + Math.round(shake);
+        p.legSpread = Math.max(pose.legSpread || 0, 1.4);
+        p.squashX = Math.max(pose.squashX || 1, 1.1);
+        p.squashY = Math.min(pose.squashY || 1, 0.9);
+        p.idleFidget.bodySway = (pose.idleFidget.bodySway || 0) + shake * 0.7;
+        p.idleFidget.wingFlap = (pose.idleFidget.wingFlap || 0) + Math.sin(frame * 0.025) * 2.2;
+        break;
+      }
+      case 'excited': {
+        const bounce = Math.abs(Math.sin(frame * 0.03)) * 2;
+        p.bodyBob = Math.round(-bounce);
+        p.headBob = Math.round(-bounce);
+        p.legSpread = Math.max(pose.legSpread || 0, 1);
+        p.squashX = 1 / (1 + Math.abs(Math.sin(frame * 0.03)) * 0.2);
+        p.squashY = 1 + Math.abs(Math.sin(frame * 0.03)) * 0.2;
+        p.idleFidget.wingFlap = (pose.idleFidget.wingFlap || 0) + Math.sin(frame * 0.025) * 2;
+        break;
+      }
+      case 'active': {
+        const sway = Math.sin(frame * 0.004) * 1;
+        p.idleFidget.bodySway = (pose.idleFidget.bodySway || 0) + sway;
+        p.legSpread = Math.max(pose.legSpread || 0, 0.6);
+        p.idleFidget.wingFlap = (pose.idleFidget.wingFlap || 0) + Math.sin(frame * 0.01) * 0.8;
+        break;
+      }
+      case 'dormant': {
+        p.bodyBob = Math.round((pose.bodyBob || 0) * 0.4);
+        p.headBob = Math.round((pose.headBob || 0) * 0.4);
+        p.squashX = Math.max(pose.squashX || 1, 1.05);
+        p.squashY = Math.min(pose.squashY || 1, 0.95);
+        p.idleFidget.headTilt = (pose.idleFidget.headTilt || 0) - 0.7;
+        p.idleFidget.wingFlap = (pose.idleFidget.wingFlap || 0) * 0.2;
+        break;
+      }
+      default: {
+        const calm = Math.sin(frame * 0.0025) * 0.6;
+        p.idleFidget.bodySway = (pose.idleFidget.bodySway || 0) + calm;
+        p.idleFidget.headTilt = (pose.idleFidget.headTilt || 0) + Math.sin(frame * 0.002) * 0.3;
+        break;
+      }
+    }
+    return p;
+  }
 
    function spawnParticle(x: number, y: number, color: string, kind: Particle['kind'] = 'sparkle') {
     if (particles.length >= MAX_PARTICLES) return;
@@ -1293,24 +1482,30 @@
      const cx = Math.round(width / 2);
      const cy = Math.round(height / 2);
 
-     const stageFilter = getStageFilter();
-     ctx.filter = stageFilter;
+       updateBlink(dt);
+      updateParticles();
+      updateAmbient();
 
-     updateBlink(dt);
-     updateParticles();
-     updateAmbient();
+      if (stage === 'mega') {
+        const pal = getColors();
+        if (frame % 20 === 0 && orbitParticles.length < MAX_ORBIT) {
+          spawnOrbitParticle(cx, cy, [pal.accent, pal.body[6], pal.body[7]]);
+        }
+        updateOrbitParticles();
+      }
 
-     if (stage === 'mega') {
-       const pal = getColors();
-       if (frame % 20 === 0 && orbitParticles.length < MAX_ORBIT) {
-         spawnOrbitParticle(cx, cy, [pal.accent, pal.body[6], pal.body[7]]);
-       }
-       updateOrbitParticles();
-     }
+      ctx.clearRect(0, 0, width, height);
 
-     ctx.clearRect(0, 0, width, height);
+      if (evolveFlash > 0.01) {
+        ctx.save();
+        ctx.globalAlpha = evolveFlash * 0.35;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+        evolveFlash *= 0.92;
+      }
 
-     const visual = getVisual(stage);
+      const visual = getVisual(stage);
     const framePal = currentPal || getColors();
     drawBackground(visual, framePal);
 
@@ -1364,7 +1559,8 @@
 
     if (mood !== lastMood) {
       const basePal = getColors();
-      currentPal = tintPalette(basePal, getMoodTint());
+      const formPal = getFormPalette(basePal, form);
+      currentPal = tintPalette(formPal, getMoodTint());
       lastMood = mood;
     }
 
@@ -1372,28 +1568,56 @@
      drawParticles();
 
      if (stage === 'mega') {
-       const pal = getColors();
+       const pal = getFormPalette(getColors(), form);
        if (frame % 20 === 0 && orbitParticles.length < MAX_ORBIT) {
          spawnOrbitParticle(cx, cy, pal.accent ? [pal.accent, pal.body[6], pal.body[7]] : pal.body);
        }
        updateOrbitParticles();
      }
 
-     const pose = animator.update(dt, mood, frame, isBlinking);
-    const breathScale = 1 + Math.sin(frame * 0.04) * 0.02;
+      const pose = animator.update(dt, mood, frame, isBlinking);
+      const formPose = applyFormPosture(pose, form);
+     const breathScale = 1 + Math.sin(frame * 0.04) * 0.02;
 
      let extraScale = breathScale;
+     if (clickBounce > 0.01) {
+       const bounce = 1 + clickBounce * 0.25;
+       extraScale *= bounce;
+       clickBounce *= 0.85;
+     }
      if (stage === 'mega') {
        const megaBreath = 1 + Math.sin(frame * 0.02) * 0.04;
        const megaPulse = 1 + Math.sin(frame * 0.015) * 0.03;
        extraScale *= megaBreath * megaPulse;
      }
-    if (stage === 'egg') {
-      const eggPulse = 1 + Math.sin(frame * 0.008) * 0.015;
-      extraScale *= eggPulse;
-    }
+     if (stage === 'egg') {
+       const eggPulse = 1 + Math.sin(frame * 0.008) * 0.015;
+       extraScale *= eggPulse;
+     }
 
-    drawSideView(pose, currentPal || getColors(), extraScale);
+       const renderPal = currentPal || getFormPalette(getColors(), form);
+       ctx.globalAlpha = 1;
+       ctx.filter = getStageFilter();
+       try { drawFormAura(renderPal, form); } catch {}
+       try { drawIdleBreathGlow(renderPal, form); } catch {}
+       drawSideView(formPose, renderPal, extraScale);
+       try { drawFormMarkers(renderPal, form); } catch {}
+       try { drawIdleTrail(renderPal, form, extraScale); } catch {}
+       ctx.filter = 'none';
+
+     if (form) {
+       const cx = Math.round(width / 2);
+       const cy = Math.round(height / 2);
+       if (form.posture === 'fierce' && frame % 12 === 0) {
+         spawnParticle(cx + (Math.random() - 0.5) * 40, cy - 10, renderPal.accent, 'sparkle');
+       } else if (form.posture === 'excited' && frame % 8 === 0) {
+         spawnParticle(cx + (Math.random() - 0.5) * 30, cy - 20, renderPal.accent, 'heart');
+       } else if (form.posture === 'active' && frame % 20 === 0) {
+         spawnParticle(cx + (Math.random() - 0.5) * 20, cy + 10, renderPal.body[5], 'puff');
+       } else if (form.posture === 'dormant' && frame % 40 === 0) {
+         spawnParticle(cx + (Math.random() - 0.5) * 20, cy - 15, renderPal.body[6], 'zzz');
+       }
+     }
 
     if (stage === 'mega') {
       const pal = getColors();
@@ -1430,17 +1654,15 @@
 
      drawOrbitParticles(Math.round(width / 2), Math.round(height / 2));
 
-     drawCosmicGlow();
+      drawCosmicGlow();
 
-     if (speech) {
-      drawSpeechBubble(speech, currentPal || getColors());
-    }
+      if (speech) {
+       drawSpeechBubble(speech, currentPal || getColors());
+     }
 
     drawScanlines();
     drawVignette();
     drawMoodOverlay();
-
-    ctx.filter = 'none';
     }
 
   function drawSpeechBubble(text: string, pal: ReturnType<typeof getColors> = getColors()) {

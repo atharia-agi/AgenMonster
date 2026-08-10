@@ -25,13 +25,13 @@
   }
   .floating-text {
     position: absolute;
-    font-size: 12px;
-    font-weight: 600;
+    font-size: var(--fs-sm);
+    font-weight: 700;
     font-family: var(--font-body);
-    color: var(--gb-text);
-    animation: floatUp 1.2s steps(8) forwards;
+    color: var(--text-primary);
+    animation: floatUp 1.2s var(--ease-default) forwards;
     white-space: nowrap;
-    image-rendering: pixelated;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
   @keyframes floatUp {
     0% { opacity: 1; transform: translateY(0); }

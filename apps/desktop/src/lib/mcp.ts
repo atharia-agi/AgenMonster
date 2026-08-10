@@ -124,13 +124,20 @@ export function handleTool(name: string, params: any = {}): ToolResult {
     }
     case 'goal.markdone': {
       const goalId = String(params.goalId || '');
+      const stepId = String(params.stepId || '').trim();
       const stepTitle = String(params.stepTitle || '').trim().toLowerCase();
       if (!goalId) return err('missing goalId');
       const gs3 = getGameState();
       const goals3 = gs3.goals ?? [];
       const idx = goals3.findIndex((g: Goal) => g.id === goalId);
       if (idx < 0) return err('goal not found');
-      const step = goals3[idx].steps.find((s: GoalStep) => s.title.toLowerCase().includes(stepTitle));
+      let step: GoalStep | undefined;
+      if (stepId) {
+        step = goals3[idx].steps.find((s: GoalStep) => s.id === stepId);
+      }
+      if (!step && stepTitle) {
+        step = goals3[idx].steps.find((s: GoalStep) => s.title.toLowerCase().includes(stepTitle));
+      }
       if (!step) return err('step not found');
       const updated = markStep(goals3[idx], step.id);
       gs3.goals[idx] = updated;
@@ -259,3 +266,7 @@ export const BROWSEROS_TOOLS = [
 ] as const;
 
 export const ALL_TOOLS = [...TOOLS, ...SECOND_BRAIN_TOOLS, ...BROWSEROS_TOOLS] as const;
+
+export async function executeToolAsync(name: string, params: any = {}): Promise<ToolResult> {
+  return Promise.resolve(handleTool(name, params));
+}

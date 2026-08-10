@@ -26,7 +26,7 @@
 
 <div class="status-panel">
   <div class="ribbon-header" class:streaming>
-    <Icon name={stageIcon} size={20} color="var(--gb-text)" />
+    <Icon name={stageIcon} size={20} color="var(--text-primary)" />
     <div class="ribbon-info">
       <div class="ribbon-name">{state.name.toUpperCase()}</div>
       <div class="ribbon-meta">
@@ -91,89 +91,98 @@
 </div>
 
 <style>
-  .status-panel { padding: 0; font-family: var(--font-body); image-rendering: pixelated; }
+  .status-panel { padding: 0; font-family: var(--font-body); }
 
   .ribbon-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 8px;
-    background: var(--gb-bg);
-    border-bottom: var(--gb-stroke) solid var(--gb-border);
+    gap: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-default);
     position: relative;
   }
   .ribbon-header::after {
     content: '';
     position: absolute;
-    bottom: -6px;
+    bottom: -3px;
     left: 0;
     right: 0;
     height: 3px;
-    background: var(--gb-border);
+    background: var(--border-strong);
     z-index: 1;
   }
   .ribbon-info {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: var(--sp-1);
     min-width: 0;
   }
   .ribbon-name {
-    font-size: 9px;
-    color: var(--gb-text);
-    letter-spacing: 1px;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 0.05em;
     line-height: 1;
   }
   .ribbon-meta {
     display: flex;
-    gap: 3px;
+    gap: var(--sp-1);
     flex-wrap: wrap;
   }
   .ribbon-chip {
-    font-size: 6px;
-    color: var(--gb-dark);
-    background: var(--gb-panel);
-    border: 2px solid var(--gb-border);
-    padding: 1px 4px;
+    font-size: var(--fs-2xs);
+    color: var(--text-secondary);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
+    padding: 1px var(--sp-1);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-weight: 600;
   }
   .ribbon-chip.accent {
-    background: var(--gb-border);
-    color: var(--gb-bg);
+    background: var(--accent-subtle);
+    color: var(--accent);
+    border-color: rgba(99, 102, 241, 0.2);
   }
   .goal-chip {
-    background: var(--gb-text);
-    color: var(--gb-bg);
+    background: var(--accent);
+    color: #fff;
     cursor: pointer;
-    border-color: var(--gb-border);
+    border-color: var(--accent);
+    border-radius: var(--radius-sm);
+    transition: all var(--duration-fast) var(--ease-default);
   }
+  .goal-chip:hover { background: var(--accent-hover); }
   .ribbon-knot {
-    font-size: 10px;
-    color: var(--gb-border);
-    width: 18px;
-    height: 18px;
+    font-size: var(--fs-xs);
+    color: var(--text-muted);
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--gb-bg);
-    border: 2px solid var(--gb-border);
+    background: var(--bg-overlay);
+    border: 1px solid var(--border-default);
     flex-shrink: 0;
+    border-radius: var(--radius-md);
   }
   .ribbon-header.streaming {
-    animation: headerPulse 1.2s steps(2) infinite;
+    animation: headerPulse 1.2s ease-in-out infinite;
   }
   @keyframes headerPulse {
-    0%, 100% { background: var(--gb-bg); }
-    50% { background: #1a2a1a; }
+    0%, 100% { background: var(--bg-elevated); }
+    50% { background: var(--accent-subtle); }
   }
   .presence-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
     display: inline-block;
-    image-rendering: pixelated;
+    flex-shrink: 0;
   }
-  .presence-awake { background: #0f380f; }
-  .presence-idle { background: #6a6; }
-  .presence-dormant { background: #555; }
+  .presence-awake { background: var(--success); box-shadow: 0 0 4px rgba(16, 185, 129, 0.4); }
+  .presence-idle { background: var(--warning); }
+  .presence-dormant { background: var(--text-muted); }
 </style>
